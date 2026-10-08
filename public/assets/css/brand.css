@@ -1,0 +1,49 @@
+/* Espace Katioka wordmark — text-based logo (no image asset). */
+.brand-logo-text {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: 'Gilda Display', serif;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.brand-logo-text__accent {
+    font-weight: 400;
+}
+
+.brand-logo-text.is-white {
+    color: #ffffff;
+}
+
+.brand-logo-text.is-white .brand-logo-text__accent {
+    color: #c9d6c6;
+}
+
+.brand-logo-text.is-dark {
+    color: #161921;
+}
+
+.brand-logo-text.is-dark .brand-logo-text__accent {
+    color: #6D7C6A;
+}
+
+.footer-logo .brand-logo-text {
+    font-size: 24px;
+}
+
+.error-404-text {
+    display: block;
+    font-family: 'Gilda Display', serif;
+    font-size: 180px;
+    line-height: 1;
+    color: #6D7C6A;
+}
+
+@media (max-width: 767px) {
+    .error-404-text {
+        font-size: 100px;
+    }
+}

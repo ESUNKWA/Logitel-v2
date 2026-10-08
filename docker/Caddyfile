@@ -1,0 +1,31 @@
+# FrankenPHP / Caddy. SERVER_NAME=":80" → plain HTTP on any address (VPS IP, no domain yet).
+# With a domain, set SERVER_NAME=hotel.example.ci and Caddy gets a Let's Encrypt certificate
+# automatically (ports 80 and 443 must be open). See DOCKER.md.
+{
+	frankenphp
+	admin off
+}
+
+{$SERVER_NAME::80} {
+	root * /app/public
+	encode zstd br gzip
+
+	# Uploads: photos are ≤2 MB each, 8 MB per request (see docker/php/app.ini).
+	request_body {
+		max_size 10MB
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+		-X-Powered-By
+	}
+
+	# Static assets (CSS, JS, fonts, photos) can be cached by browsers.
+	@static path /assets/* /css/* /js/* /storage/*
+	header @static Cache-Control "public, max-age=604800"
+
+	php_server
+}

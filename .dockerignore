@@ -1,0 +1,25 @@
+# Never in the image: secrets, local data, dev leftovers.
+.env
+.env.*
+!.env.production.example
+.git
+.idea
+.vscode
+.DS_Store
+.phpunit.result.cache
+.phpunit.cache
+node_modules
+vendor
+public/storage
+public/hot
+storage/backups
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*.php
+compose*.yaml
+Dockerfile
+tests
+phpunit.xml

@@ -1,0 +1,51 @@
+# Espace Katioka — DEVELOPMENT. Code bind-mounted (changes are live), debug on.
+#   docker compose -f compose.dev.yaml up --build
+#   → http://localhost:8080   (PostgreSQL on localhost:5433, user/pass: katioka/katioka)
+# APP_KEY comes from your local .env (mounted with the code); the DB settings below override it.
+name: espace-katioka-dev
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8080
+      SERVER_NAME: ":80"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: katioka
+      DB_USERNAME: katioka
+      DB_PASSWORD: katioka
+      LOG_CHANNEL: stderr
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/app
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: katioka
+      POSTGRES_USER: katioka
+      POSTGRES_PASSWORD: katioka
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U katioka -d katioka"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  db_data_dev:
