@@ -6,7 +6,7 @@ services:
     build:
       context: .
       target: prod
-    image: espace-katioka:latest
+    image: logitel:latest
     restart: unless-stopped
     env_file: .env.production
     depends_on:
