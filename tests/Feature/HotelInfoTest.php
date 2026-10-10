@@ -24,7 +24,7 @@ class HotelInfoTest extends TestCase
     private function info(array $extra = []): array
     {
         return [
-            'hotel_name' => 'Hôtel Hôtel Evasion',
+            'hotel_name' => 'Hôtel Evasion Bouaké',
             'hotel_tagline' => 'Le confort au cœur de Bouaké',
             'hotel_phone' => '+225 07 11 22 33 44',
             'hotel_phone2' => '+225 27 31 00 00 00',
@@ -51,7 +51,7 @@ class HotelInfoTest extends TestCase
         $this->actingAs($manager)->get('/admin/hotel')->assertOk()->assertSee("Informations de l'hôtel", false);
         $this->actingAs($manager)->put('/admin/hotel', $this->info())->assertSessionHasNoErrors()->assertRedirect('/admin/hotel');
 
-        $this->assertSame('Hôtel Hôtel Evasion', config('hotel.info.name'));
+        $this->assertSame('Hôtel Evasion Bouaké', config('hotel.info.name'));
         $this->assertSame('https://www.katioka.ci', config('hotel.info.website')); // scheme added
         $this->assertSame('https://facebook.com/katioka', config('hotel.info.facebook'));
         $this->assertSame('', config('hotel.info.instagram'));
@@ -116,7 +116,7 @@ class HotelInfoTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->actingAs($manager)->get('/admin/recus/'.Reservation::sole()->id)->assertOk()
-            ->assertSee('Hôtel Hôtel Evasion')
+            ->assertSee('Hôtel Evasion Bouaké')
             ->assertSee("Quartier Commerce, Bouaké, Côte d'Ivoire")
             ->assertSee('+225 07 11 22 33 44 / +225 27 31 00 00 00')
             ->assertSee('reception@katioka.ci')
@@ -129,12 +129,12 @@ class HotelInfoTest extends TestCase
         $manager = User::factory()->create();
         $this->actingAs($manager)->put('/admin/hotel', $this->info());
 
-        $this->actingAs($manager)->get('/admin')->assertSee('<title>Tableau de bord — Hôtel Hôtel Evasion</title>', false);
+        $this->actingAs($manager)->get('/admin')->assertSee('<title>Tableau de bord — Hôtel Evasion Bouaké</title>', false);
         $this->actingAs($manager)->get('/admin')->assertSee('data-initials="HE"', false);
-        $this->get('/demande')->assertOk()->assertSee('Hôtel <span>Hôtel Evasion</span>', false)->assertSee('tel:+2250711223344', false);
+        $this->get('/demande')->assertOk()->assertSee('Hôtel <span>Evasion Bouaké</span>', false)->assertSee('tel:+2250711223344', false);
 
         $this->app['auth']->forgetGuards();
-        $this->get('/admin/login')->assertSee('Hôtel Hôtel Evasion');
+        $this->get('/admin/login')->assertSee('Hôtel Evasion Bouaké');
     }
 
     public function test_the_public_site_shows_the_real_contact_details(): void
@@ -153,7 +153,7 @@ class HotelInfoTest extends TestCase
             ->assertSee('https://wa.me/2250566778899', false)
             ->assertSee('https://facebook.com/katioka', false)
             ->assertDontSee('fa-linkedin-in', false); // no fake social links
-        $this->get('/')->assertSee('Le confort au cœur de Bouaké')->assertSee('&copy; '.date('Y').' Hôtel Hôtel Evasion', false);
+        $this->get('/')->assertSee('Le confort au cœur de Bouaké')->assertSee('&copy; '.date('Y').' Hôtel Evasion Bouaké', false);
     }
 
     public function test_empty_details_are_hidden_on_the_public_site(): void

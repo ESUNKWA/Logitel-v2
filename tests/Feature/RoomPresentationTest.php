@@ -58,6 +58,35 @@ class RoomPresentationTest extends TestCase
             ->assertSee("Bouilloire / cafetière\nLiterie haut de gamme", false);
     }
 
+    public function test_a_room_can_be_created_with_empty_features_and_rules(): void
+    {
+        // Empty textareas arrive as null: they used to fail with "must be an array".
+        $this->actingAs(User::factory()->create())
+            ->post('/admin/rooms', $this->payload(['features' => '', 'rules' => '', 'description' => '']))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $room = Room::where('number', '601')->sole();
+        $this->assertSame([], $room->features ?? []);
+        $this->assertSame([], $room->rules ?? []);
+    }
+
+    public function test_emptying_the_textareas_clears_the_lists(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->post('/admin/rooms', $this->payload(['features' => "Climatisation\nWi-Fi", 'rules' => 'Non-fumeur']));
+        $room = Room::where('number', '601')->sole();
+        $this->assertSame(['Climatisation', 'Wi-Fi'], $room->features);
+
+        $this->actingAs($user)->put("/admin/rooms/{$room->id}", [
+            'room_type_id' => $room->room_type_id, 'number' => '601', 'floor' => '6', 'status' => 'disponible',
+            'presentation' => '1', 'features' => '', 'rules' => '',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame([], $room->fresh()->features ?? []);
+        $this->assertSame([], $room->fresh()->rules ?? []);
+    }
+
     public function test_the_display_name_defaults_to_the_room_type(): void
     {
         $this->actingAs(User::factory()->create())->post('/admin/rooms', $this->payload())->assertSessionHasNoErrors();

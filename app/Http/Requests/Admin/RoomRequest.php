@@ -64,7 +64,10 @@ class RoomRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         foreach (['features', 'rules'] as $key) {
-            if (is_string($this->input($key))) {
+            // An empty textarea arrives as null (ConvertEmptyStringsToNull): it means "no item".
+            if ($this->has($key) && $this->input($key) === null) {
+                $this->merge([$key => []]);
+            } elseif (is_string($this->input($key))) {
                 $lines = array_map(fn ($line) => trim($line), preg_split('/\R/', $this->input($key)));
                 $this->merge([$key => array_values(array_unique(array_filter($lines, fn ($line) => $line !== '')))]);
             }
