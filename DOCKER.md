@@ -84,15 +84,30 @@ docker compose logs -f app        # Ctrl+C pour quitter les logs
 
 Au démarrage, le conteneur `app` attend PostgreSQL, **applique les migrations** (création des tables sur la base neuve), puis met en cache la configuration.
 
-### 1.5 Créer le compte du gérant (première fois)
+### 1.5 Premier compte : l'administrateur par défaut
 
-La base est neuve : aucun compte n'existe. **Ne lancez pas `db:seed` en production** (il crée un compte `admin@espace-katioka.local` / `password` et des chambres de démonstration).
+Au **premier démarrage**, sur une base **vide**, un compte **Gérant** est créé automatiquement :
+
+- **E-mail** : `ADMIN_EMAIL` de `.env.production` (par défaut `admin@espace-katioka.local`)
+- **Mot de passe** : `ADMIN_PASSWORD` de `.env.production` s'il est rempli ; **sinon un mot de passe aléatoire est généré** et affiché une seule fois dans les journaux :
+
+```bash
+docker compose logs app | grep -A4 "Compte administrateur par défaut"
+```
+
+À la première connexion, l'application **oblige à changer ce mot de passe**. Dès qu'un compte existe, plus rien n'est créé ni modifié aux redémarrages suivants.
+
+> ℹ️ Un mot de passe fourni dans `ADMIN_PASSWORD` doit respecter la politique (10 caractères min., majuscules, minuscules et chiffres) ; sinon le compte n'est pas créé et un message l'indique dans les journaux. Une fois connecté, vous pouvez vider `ADMIN_PASSWORD` dans `.env.production`.
+
+Si l'application était déjà installée **avant** cette fonctionnalité avec une base vide, il suffit de la mettre à jour (`docker compose up -d --build`) : le compte est créé au redémarrage.
+
+Pour créer un autre gérant ou **réinitialiser un mot de passe oublié** :
 
 ```bash
 docker compose exec app php artisan hotel:create-manager
 ```
 
-La commande demande l'e-mail, le nom et le mot de passe (10 caractères minimum, majuscules, minuscules et chiffres). Elle sert aussi à **réinitialiser** le mot de passe d'un gérant qui l'a oublié.
+**Ne lancez pas `db:seed` en production** (il crée un compte avec le mot de passe `password` et des chambres de démonstration).
 
 Ouvrez ensuite `http://IP_DU_VPS/admin`, connectez-vous, puis :
 

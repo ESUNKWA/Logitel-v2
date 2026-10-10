@@ -34,6 +34,8 @@ ln -sfn ../storage/app/public public/storage
 
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force --no-interaction
+    # Empty database only: default manager account (credentials printed below, see DOCKER.md).
+    php artisan hotel:ensure-admin --no-interaction || echo "ATTENTION : compte administrateur par défaut non créé (voir ci-dessus)." >&2
 fi
 
 if [ "$APP_ENV" = "production" ]; then

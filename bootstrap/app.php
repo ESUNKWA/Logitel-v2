@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware('web')->group(base_path('routes/admin.php'));
         },
     )
-   ->withMiddleware(function (Middleware $middleware): void {
+    ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
 
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
