@@ -8,6 +8,7 @@
 
 use App\Http\Controllers\Admin\AffectationController;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\BookingRequestController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FrontDeskController;
@@ -24,9 +25,11 @@ use App\Http\Controllers\Admin\RoomAssignmentController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\RoomTypeController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\Site\EventController;
 use App\Http\Controllers\Admin\Site\GalleryController;
 use App\Http\Controllers\Admin\Site\HomeContentController;
 use App\Http\Controllers\Admin\Site\ServiceController;
+use App\Http\Controllers\Admin\Site\SiteStatsController;
 use App\Http\Controllers\Admin\StayRequestController;
 use App\Http\Controllers\Admin\UiModeController;
 use App\Http\Controllers\Admin\UserController;
@@ -114,13 +117,20 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::resource('users', UserController::class)->except(['show', 'destroy'])->middleware('can:users.manage');
         Route::resource('roles', RoleController::class)->except(['show'])->middleware('can:roles.manage');
 
+        // Online booking requests from the website (« Réserver »).
+        Route::get('/demandes-reservation', [BookingRequestController::class, 'index'])->middleware('can:reservations.view')->name('booking-requests.index');
+        Route::post('/demandes-reservation/{bookingRequest}/refuser', [BookingRequestController::class, 'refuse'])->middleware('can:reservations.manage')->name('booking-requests.refuse');
+
         // « Site web »: content of the public website managed from here.
+        Route::get('/site/statistiques', [SiteStatsController::class, 'index'])->middleware('can:site.stats')->name('site.stats');
         Route::get('/site/accueil', [HomeContentController::class, 'edit'])->middleware('can:site.manage')->name('site.home.edit');
         Route::put('/site/accueil', [HomeContentController::class, 'update'])->middleware('can:site.manage')->name('site.home.update');
         Route::get('/site/galerie', [GalleryController::class, 'index'])->middleware('can:site.manage')->name('site.gallery.index');
         Route::post('/site/galerie', [GalleryController::class, 'store'])->middleware('can:site.manage')->name('site.gallery.store');
         Route::put('/site/galerie', [GalleryController::class, 'update'])->middleware('can:site.manage')->name('site.gallery.update');
         Route::delete('/site/galerie/{photo}', [GalleryController::class, 'destroy'])->middleware('can:site.manage')->name('site.gallery.destroy');
+        Route::resource('site/evenements', EventController::class)->except(['show'])->middleware('can:site.manage')
+            ->names('site.events')->parameters(['evenements' => 'event']);
         Route::resource('site/services', ServiceController::class)->except(['show'])->middleware('can:site.manage')
             ->names('site.services')->parameters(['services' => 'service']);
 

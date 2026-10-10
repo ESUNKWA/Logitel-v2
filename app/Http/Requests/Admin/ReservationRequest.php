@@ -66,6 +66,8 @@ class ReservationRequest extends FormRequest
             'status' => ['required', Rule::in([ReservationStatus::EnAttente->value, ReservationStatus::Confirmee->value])],
             'room_id' => ['required', 'exists:rooms,id', new RoomIsAvailableForDates($reservation?->id)],
             'notes' => ['nullable', 'string'],
+            // Created from an online booking request (« Demandes en ligne »), marked handled on save.
+            'booking_request_id' => ['nullable', 'integer', 'exists:booking_requests,id'],
             ...$this->discountRules(),
             // Deposit (acompte) at booking only; later payments go through the invoice.
             ...$this->paymentLineRules(required: false),
@@ -164,7 +166,7 @@ class ReservationRequest extends FormRequest
         [$start, , $duration] = $this->period();
 
         $data = collect($this->validated())->except([
-            'check_out', 'payments', 'discount_type', 'discount_value', 'discount_reason',
+            'check_out', 'payments', 'booking_request_id', 'discount_type', 'discount_value', 'discount_reason',
             'new_client_type', 'new_first_name', 'new_last_name', 'new_company_name', 'new_tax_id', 'new_phone',
         ])->all();
 

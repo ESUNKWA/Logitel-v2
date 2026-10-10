@@ -50,5 +50,6 @@
         <script src="{{ asset('site/js/plugins/isotope.min.js') }}"></script>
         <script src="{{ asset('site/js/plugins/aos.js') }}"></script>
         <script src="{{ asset('site/js/theme.js') }}"></script>
+        @stack('scripts')
     </body>
 </html>

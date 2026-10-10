@@ -6,12 +6,14 @@ use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReservationRequest;
+use App\Models\BookingRequest;
 use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -51,11 +53,41 @@ class ReservationController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View|RedirectResponse
     {
+        $reservation = new Reservation;
+        $bookingRequest = null;
+        $prefillClient = [];
+
+        // From an online booking request (« Demandes en ligne »): pre-fill the form with it.
+        if ($request->filled('demande')) {
+            $bookingRequest = BookingRequest::query()->with('roomType')->find($request->integer('demande'));
+            if (! $bookingRequest || ! $bookingRequest->isPending()) {
+                return redirect()->route('admin.booking-requests.index')->withErrors(['demande' => 'Cette demande en ligne a déjà été traitée.']);
+            }
+
+            $reservation->fill([
+                'pricing_mode' => $bookingRequest->pricing_mode,
+                'check_in' => $bookingRequest->check_in,
+                'duration' => $bookingRequest->duration,
+                'adults' => $bookingRequest->adults,
+                'children' => $bookingRequest->children,
+                'notes' => trim('Demande en ligne n°'.$bookingRequest->id.($bookingRequest->email ? " — e-mail : {$bookingRequest->email}" : '')
+                    .($bookingRequest->message ? "\n".$bookingRequest->message : '')),
+            ]);
+            if ($guest = $bookingRequest->matchingGuest()) {
+                $reservation->guest_id = $guest->id;
+                $reservation->setRelation('guest', $guest);
+            } else {
+                $prefillClient = ['phone' => $bookingRequest->phone, 'first_name' => $bookingRequest->first_name, 'last_name' => $bookingRequest->last_name];
+            }
+        }
+
         return view('admin.reservations.create', [
-            'reservation' => new Reservation,
+            'reservation' => $reservation,
             'statuses' => [ReservationStatus::EnAttente, ReservationStatus::Confirmee],
+            'bookingRequest' => $bookingRequest,
+            'prefillClient' => $prefillClient,
         ]);
     }
 
@@ -69,7 +101,23 @@ class ReservationController extends Controller
             [$start, $end] = $request->period();
             Room::lockAvailable((int) $request->validated('room_id'), $start, $end, null, 'room_id');
 
+            // Created from an online booking request: it's handled once (locked), in this transaction.
+            $bookingRequest = null;
+            if ($request->filled('booking_request_id')) {
+                $bookingRequest = BookingRequest::query()->lockForUpdate()->find((int) $request->validated('booking_request_id'));
+                if (! $bookingRequest?->isPending()) {
+                    throw ValidationException::withMessages(['booking_request_id' => 'Cette demande en ligne a déjà été traitée.']);
+                }
+            }
+
             $reservation = Reservation::create([...$request->reservationAttributes(), 'guest_id' => $request->resolveGuestId(), 'origin' => Reservation::ORIGIN_RESERVATION]);
+
+            $bookingRequest?->forceFill([
+                'status' => BookingRequest::STATUS_HANDLED,
+                'reservation_id' => $reservation->id,
+                'handled_by' => $request->user()->id,
+                'handled_at' => now(),
+            ])->save();
 
             if ($request->paymentLines() !== []) {
                 $reservation->invoice->settle($request->paymentLines(), now(), 'Acompte à la réservation');

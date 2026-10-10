@@ -185,8 +185,9 @@
                                 @if ($requestable)
                                     <p><span class="site-badge-free"><i class="fas fa-circle"></i> Libre en ce moment</span></p>
                                 @endif
+                                <a href="{{ route('booking.create', ['type' => $room->room_type_id]) }}" class="theme-btn style-one w-100 mb-3">Réserver cette chambre</a>
                                 @if ($hotelInfo->phones())
-                                    <p class="mb-2">Pour réserver, appelez la réception :</p>
+                                    <p class="mb-2">Ou appelez la réception :</p>
                                     <ul>
                                         @foreach ($hotelInfo->phones() as $phone)
                                             <li><a href="{{ $hotelInfo->telHref($phone) }}">Tél : {{ $phone }}</a></li>

@@ -16,12 +16,15 @@
                             <li class="menu-item"><a href="{{ route('home') }}">Accueil</a></li>
                             <li class="menu-item"><a href="{{ route('rooms.index') }}">Chambres</a></li>
                             <li class="menu-item"><a href="{{ route('services.index') }}">Services</a></li>
+                            @if (\App\Models\SiteEvent::query()->upcoming()->exists())
+                                <li class="menu-item"><a href="{{ route('events.index') }}">Événements</a></li>
+                            @endif
                             <li class="menu-item"><a href="{{ route('gallery') }}">Galerie</a></li>
                             <li class="menu-item"><a href="{{ route('contact') }}">Contact</a></li>
                         </ul>
                     </nav>
                     <div class="theme-nav-button mt-20 d-block d-md-none">
-                        <a href="{{ route('contact') }}" class="theme-btn style-one">Nous contacter<i class="far fa-arrow-right"></i></a>
+                        <a href="{{ route('booking.create') }}" class="theme-btn style-one">Réserver<i class="far fa-arrow-right"></i></a>
                     </div>
                     @if ($hotelInfo->socials())
                         <div class="theme-menu-bottom mt-50 d-block d-xl-none">
@@ -36,7 +39,7 @@
                 </div>
                 <div class="nav-right-item">
                     <div class="nav-button d-none d-md-block">
-                        <a href="{{ route('contact') }}" class="theme-btn style-one">Nous contacter<i class="far fa-arrow-right"></i></a>
+                        <a href="{{ route('booking.create') }}" class="theme-btn style-one">Réserver<i class="far fa-arrow-right"></i></a>
                     </div>
                     <div class="navbar-toggler">
                         <span></span>

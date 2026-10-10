@@ -403,23 +403,34 @@
                         return;
                     }
 
+                    // From an online booking request: pre-select a room of the requested type.
+                    var preferredType = roomSelect.dataset.preferredType || '';
+                    var preferred = !currentValue && preferredType
+                        ? rooms.find(function (room) { return String(room.room_type_id) === preferredType; })
+                        : null;
                     rooms.forEach(function (room) {
                         var option = document.createElement('option');
                         option.value = room.id;
                         option.textContent = room.label;
                         option.dataset.rate = room.rate || '';
-                        if (String(room.id) === currentValue) {
+                        if (String(room.id) === currentValue || (preferred && room.id === preferred.id)) {
                             option.selected = true;
                         }
                         roomSelect.appendChild(option);
                     });
                     roomSelect.dispatchEvent(new CustomEvent('rooms:refreshed'));
+                    if (preferred) {
+                        roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 });
         };
 
         triggers.forEach(function (trigger) {
             trigger.addEventListener('change', refreshRooms);
         });
+        if (roomSelect.hasAttribute('data-refresh-on-load')) {
+            refreshRooms();
+        }
 
         roomSelect.addEventListener('change', function () {
             var selected = roomSelect.options[roomSelect.selectedIndex];

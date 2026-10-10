@@ -31,6 +31,7 @@ enum Permission: string
     case RolesManage = 'roles.manage';
     case SettingsManage = 'settings.manage';
     case SiteManage = 'site.manage';
+    case SiteStats = 'site.stats';
 
     public function getLabel(): string
     {
@@ -55,7 +56,8 @@ enum Permission: string
             self::UsersManage => 'Gérer les comptes du personnel',
             self::RolesManage => 'Gérer les rôles et leurs permissions',
             self::SettingsManage => "Modifier les paramètres de l'hôtel (journée commerciale, horaires des tarifs)",
-            self::SiteManage => "Gérer le contenu du site web (page d'accueil, services)",
+            self::SiteManage => 'Gérer le contenu du site web (accueil, services, galerie, événements)',
+            self::SiteStats => 'Voir les statistiques de visite du site web',
         };
     }
 
@@ -70,7 +72,7 @@ enum Permission: string
             self::DashboardRevenue => 'Tableau de bord',
             self::AlertsCheckout => 'Alertes',
             self::UsersManage, self::RolesManage, self::SettingsManage => 'Administration',
-            self::SiteManage => 'Site web',
+            self::SiteManage, self::SiteStats => 'Site web',
         };
     }
 

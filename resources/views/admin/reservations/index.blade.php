@@ -15,6 +15,14 @@
         @endcan
     </div>
 
+    @php($pendingBookings = \App\Models\BookingRequest::query()->pending()->count())
+    @if ($pendingBookings)
+        <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span><i class="far fa-globe"></i> <strong>{{ $pendingBookings }} demande{{ $pendingBookings > 1 ? 's' : '' }} de réservation en ligne</strong> en attente de rappel.</span>
+            <a href="{{ route('admin.booking-requests.index') }}" class="btn btn-sm btn-warning">Voir les demandes</a>
+        </div>
+    @endif
+
     <div class="admin-card">
         <form method="GET" class="row g-2 mb-3">
             <div class="col-auto">

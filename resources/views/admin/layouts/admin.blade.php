@@ -49,6 +49,13 @@
                         <a href="{{ route('admin.reservations.index') }}" class="{{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}">
                             <i class="far fa-calendar-alt"></i> Réservations
                         </a>
+                        <a href="{{ route('admin.booking-requests.index') }}" class="{{ request()->routeIs('admin.booking-requests.*') ? 'active' : '' }}">
+                            <i class="far fa-globe"></i> Demandes en ligne
+                            @php($pendingBookings = \App\Models\BookingRequest::query()->pending()->count())
+                            @if ($pendingBookings)
+                                <span class="badge rounded-pill bg-warning text-dark ms-auto">{{ $pendingBookings }}</span>
+                            @endif
+                        </a>
                     @endcan
                     @can('guests.view')
                         <a href="{{ route('admin.guests.index') }}" class="{{ request()->routeIs('admin.guests.*') ? 'active' : '' }}">
@@ -60,13 +67,23 @@
                             <i class="far fa-file-invoice-dollar"></i> Factures
                         </a>
                     @endcan
-                    @can('site.manage')
+                    @canany(['site.manage', 'site.stats'])
                         <div class="admin-sidebar__section">Site web</div>
+                    @endcanany
+                    @can('site.stats')
+                        <a href="{{ route('admin.site.stats') }}" class="{{ request()->routeIs('admin.site.stats') ? 'active' : '' }}">
+                            <i class="far fa-chart-bar"></i> Statistiques
+                        </a>
+                    @endcan
+                    @can('site.manage')
                         <a href="{{ route('admin.site.home.edit') }}" class="{{ request()->routeIs('admin.site.home.*') ? 'active' : '' }}">
                             <i class="far fa-globe"></i> Accueil du site
                         </a>
                         <a href="{{ route('admin.site.services.index') }}" class="{{ request()->routeIs('admin.site.services.*') ? 'active' : '' }}">
                             <i class="far fa-concierge-bell"></i> Services
+                        </a>
+                        <a href="{{ route('admin.site.events.index') }}" class="{{ request()->routeIs('admin.site.events.*') ? 'active' : '' }}">
+                            <i class="far fa-calendar-star"></i> Événements
                         </a>
                         <a href="{{ route('admin.site.gallery.index') }}" class="{{ request()->routeIs('admin.site.gallery.*') ? 'active' : '' }}">
                             <i class="far fa-images"></i> Galerie

@@ -227,6 +227,7 @@ class RoomController extends Controller
             ->map(fn (Room $room) => [
                 'id' => $room->id,
                 'label' => "N°{$room->number} — {$room->roomType?->name}",
+                'room_type_id' => $room->room_type_id,
                 'rate' => $mode->rateFor($room->roomType),
             ]);
 

@@ -6,6 +6,7 @@
 @php
     $isActive = fn (string ...$patterns) => request()->routeIs(...$patterns) ? 'active' : '';
     $pendingRequests = auth()->user()->can('affectations.view') ? \App\Models\StayRequest::query()->holding()->count() : null;
+    $pendingBookings = auth()->user()->can('reservations.view') ? \App\Models\BookingRequest::query()->pending()->count() : 0;
     $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage']);
 @endphp
 
@@ -22,7 +23,11 @@
         <a href="{{ route('admin.affectations.index') }}" class="{{ $isActive('admin.affectations.*') }}"><i class="far fa-key"></i> Affectations</a>
     @endcan
     @can('reservations.view')
-        <a href="{{ route('admin.reservations.index') }}" class="{{ $isActive('admin.reservations.*') }}"><i class="far fa-calendar-alt"></i> Réservations</a>
+        <a href="{{ route('admin.reservations.index') }}" class="{{ $isActive('admin.reservations.*', 'admin.booking-requests.*') }}"><i class="far fa-calendar-alt"></i> Réservations
+            @if ($pendingBookings)
+                <span class="badge rounded-pill bg-warning text-dark" title="Demandes en ligne en attente">{{ $pendingBookings }}</span>
+            @endif
+        </a>
     @endcan
     @can('guests.view')
         <a href="{{ route('admin.guests.index') }}" class="{{ $isActive('admin.guests.*') }}"><i class="far fa-users"></i> Clients</a>
@@ -45,16 +50,25 @@
             <li><a class="dropdown-item" href="{{ route('admin.stay-requests.index') }}"><i class="far fa-mobile-alt"></i> Demandes clients</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.stay-requests.qr') }}"><i class="far fa-qrcode"></i> QR code client</a></li>
         @endcan
+        @can('reservations.view')
+            <li><a class="dropdown-item" href="{{ route('admin.booking-requests.index') }}"><i class="far fa-globe"></i> Demandes en ligne @if ($pendingBookings)<span class="badge bg-warning text-dark">{{ $pendingBookings }}</span>@endif</a></li>
+        @endcan
         @can('invoices.view')
             <li><a class="dropdown-item" href="{{ route('admin.invoices.index') }}"><i class="far fa-file-invoice-dollar"></i> Factures</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.front-desk.collect') }}"><i class="far fa-coins"></i> À encaisser</a></li>
         @endcan
         <li><a class="dropdown-item" href="{{ route('admin.stats') }}"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>
-        @can('site.manage')
+        @canany(['site.manage', 'site.stats'])
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header"><i class="far fa-globe"></i> Site web</h6></li>
+        @endcanany
+        @can('site.stats')
+            <li><a class="dropdown-item" href="{{ route('admin.site.stats') }}"><i class="far fa-chart-bar"></i> Statistiques du site</a></li>
+        @endcan
+        @can('site.manage')
             <li><a class="dropdown-item" href="{{ route('admin.site.home.edit') }}"><i class="far fa-home"></i> Accueil du site</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.site.services.index') }}"><i class="far fa-concierge-bell"></i> Services</a></li>
+            <li><a class="dropdown-item" href="{{ route('admin.site.events.index') }}"><i class="far fa-calendar-star"></i> Événements</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.site.gallery.index') }}"><i class="far fa-images"></i> Galerie</a></li>
         @endcan
         @if ($canConfigure)

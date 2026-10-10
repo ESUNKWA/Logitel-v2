@@ -130,3 +130,82 @@
 .site-gallery-item .thumbnail img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
 .site-gallery-item figcaption { padding: 10px 4px 0; font-size: 15px; color: var(--heading-color, #161921); }
 .luxivo-instagram-sec .luxivo-gallery-item .thumbnail img { aspect-ratio: 1 / 1; object-fit: cover; width: 100%; }
+
+/* « Réserver » (online booking request) */
+.site-booking__step { display: flex; align-items: center; gap: 12px; margin: 34px 0 18px; font-size: 24px; }
+.site-booking__step:first-of-type { margin-top: 0; }
+.site-booking__step span { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-color); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; font-family: inherit; }
+.site-booking__choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.site-booking__choice, .site-booking__mode { position: relative; cursor: pointer; margin: 0; }
+.site-booking__choice input, .site-booking__mode input { position: absolute; opacity: 0; pointer-events: none; }
+.site-booking__choice-body { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 18px 20px; border: 1px solid rgba(22, 25, 33, .12); border-radius: 14px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+.site-booking__choice-body strong { font-size: 18px; color: var(--heading-color, #161921); }
+.site-booking__choice-body small { color: #6b7280; }
+.site-booking__choice-body em { font-style: normal; color: var(--primary-color); font-weight: 600; }
+.site-booking__choice input:checked + .site-booking__choice-body, .site-booking__mode input:checked + span { border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-color); }
+.site-booking__choice input:focus-visible + .site-booking__choice-body, .site-booking__mode input:focus-visible + span { outline: 2px solid var(--primary-color); outline-offset: 3px; }
+.site-booking__modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.site-booking__mode span { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12px 8px; border: 1px solid rgba(22, 25, 33, .12); border-radius: 12px; background: #fff; font-weight: 600; color: var(--heading-color, #161921); }
+.site-booking__mode span small { font-weight: 400; color: #6b7280; font-size: 13px; margin-top: 2px; }
+.site-booking__mode.is-disabled { cursor: not-allowed; opacity: .45; }
+.site-booking__label { display: block; font-weight: 600; margin-bottom: 6px; color: var(--heading-color, #161921); }
+.site-booking .form_control { width: 100%; height: 54px; margin-bottom: 0; padding: 0 18px; border: 1px solid rgba(22, 25, 33, .14); border-radius: 12px; background: #fff; color: var(--heading-color, #161921); font-size: 16px; transition: border-color .15s, box-shadow .15s; }
+.site-booking .form_control:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(109, 124, 106, .2); }
+.site-booking textarea.form_control { height: auto; padding: 14px 18px; }
+.site-booking__summary { padding: 28px; border-radius: 20px; background: #161921; color: rgba(255, 255, 255, .85); top: 120px; }
+.site-booking__summary h4 { color: #fff; margin-bottom: 18px; }
+.site-booking__summary dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin-bottom: 18px; font-size: 15px; }
+.site-booking__summary dt { font-weight: 400; color: rgba(255, 255, 255, .6); }
+.site-booking__summary dd { margin: 0; color: #fff; text-align: right; }
+.site-booking__total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; border-top: 1px solid rgba(255, 255, 255, .15); margin-bottom: 14px; }
+.site-booking__total strong { color: #fff; font-size: 24px; }
+.site-booking__note { font-size: 14px; margin-bottom: 18px; color: rgba(255, 255, 255, .75); }
+.site-booking__note strong { color: #fff; }
+.site-booking__errors { padding: 16px 20px; margin-bottom: 26px; border-radius: 12px; background: #fdecec; color: #8a1c1c; }
+.site-booking__errors ul { margin: 6px 0 0 18px; list-style: disc; }
+.site-booking__hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.site-booking__done { max-width: 640px; margin: 0 auto; text-align: center; }
+.site-booking__done-icon { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; background: var(--primary-color); color: #fff; font-size: 30px; display: flex; align-items: center; justify-content: center; }
+.site-booking__done-icon.is-refused { background: #6b7280; }
+.site-booking__recap { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; text-align: left; margin: 28px 0; padding: 24px; border: 1px solid rgba(22, 25, 33, .1); border-radius: 16px; }
+.site-booking__recap dt { font-weight: 400; color: #6b7280; }
+.site-booking__recap dd { margin: 0; color: var(--heading-color, #161921); font-weight: 600; }
+@media (max-width: 767.98px) {
+    .site-booking__modes { grid-template-columns: repeat(2, 1fr); }
+    .site-booking__summary { position: static; }
+}
+
+/* Events managed in the application: home banner (under the hero) and cards */
+.site-event-bar { position: relative; z-index: 3; max-width: 980px; margin: 44px auto 0; }
+.site-event-bar__inner { display: flex; align-items: center; gap: 14px 22px; flex-wrap: wrap; padding: 18px 26px; border-radius: 16px; background: #fff; box-shadow: 0 16px 40px rgba(22, 25, 33, .14); color: var(--heading-color, #161921); text-decoration: none; transition: transform .2s, box-shadow .2s; }
+.site-event-bar__inner:hover { transform: translateY(-2px); box-shadow: 0 20px 46px rgba(22, 25, 33, .18); color: var(--heading-color, #161921); }
+.site-event-bar__tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--primary-color); color: #fff; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.site-event-bar__title { font-family: var(--heading-font, inherit); font-size: 22px; }
+.site-event-bar__when { color: #6b7280; }
+.site-event-bar__cta { margin-left: auto; font-weight: 600; color: var(--primary-color); white-space: nowrap; }
+@media (max-width: 767.98px) {
+    .site-event-bar { margin-top: 28px; }
+    .site-event-bar__inner { padding: 16px 18px; gap: 8px; }
+    .site-event-bar__title { font-size: 19px; width: 100%; }
+    .site-event-bar__cta { margin-left: 0; }
+}
+.site-event-card { background: #fff; border: 1px solid rgba(22, 25, 33, .08); border-radius: 18px; overflow: hidden; transition: box-shadow .2s, transform .2s; }
+.site-event-card__link { display: block; height: 100%; color: inherit; text-decoration: none; }
+.site-event-card__link:hover .site-event-card { box-shadow: 0 14px 34px rgba(22, 25, 33, .1); transform: translateY(-3px); }
+.site-event-card__media { position: relative; aspect-ratio: 16 / 10; background: #f1efe9; overflow: hidden; }
+.site-event-card__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.site-event-card__placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 56px; color: var(--primary-color); opacity: .6; }
+.site-event-card__date { position: absolute; top: 16px; left: 16px; min-width: 64px; padding: 8px 10px; border-radius: 12px; background: #fff; text-align: center; line-height: 1.1; box-shadow: 0 6px 18px rgba(22, 25, 33, .15); }
+.site-event-card__date strong { display: block; font-size: 26px; color: var(--heading-color, #161921); }
+.site-event-card__date span { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--primary-color); font-weight: 600; }
+.site-event-card__live { position: absolute; top: 16px; right: 16px; padding: 5px 10px; border-radius: 999px; background: #1f8a4c; color: #fff; font-size: 12px; font-weight: 600; }
+.site-event-card__body { padding: 22px 24px 26px; }
+.site-event-card__body h4 { margin-bottom: 12px; }
+.site-event-card__meta { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 4px; font-size: 15px; color: #4b5563; }
+.site-event-card__meta i { width: 18px; color: var(--primary-color); }
+.site-event-card__body p { margin-bottom: 0; }
+.site-event-card__booking { margin-top: 10px; font-weight: 600; }
+
+/* Home banner title: the template's 120px wrapped « Bienvenue à Hôtel Evasion » on two lines —
+   sized to the screen width so it fits on one line (a much longer title still wraps, never overflows). */
+.luxivo-hero_one .hero-content h1 { font-size: clamp(28px, 5.6vw, 84px); line-height: 1.15em; }

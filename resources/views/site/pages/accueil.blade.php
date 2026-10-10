@@ -34,6 +34,24 @@
                     </div>
                 </div>
             </div>
+            {{-- Next event, inside the banner so it's seen as soon as the page opens, whatever the
+                 screen height (« Site web → Événements »). --}}
+            @if ($events->isNotEmpty())
+                @php($nextEvent = $events->first())
+                <div class="site-event-bar">
+                    <a href="{{ route('events.index') }}#evenement-{{ $nextEvent->id }}" class="site-event-bar__inner">
+                        <span class="site-event-bar__tag"><i class="far fa-calendar-star"></i> {{ $nextEvent->isOngoing() ? 'En ce moment' : 'Prochain événement' }}</span>
+                        <span class="site-event-bar__title">{{ $nextEvent->title }}</span>
+                        <span class="site-event-bar__when">
+                            {{ $nextEvent->whenLabel() }}
+                            @if ($nextEvent->location)
+                                · {{ $nextEvent->location }}
+                            @endif
+                        </span>
+                        <span class="site-event-bar__cta">Voir les événements <i class="far fa-arrow-right"></i></span>
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
 </section>
@@ -112,6 +130,35 @@
 @endif
 
 {{-- Rooms published from the application (hidden while none is published). --}}
+{{-- Upcoming events (up to three). --}}
+@if ($events->isNotEmpty())
+<section class="site-events pt-110 pb-80">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-7">
+                <div class="section-title text-center mb-50">
+                    <span class="line d-block mb-10"><img src="{{ asset('site/images/home-one/gallery/d-line.png') }}" alt=""></span>
+                    <span class="sub-title">Agenda</span>
+                    <h2>Événements à venir</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            @foreach ($events as $event)
+                <div class="col-xl-4 col-md-6 mb-30">
+                    <a href="{{ route('events.index') }}#evenement-{{ $event->id }}" class="site-event-card__link">
+                        <x-site::event-card :event="$event" />
+                    </a>
+                </div>
+            @endforeach
+        </div>
+        <div class="text-center mt-2">
+            <a href="{{ route('events.index') }}" class="theme-btn style-two">Tous les événements <i class="far fa-arrow-right"></i></a>
+        </div>
+    </div>
+</section>
+@endif
+
 @if ($rooms->isNotEmpty())
 <section class="luxivo-room_one p-r z-1 pt-120 pb-120">
     <div class="room-bg" data-src="{{ asset('site/images/stock/hero-bg.jpg') }}"></div>

@@ -1,4 +1,7 @@
 @csrf
+@if ($bookingRequest ?? null)
+    <input type="hidden" name="booking_request_id" value="{{ $bookingRequest->id }}">
+@endif
 
 {{-- A réservation in any of the four modes (public/js/admin.js, [data-booking-form]): the arrival
      is a date for a nuitée (night of …, from 22:00) and a date + time otherwise. --}}
@@ -43,7 +46,7 @@
             </div>
             <div class="row g-2">
                 <div class="col-md-4">
-                    <input type="tel" class="form-control @error('new_phone') is-invalid @enderror" name="new_phone" value="{{ old('new_phone') }}" placeholder="Téléphone *" aria-label="Téléphone du nouveau client">
+                    <input type="tel" class="form-control @error('new_phone') is-invalid @enderror" name="new_phone" value="{{ old('new_phone', $prefillClient['phone'] ?? '') }}" placeholder="Téléphone *" aria-label="Téléphone du nouveau client">
                     @error('new_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4" data-client-only="morale">
@@ -53,10 +56,10 @@
                     <input type="text" class="form-control" name="new_tax_id" value="{{ old('new_tax_id') }}" placeholder="N° RCCM / NCC" aria-label="N° RCCM / NCC">
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="new_first_name" value="{{ old('new_first_name') }}" placeholder="Prénom" aria-label="Prénom">
+                    <input type="text" class="form-control" name="new_first_name" value="{{ old('new_first_name', $prefillClient['first_name'] ?? '') }}" placeholder="Prénom" aria-label="Prénom">
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="new_last_name" value="{{ old('new_last_name') }}" placeholder="Nom" aria-label="Nom">
+                    <input type="text" class="form-control" name="new_last_name" value="{{ old('new_last_name', $prefillClient['last_name'] ?? '') }}" placeholder="Nom" aria-label="Nom">
                 </div>
             </div>
             <div class="form-text" data-client-only="morale">Pour une entreprise, prénom et nom sont ceux de la personne à contacter.</div>
@@ -98,6 +101,7 @@
             data-room-select
             data-availability-url="{{ route('admin.rooms.available') }}"
             data-exclude-reservation-id="{{ $reservation->id }}"
+            @if ($bookingRequest ?? null) data-refresh-on-load data-preferred-type="{{ $bookingRequest->room_type_id }}" @endif
             required
         >
             @if ($currentRoomOption ?? null)

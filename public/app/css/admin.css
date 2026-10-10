@@ -2761,3 +2761,20 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 .gallery-admin-item__fields { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .gallery-admin-item__order { width: 76px; flex: 0 0 76px; }
 .gallery-admin-save { position: sticky; bottom: 0; padding: 14px 0; margin-top: 8px; background: linear-gradient(transparent, var(--ek-bg, #f5f7fa) 35%); text-align: right; z-index: 5; }
+
+/* Demandes de réservation en ligne */
+.booking-request-card { padding: 18px 20px; }
+.booking-request-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.booking-request-card__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.booking-request-card__label { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ek-muted, #6b7a90); margin-bottom: 2px; }
+.booking-request-card__message { white-space: pre-line; background: var(--ek-bg); border-radius: 8px; padding: 8px 10px; font-size: .92em; }
+.booking-request-card__actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; border-top: 1px solid var(--ek-border); margin-top: 16px; padding-top: 14px; }
+.booking-request-card__actions form { flex-wrap: nowrap !important; flex: 1 1 320px; max-width: 520px; }
+
+/* Site web → Statistiques: three tiles; delta pills on a light background */
+.dash-grid.site-stats-kpis { grid-template-columns: repeat(3, 1fr); }
+.site-stats-kpis .dash-delta.is-up { background: rgba(var(--ek-success-rgb), .14); color: #146c43; }
+.site-stats-kpis .dash-delta.is-down { background: rgba(var(--ek-danger-rgb), .12); color: #b02a37; }
+@media (max-width: 860px) {
+    .dash-grid.site-stats-kpis { grid-template-columns: 1fr; }
+}
