@@ -34,7 +34,7 @@
                     <dt class="col-5">Client</dt>
                     <dd class="col-7">{{ $stayRequest->fullName() }}</dd>
                     <dt class="col-5">Téléphone</dt>
-                    <dd class="col-7">{{ $stayRequest->phone }}</dd>
+                    <dd class="col-7">{{ $stayRequest->phone ?: '—' }}</dd>
                     <dt class="col-5">Personnes</dt>
                     <dd class="col-7">{{ $stayRequest->adults }} adulte(s), {{ $stayRequest->children }} enfant(s)</dd>
                     <dt class="col-5">Chambre</dt>

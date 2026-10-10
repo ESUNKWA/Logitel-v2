@@ -27,6 +27,38 @@
         @section('inline-errors', '1')
     @endif
 
+    {{-- Rate grid: every formula per room type, to inform guests (folded by default). --}}
+    @php($nightOpen = \App\Enums\PricingMode::Nuitee->canStartAt(now()))
+    @if ($rateGrid->isNotEmpty())
+        <details class="rate-grid admin-card" data-rate-grid>
+            <summary><i class="fas fa-tags me-2"></i>Grille tarifaire <span class="text-muted fw-normal">— tarifs par type de chambre (FCFA)</span></summary>
+            <div class="table-responsive mt-3">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Type de chambre</th>
+                            @foreach (\App\Enums\PricingMode::cases() as $mode)
+                                <th class="text-end">{{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee)<div class="small text-muted fw-normal">{{ str_replace(':', 'h', config('hotel.night.from')) }} → {{ str_replace(':', 'h', config('hotel.night.until')) }}</div>@endif</th>
+                            @endforeach
+                            <th class="text-end">Libres</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($rateGrid as $row)
+                            <tr>
+                                <td><strong>{{ $row['type']->name }}</strong>@if ($row['type']->capacity_adults)<div class="small text-muted">{{ $row['type']->capacity_adults }} adulte(s){{ $row['type']->capacity_children ? ' + '.$row['type']->capacity_children.' enfant(s)' : '' }}</div>@endif</td>
+                                @foreach (\App\Enums\PricingMode::cases() as $mode)
+                                    <td class="text-end">{!! $mode->rateFor($row['type']) !== null ? '<strong>'.e(number_format((float) $mode->rateFor($row['type']), 0, ',', ' ')).'</strong>' : '<span class="text-muted">—</span>' !!}</td>
+                                @endforeach
+                                <td class="text-end"><span class="badge bg-{{ $row['free'] ? 'success' : 'secondary' }}">{{ $row['free'] }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    @endif
+
     @if ($canAssign)
         <p class="text-muted mb-3" data-room-tab-only="disponible">Cliquez sur une chambre <strong>disponible</strong> pour l'affecter à un client : il s'installe maintenant (check-in immédiat).</p>
     @endif
@@ -146,6 +178,20 @@
                     @endcan
                 @elseif ($room->nextArrival)
                     <div class="mt-2 small text-muted">Réservée à partir du {{ $room->nextArrival->check_in->format('d/m/Y') }}</div>
+                @endif
+
+                @if ($room->isAvailableNow())
+                    {{-- Free room: its formulas and prices, to inform the guest before assigning. --}}
+                    <ul class="room-card__rates">
+                        @foreach (\App\Enums\PricingMode::cases() as $mode)
+                            @if ($mode->rateFor($room->roomType) !== null)
+                                <li>
+                                    <span>{{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen) <small class="text-muted">dès {{ str_replace(':', 'h', config('hotel.night.from')) }}</small>@endif</span>
+                                    <strong>{{ number_format((float) $mode->rateFor($room->roomType), 0, ',', ' ') }}</strong>
+                                </li>
+                            @endif
+                        @endforeach
+                    </ul>
                 @endif
 
                 @if ($room->status->value === 'disponible' && ! $room->isReserved() && $room->unguaranteedArrival)

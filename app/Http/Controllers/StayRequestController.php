@@ -67,9 +67,10 @@ class StayRequestController extends Controller
 
                 $stayRequest = new StayRequest([
                     'room_id' => $room->id,
-                    'first_name' => $request->validated('first_name'),
-                    'last_name' => $request->validated('last_name'),
-                    'phone' => $request->validated('phone'),
+                    // Optional fields: stored as empty strings (the columns aren't nullable).
+                    'first_name' => (string) $request->validated('first_name'),
+                    'last_name' => (string) $request->validated('last_name'),
+                    'phone' => (string) $request->validated('phone'),
                     'adults' => $request->validated('adults'),
                     'children' => $request->validated('children'),
                     'pricing_mode' => $mode,

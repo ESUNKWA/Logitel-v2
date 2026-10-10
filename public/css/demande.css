@@ -312,3 +312,5 @@ body {
 }
 
 .dm-footer a { color: var(--dm-primary); font-weight: 600; text-decoration: none; }
+
+.dm-optional { font-weight: 400; color: var(--dm-muted); }

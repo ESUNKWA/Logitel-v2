@@ -98,9 +98,10 @@ class StayRequestController extends Controller
             $existing = $request->boolean('new_guest') ? null : $stayRequest->matchingGuest();
 
             return $existing?->id ?? Guest::create([
-                'first_name' => $stayRequest->first_name,
-                'last_name' => $stayRequest->last_name,
-                'phone' => $stayRequest->phone,
+                // No name given: same "Client de passage" file as a desk affectation without details.
+                'first_name' => $stayRequest->hasName() ? (string) $stayRequest->first_name : Guest::WALK_IN_FIRST_NAME,
+                'last_name' => $stayRequest->hasName() ? (string) $stayRequest->last_name : Guest::WALK_IN_LAST_NAME,
+                'phone' => (string) $stayRequest->phone,
             ])->id;
         }, $stayRequest);
 

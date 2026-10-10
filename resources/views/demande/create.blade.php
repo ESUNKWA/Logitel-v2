@@ -69,16 +69,16 @@
             <h2><span>2</span> Vos informations</h2>
             <div class="row g-2">
                 <div class="col-6">
-                    <label class="form-label" for="first_name">Prénom</label>
-                    <input type="text" class="form-control @error('first_name') is-invalid @enderror" id="first_name" name="first_name" value="{{ old('first_name') }}" autocomplete="given-name" maxlength="100" required>
+                    <label class="form-label" for="first_name">Prénom <span class="dm-optional">(facultatif)</span></label>
+                    <input type="text" class="form-control @error('first_name') is-invalid @enderror" id="first_name" name="first_name" value="{{ old('first_name') }}" autocomplete="given-name" maxlength="100">
                 </div>
                 <div class="col-6">
-                    <label class="form-label" for="last_name">Nom</label>
-                    <input type="text" class="form-control @error('last_name') is-invalid @enderror" id="last_name" name="last_name" value="{{ old('last_name') }}" autocomplete="family-name" maxlength="100" required>
+                    <label class="form-label" for="last_name">Nom <span class="dm-optional">(facultatif)</span></label>
+                    <input type="text" class="form-control @error('last_name') is-invalid @enderror" id="last_name" name="last_name" value="{{ old('last_name') }}" autocomplete="family-name" maxlength="100">
                 </div>
                 <div class="col-12">
-                    <label class="form-label" for="phone">Téléphone</label>
-                    <input type="tel" inputmode="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel" placeholder="07 00 00 00 00" maxlength="30" required>
+                    <label class="form-label" for="phone">Téléphone <span class="dm-optional">(facultatif)</span></label>
+                    <input type="tel" inputmode="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" autocomplete="tel" placeholder="07 00 00 00 00" maxlength="30">
                 </div>
                 <div class="col-6">
                     <label class="form-label" for="adults">Adultes</label>

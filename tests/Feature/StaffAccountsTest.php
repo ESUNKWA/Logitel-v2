@@ -83,7 +83,7 @@ class StaffAccountsTest extends TestCase
             'password' => 'abcd',
             'password_confirmation' => 'abcd',
         ])->assertSessionHasNoErrors();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('abcd', $user->fresh()->password));
+        $this->assertTrue(Hash::check('abcd', $user->fresh()->password));
     }
 
     public function test_logout_everywhere_drops_other_sessions_and_rotates_remember_token(): void

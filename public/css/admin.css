@@ -2540,3 +2540,30 @@ a.home-tile:focus-visible { outline: 3px solid rgba(var(--tile-rgb), .4); outlin
 @media (max-width: 1366px) {
     .ui-simple .ui-mode-switch__label, .ui-simple .admin-topbar__logout-label { display: none; }
 }
+
+/* ------------------------------------------------------------------ Rates on free room cards + rate grid */
+.room-card__rates {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 8px 0 0;
+    border-top: 1px dashed var(--ek-border);
+    display: grid;
+    gap: 3px;
+    font-size: .8rem;
+}
+
+.room-card__rates li { display: flex; justify-content: space-between; gap: 8px; color: var(--ek-text); }
+.room-card__rates li strong { color: var(--ek-ink); white-space: nowrap; }
+.room-card__rates li strong::after { content: ' F'; font-weight: 500; color: var(--ek-muted); }
+
+.rate-grid { padding: 14px 20px; margin-bottom: 18px; }
+.rate-grid > summary { cursor: pointer; font-weight: 700; color: var(--ek-ink); list-style: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.rate-grid > summary::-webkit-details-marker { display: none; }
+.rate-grid > summary::after { content: '\f107'; font-family: 'Font Awesome 5 Pro'; font-weight: 400; margin-left: auto; transition: transform .15s ease; }
+.rate-grid[open] > summary::after { transform: rotate(180deg); }
+.rate-grid table th { font-size: .8rem; white-space: nowrap; }
+.rate-grid table td { white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+    .rate-grid > summary::after { transition: none; }
+}

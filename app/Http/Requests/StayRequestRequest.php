@@ -40,9 +40,10 @@ class StayRequestRequest extends FormRequest
         return [
             'pricing_mode' => ['required', new Enum(PricingMode::class)],
             'duration' => ['required', 'integer', 'min:1', 'max:30'],
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'max:30', 'regex:/^\+?[0-9][0-9 .\-\/]{6,24}$/'],
+            // All optional (client request): the réception completes the guest's details at the desk.
+            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9][0-9 .\-\/]{6,24}$/'],
             'adults' => ['required', 'integer', 'min:1', 'max:10'],
             'children' => ['required', 'integer', 'min:0', 'max:10'],
             // Honeypot: hidden from people, filled in by most spam bots.
@@ -69,7 +70,7 @@ class StayRequestRequest extends FormRequest
                     $validator->errors()->add('pricing_mode', 'La nuitée est proposée à partir de '.str_replace(':', 'h', config('hotel.night.from')).'. Choisissez une autre formule.');
                 }
 
-                if (is_string($this->input('phone')) && StayRequest::query()->holding()->get(['phone'])
+                if (filled($this->input('phone')) && StayRequest::query()->holding()->get(['phone'])
                     ->contains(fn (StayRequest $r) => StayRequest::normalizePhone($r->phone) === StayRequest::normalizePhone($this->input('phone')))) {
                     $validator->errors()->add('phone', 'Une demande est déjà en cours avec ce numéro. Présentez-vous à la réception.');
                 }

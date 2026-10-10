@@ -55,7 +55,7 @@
         <h2 class="dm-card__plain">Récapitulatif</h2>
         <dl class="dm-recap">
             <dt>Nom</dt><dd>{{ $stayRequest->fullName() }}</dd>
-            <dt>Téléphone</dt><dd>{{ $stayRequest->phone }}</dd>
+            <dt>Téléphone</dt><dd>{{ $stayRequest->phone ?: '—' }}</dd>
             <dt>Chambre</dt><dd>N°{{ $stayRequest->room?->number }} — {{ $stayRequest->room?->displayName() }}</dd>
             <dt>Formule</dt><dd>{{ $stayRequest->pricing_mode->getLabel() }} : {{ $stayRequest->billingLabel() }}</dd>
             <dt>Total</dt><dd><strong>{{ number_format((float) $stayRequest->total_amount, 0, ',', ' ') }} FCFA</strong></dd>

@@ -76,7 +76,18 @@ class RoomController extends Controller
             'rooms' => $rooms->filter(fn (Room $room) => $room->displayState() === $state)->values(),
         ]);
 
-        return view('admin.rooms.board', compact('rooms', 'groups'));
+        // Rate grid (one row per active room type offering at least one formula), with how many
+        // of its rooms are free right now — to inform guests at the desk or on the phone.
+        $freeByType = $rooms->filter(fn (Room $room) => $room->isAvailableNow())->countBy('room_type_id');
+        $rateGrid = RoomType::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (RoomType $type) => collect(PricingMode::cases())->contains(fn (PricingMode $mode) => $mode->rateFor($type) !== null))
+            ->map(fn (RoomType $type) => ['type' => $type, 'free' => $freeByType->get($type->id, 0)])
+            ->values();
+
+        return view('admin.rooms.board', compact('rooms', 'groups', 'rateGrid'));
     }
 
     /**

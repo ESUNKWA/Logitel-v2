@@ -129,9 +129,17 @@ class StayRequest extends Model
         return $this->isExpired() ? ['Expirée', 'secondary'] : [$this->status->getLabel(), $this->status->getColor()];
     }
 
+    /**
+     * The name given by the guest, or "Client de passage" when they left it blank (optional).
+     */
     public function fullName(): string
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        return trim("{$this->first_name} {$this->last_name}") ?: Guest::WALK_IN_FIRST_NAME.' '.Guest::WALK_IN_LAST_NAME;
+    }
+
+    public function hasName(): bool
+    {
+        return trim("{$this->first_name} {$this->last_name}") !== '';
     }
 
     /**

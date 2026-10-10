@@ -337,4 +337,46 @@ class StayRequestTest extends TestCase
         $this->sendRequest();
         $this->assertSame('2026-10-08 10:15', StayRequest::sole()->expires_at->format('Y-m-d H:i'));
     }
+
+    public function test_name_and_phone_are_optional_for_the_guest(): void
+    {
+        $this->get('/demande/chambre/'.$this->room->id)->assertOk()
+            ->assertSee('Prénom <span class="dm-optional">(facultatif)</span>', false)
+            ->assertDontSee('autocomplete="tel" placeholder="07 00 00 00 00" maxlength="30" required', false);
+
+        $response = $this->sendRequest(['first_name' => '', 'last_name' => '', 'phone' => ''])->assertSessionHasNoErrors();
+
+        $request = StayRequest::sole();
+        $this->assertSame('', $request->phone);
+        $this->assertSame('Client de passage', $request->fullName());
+        $this->assertSame(StayRequestStatus::EnAttente, $request->status);
+        $this->get($response->headers->get('Location'))->assertOk()->assertSee('Client de passage');
+
+        // The réception sees it, and validating it creates a "Client de passage" file.
+        $staff = User::factory()->create();
+        $this->actingAs($staff)->get('/admin/demandes')->assertSee('Client de passage');
+        $this->actingAs($staff)->get("/admin/demandes/{$request->id}")->assertOk()->assertSee('Nouveau client');
+        $this->approve($request, user: $staff)->assertSessionHasNoErrors();
+
+        $guest = Reservation::sole()->guest;
+        $this->assertSame('Client de passage', $guest->fullName());
+        $this->assertSame('', $guest->phone);
+    }
+
+    public function test_guests_without_phone_are_not_blocked_by_the_one_request_per_phone_rule(): void
+    {
+        $this->sendRequest(['phone' => ''])->assertSessionHasNoErrors();
+
+        $other = Room::factory()->create(['number' => 'DM-9', 'room_type_id' => $this->room->room_type_id, 'status' => RoomStatus::Disponible]);
+        $this->sendRequest(['phone' => '', 'first_name' => 'Jean'], $other)->assertSessionHasNoErrors();
+
+        $this->assertSame(2, StayRequest::count());
+    }
+
+    public function test_a_phone_given_must_still_be_valid(): void
+    {
+        $this->sendRequest(['phone' => 'abc'])->assertSessionHasErrors('phone');
+        $this->sendRequest(['first_name' => str_repeat('a', 101)])->assertSessionHasErrors('first_name');
+        $this->assertSame(0, StayRequest::count());
+    }
 }
