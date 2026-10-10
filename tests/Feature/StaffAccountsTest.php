@@ -67,15 +67,23 @@ class StaffAccountsTest extends TestCase
         $this->assertTrue(Hash::check('password', $user->fresh()->password));
     }
 
-    public function test_weak_password_is_rejected(): void
+    public function test_password_shorter_than_four_characters_is_rejected(): void
     {
         $user = User::factory()->create(['password' => 'password']);
 
         $this->actingAs($user)->put('/admin/profil/mot-de-passe', [
             'current_password' => 'password',
-            'password' => 'abc123',
-            'password_confirmation' => 'abc123',
+            'password' => 'abc',
+            'password_confirmation' => 'abc',
         ])->assertSessionHasErrors('password');
+
+        // 4 characters is the only rule (client request).
+        $this->actingAs($user)->put('/admin/profil/mot-de-passe', [
+            'current_password' => 'password',
+            'password' => 'abcd',
+            'password_confirmation' => 'abcd',
+        ])->assertSessionHasNoErrors();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('abcd', $user->fresh()->password));
     }
 
     public function test_logout_everywhere_drops_other_sessions_and_rotates_remember_token(): void

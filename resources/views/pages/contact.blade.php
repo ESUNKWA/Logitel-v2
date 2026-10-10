@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', "Contact - Espace Katioka")
+@section('title', "Contact - Hôtel Evation")
 
 @section('content')
 
@@ -12,7 +12,7 @@
             <div class="col-lg-10">
                 <div class="text-box text-center mb-50">
                     <h3 class="mb-30">Besoin d'aide pour une réservation en ligne, une question ou plus d'informations ? Écrivez-nous !</h3>
-                    <p>Notre équipe se tient à votre disposition pour répondre à toutes vos questions concernant votre séjour à Espace Katioka.</p>
+                    <p>Notre équipe se tient à votre disposition pour répondre à toutes vos questions concernant votre séjour à Hôtel Evation.</p>
                 </div>
             </div>
         </div>

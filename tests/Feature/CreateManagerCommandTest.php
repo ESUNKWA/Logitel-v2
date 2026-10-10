@@ -34,7 +34,7 @@ class CreateManagerCommandTest extends TestCase
         $this->artisan('hotel:create-manager')
             ->expectsQuestion('E-mail de connexion', 'gerant@katioka.ci')
             ->expectsQuestion('Nom affiché', 'Gérant')
-            ->expectsQuestion('Mot de passe (10 caractères min., majuscules, minuscules et chiffres)', 'faible')
+            ->expectsQuestion('Mot de passe (4 caractères minimum)', 'abc')
             ->assertFailed();
 
         $this->assertSame(0, User::where('email', 'gerant@katioka.ci')->count());
@@ -53,5 +53,16 @@ class CreateManagerCommandTest extends TestCase
         $this->assertTrue($user->role->is_system);
         $this->assertTrue(Hash::check('Nouveau-Pass-2026', $user->password));
         $this->assertSame(1, User::where('email', 'chef@katioka.ci')->count());
+    }
+
+    public function test_four_characters_is_the_only_password_rule(): void
+    {
+        foreach (['abcd', '1234', 'ABCD'] as $i => $password) {
+            $this->artisan('hotel:create-manager', ['email' => "ok{$i}@katioka.ci", '--name' => 'Ok', '--password' => $password])->assertSuccessful();
+        }
+        $this->assertSame(3, User::count());
+
+        $this->artisan('hotel:create-manager', ['email' => 'court@katioka.ci', '--name' => 'Court', '--password' => 'abc'])->assertFailed();
+        $this->assertSame(0, User::where('email', 'court@katioka.ci')->count());
     }
 }

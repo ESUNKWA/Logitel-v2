@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <meta name="description" content="@yield('meta_description', "Espace Katioka - Hôtel & Resort")">
+        <meta name="description" content="@yield('meta_description', "Hôtel Evation - Hôtel & Resort")">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <title>@yield('title', 'Espace Katioka - Hôtel & Resort')</title>
+        <title>@yield('title', 'Hôtel Evation - Hôtel & Resort')</title>
         <link rel="shortcut icon" href="{{ asset('assets/images/favicon.png') }}" type="image/png">
         <link href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome/css/all.min.css') }}">

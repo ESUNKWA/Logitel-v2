@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
             Gate::define($permission->value, fn (User $user) => $user->hasPermission($permission));
         }
 
-        Password::defaults(fn () => Password::min(10)->letters()->mixedCase()->numbers());
+        // Client request: at least 4 characters, no other constraint.
+        Password::defaults(fn () => Password::min(4));
     }
 }

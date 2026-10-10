@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', "Les secrets d'une hospitalité de luxe réussie - Espace Katioka")
+@section('title', "Les secrets d'une hospitalité de luxe réussie - Hôtel Evation")
 
 @section('content')
 
@@ -23,12 +23,12 @@
                                     <span><i class="far fa-comment"></i><a href="#">Commentaires (03)</a></span>
                                 </div>
                                 <h4 class="title">Les secrets d'une hospitalité de luxe réussie</h4>
-                                <p>Chez Espace Katioka, l'hospitalité ne se limite pas à un lieu confortable : c'est une attention constante portée à chaque détail, du premier contact jusqu'au départ de nos hôtes.</p>
+                                <p>Chez Hôtel Evation, l'hospitalité ne se limite pas à un lieu confortable : c'est une attention constante portée à chaque détail, du premier contact jusqu'au départ de nos hôtes.</p>
                                 <p>Notre équipe s'attache à créer une atmosphère chaleureuse et authentique, en s'appuyant sur des standards de service rigoureux et une connaissance fine des attentes de chaque voyageur, qu'il s'agisse d'un séjour d'affaires ou de loisirs.</p>
                                 <blockquote>
                                     <div class="content">
                                         <p>L'hospitalité, c'est l'art de faire sentir à chacun qu'il compte, dès la première minute de son séjour.</p>
-                                        <h5>L'équipe Espace Katioka</h5>
+                                        <h5>L'équipe Hôtel Evation</h5>
                                     </div>
                                 </blockquote>
                                 <p>De la réception à la restauration, chaque service est pensé pour offrir une expérience fluide et mémorable, à la hauteur de la réputation que nous souhaitons bâtir à Bouaké et au-delà.</p>

@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', 'Chambre Standard - Espace Katioka')
+@section('title', 'Chambre Standard - Hôtel Evation')
 
 @section('content')
 

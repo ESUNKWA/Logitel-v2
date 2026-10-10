@@ -17,7 +17,7 @@ class HotelInfo
 
     public function name(): string
     {
-        return $this->get('name') !== '' ? $this->get('name') : 'Espace Katioka';
+        return $this->get('name') !== '' ? $this->get('name') : 'Hôtel Evation';
     }
 
     /**
@@ -33,7 +33,7 @@ class HotelInfo
     }
 
     /**
-     * Up to two initials for the brand badge: "Espace Katioka" → "EK".
+     * Up to two initials for the brand badge: "Hôtel Evation" → "EK".
      */
     public function initials(): string
     {

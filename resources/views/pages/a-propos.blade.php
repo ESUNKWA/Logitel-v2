@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', "À propos - Espace Katioka")
+@section('title', "À propos - Hôtel Evation")
 
 @section('content')
 
@@ -13,14 +13,14 @@
                 <div class="luxivo-about-content-box text-center mb-60">
                     <div class="section-title mb-30">
                         <span class="line d-block mb-10"><img src="{{ asset('assets/images/home-one/gallery/d-line.png') }}" alt="ligne"></span>
-                        <span class="sub-title">Bienvenue à Espace Katioka</span>
+                        <span class="sub-title">Bienvenue à Hôtel Evation</span>
                         <h2>Votre expérience nous tient à cœur</h2>
                     </div>
-                    <p>Bienvenue à Espace Katioka, votre havre d'élégance, de confort et de moments inoubliables. Notre établissement vous propose bien plus qu'un simple séjour : un véritable voyage vers la détente et la découverte.</p>
+                    <p>Bienvenue à Hôtel Evation, votre havre d'élégance, de confort et de moments inoubliables. Notre établissement vous propose bien plus qu'un simple séjour : un véritable voyage vers la détente et la découverte.</p>
                     <p>Nous nous engageons chaque jour à redéfinir l'hospitalité, en conjuguant équipements modernes et service chaleureux et personnalisé. De nos chambres et suites raffinées à notre restauration soignée, chaque détail est pensé pour rendre votre séjour exceptionnel.</p>
-                    <p>Que vous soyez ici pour une escapade romantique, un séjour en famille ou un moment de ressourcement, Espace Katioka est l'endroit où naissent les souvenirs précieux.</p>
+                    <p>Que vous soyez ici pour une escapade romantique, un séjour en famille ou un moment de ressourcement, Hôtel Evation est l'endroit où naissent les souvenirs précieux.</p>
                     <div class="author-box">
-                        <h5>Le Directeur Général <span>- Espace Katioka</span></h5>
+                        <h5>Le Directeur Général <span>- Hôtel Evation</span></h5>
                     </div>
                 </div>
             </div>

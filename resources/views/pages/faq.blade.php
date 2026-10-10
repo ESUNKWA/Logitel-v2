@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', "Questions fréquentes - Espace Katioka")
+@section('title', "Questions fréquentes - Hôtel Evation")
 
 @section('content')
 
@@ -14,7 +14,7 @@
                     <h2 class="mb-40">Chambres & réservations</h2>
                     <div class="accordion" id="accordionOne">
                         @foreach([
-                            ["Quels sont les horaires d'arrivée et de départ ?", "Chez Espace Katioka, l'arrivée est possible à partir de 15h00 et le départ jusqu'à 11h00. Un arrangement peut être trouvé selon la disponibilité des chambres."],
+                            ["Quels sont les horaires d'arrivée et de départ ?", "Chez Hôtel Evation, l'arrivée est possible à partir de 15h00 et le départ jusqu'à 11h00. Un arrangement peut être trouvé selon la disponibilité des chambres."],
                             ["Comment annuler ma réservation si j'ai réservé directement auprès de l'hôtel ?", "Vous pouvez annuler votre réservation en nous contactant par téléphone ou e-mail, en respectant les conditions indiquées lors de la réservation."],
                             ["Dois-je payer d'avance pour une réservation directe avec l'hôtel ?", "Cela dépend du tarif choisi. Certaines offres nécessitent un acompte, d'autres non ; les conditions sont précisées à la réservation."],
                             ["Y a-t-il des restrictions pour réserver une chambre depuis l'étranger ?", "Aucune restriction particulière. Nos réservations sont ouvertes à tous, où que vous soyez."],

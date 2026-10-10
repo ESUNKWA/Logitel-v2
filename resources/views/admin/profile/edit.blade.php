@@ -38,7 +38,7 @@
                     <div class="mb-3">
                         <label class="form-label" for="password">Nouveau mot de passe</label>
                         <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" required>
-                        <div class="form-text">Au moins 10 caractères, avec des majuscules, des minuscules et des chiffres.</div>
+                        <div class="form-text">4 caractères minimum.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="password_confirmation">Confirmer le nouveau mot de passe</label>

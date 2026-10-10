@@ -35,7 +35,7 @@
             @if ($user->exists)
                 Laissez vide pour ne pas le changer. Un nouveau mot de passe sera provisoire : la personne devra le changer à sa prochaine connexion, et ses sessions ouvertes seront fermées.
             @else
-                La personne devra le changer à sa première connexion. Au moins 10 caractères, avec des majuscules, des minuscules et des chiffres.
+                La personne devra le changer à sa première connexion. 4 caractères minimum.
             @endif
         </p>
     </div>

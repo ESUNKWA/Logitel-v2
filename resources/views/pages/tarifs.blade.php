@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', "Nos tarifs - Espace Katioka")
+@section('title', "Nos tarifs - Hôtel Evation")
 
 @section('content')
 

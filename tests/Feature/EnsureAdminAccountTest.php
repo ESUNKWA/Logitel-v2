@@ -67,7 +67,7 @@ class EnsureAdminAccountTest extends TestCase
 
     public function test_a_weak_environment_password_is_refused(): void
     {
-        putenv('ADMIN_PASSWORD=password');
+        putenv('ADMIN_PASSWORD=abc'); // under 4 characters
 
         $this->artisan('hotel:ensure-admin')->expectsOutputToContain('NON créé')->assertFailed();
         $this->assertSame(0, User::count());

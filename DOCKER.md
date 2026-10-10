@@ -1,4 +1,4 @@
-# Espace Katioka — Déploiement avec Docker
+# Hôtel Evation — Déploiement avec Docker
 
 L'application tourne dans **deux conteneurs** :
 
@@ -97,7 +97,7 @@ docker compose logs app | grep -A4 "Compte administrateur par défaut"
 
 À la première connexion, l'application **oblige à changer ce mot de passe**. Dès qu'un compte existe, plus rien n'est créé ni modifié aux redémarrages suivants.
 
-> ℹ️ Un mot de passe fourni dans `ADMIN_PASSWORD` doit respecter la politique (10 caractères min., majuscules, minuscules et chiffres) ; sinon le compte n'est pas créé et un message l'indique dans les journaux. Une fois connecté, vous pouvez vider `ADMIN_PASSWORD` dans `.env.production`.
+> ℹ️ Un mot de passe fourni dans `ADMIN_PASSWORD` doit faire au moins 4 caractères ; sinon le compte n'est pas créé et un message l'indique dans les journaux. Une fois connecté, vous pouvez vider `ADMIN_PASSWORD` dans `.env.production`.
 
 Si l'application était déjà installée **avant** cette fonctionnalité avec une base vide, il suffit de la mettre à jour (`docker compose up -d --build`) : le compte est créé au redémarrage.
 

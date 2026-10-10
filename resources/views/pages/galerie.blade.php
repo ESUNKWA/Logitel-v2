@@ -1,10 +1,10 @@
 @extends('layouts.hotel')
 
-@section('title', "Galerie - Espace Katioka")
+@section('title', "Galerie - Hôtel Evation")
 
 @section('content')
 
-<x-page-hero title="Galerie" subtitle="Découvrez l'univers d'Espace Katioka en images" breadcrumb="Galerie" />
+<x-page-hero title="Galerie" subtitle="Découvrez l'univers d'Hôtel Evation en images" breadcrumb="Galerie" />
 
 <section class="luxivo-gallery pt-120 pb-90">
     <div class="container">

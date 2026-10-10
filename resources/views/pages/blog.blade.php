@@ -1,6 +1,6 @@
 @extends('layouts.hotel')
 
-@section('title', "Blog - Espace Katioka")
+@section('title', "Blog - Hôtel Evation")
 
 @section('content')
 
@@ -12,7 +12,7 @@
             @foreach([
                 ['img' => 'gallery-1.jpg', 'title' => "L'expérience de luxe : ce qui rend notre hôtel unique"],
                 ['img' => 'about-1.jpg', 'title' => 'Découvrez le charme de notre expérience signature'],
-                ['img' => 'gallery-2.jpg', 'title' => "L'histoire d'Espace Katioka, où le luxe rencontre l'authenticité"],
+                ['img' => 'gallery-2.jpg', 'title' => "L'histoire d'Hôtel Evation, où le luxe rencontre l'authenticité"],
                 ['img' => 'choose-1.jpg', 'title' => 'Explorez la différence au cœur de notre confort'],
                 ['img' => 'gallery-3.jpg', 'title' => 'Une touche au-dessus, les particularités de notre hôtel'],
                 ['img' => 'gallery-4.jpg', 'title' => "L'expérience qui donne envie de revenir"],

@@ -34,7 +34,7 @@ class CreateManagerAccount extends Command
 
         $email = $this->argument('email') ?: $this->ask('E-mail de connexion');
         $name = $this->option('name') ?: $this->ask('Nom affiché', 'Gérant');
-        $password = $this->option('password') ?: $this->secret('Mot de passe (10 caractères min., majuscules, minuscules et chiffres)');
+        $password = $this->option('password') ?: $this->secret('Mot de passe (4 caractères minimum)');
 
         $validator = Validator::make(
             ['email' => $email, 'name' => $name, 'password' => $password],
