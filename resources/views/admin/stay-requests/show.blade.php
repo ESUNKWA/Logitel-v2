@@ -60,7 +60,7 @@
                         @endif
                     </dl>
                     @if ($stayRequest->reservation)
-                        <a href="{{ route('admin.affectations.show', $stayRequest->reservation) }}" class="btn btn-sm btn-outline-primary mt-3">Voir l'affectation</a>
+                        <a href="{{ route('admin.affectations.show', $stayRequest->reservation) }}" class="btn btn-sm btn-outline-primary mt-3">Voir l'affectation {{ $stayRequest->reservation->reference() }}</a>
                     @endif
                 </div>
             @endunless

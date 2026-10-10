@@ -23,7 +23,8 @@
                     <th>Nom</th>
                     <th>Téléphone</th>
                     <th>E-mail</th>
-                    <th>Séjours</th>
+                    <th class="text-center"><span class="file-badge file-badge--affectation"><i class="fas fa-key" aria-hidden="true"></i> Affectations</span></th>
+                    <th class="text-center"><span class="file-badge file-badge--reservation"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Réservations</span></th>
                     <th class="text-end">Actions</th>
                 </tr>
             </thead>
@@ -33,7 +34,8 @@
                         <td>{{ $guest->fullName() }}</td>
                         <td>{{ $guest->phone }}</td>
                         <td>{{ $guest->email ?: '—' }}</td>
-                        <td>{{ $guest->reservations_count }}</td>
+                        <td class="text-center">{{ $guest->stays_count }}</td>
+                        <td class="text-center">{{ $guest->bookings_count }}</td>
                         <td class="text-end">
                             @can('guests.manage')
                                 <a href="{{ route('admin.guests.edit', $guest) }}" class="btn btn-sm btn-outline-primary">Modifier</a>
@@ -49,7 +51,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Aucun client pour l'instant.</td>
+                        <td colspan="6" class="text-center text-muted py-4">Aucun client pour l'instant.</td>
                     </tr>
                 @endforelse
             </tbody>

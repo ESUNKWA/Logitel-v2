@@ -124,6 +124,56 @@ class Reservation extends Model
     }
 
     /**
+     * Réservations not started (yet or ever): booked ahead and never checked in. Together with
+     * stays() it splits every file in two, the way the UI labels them (see kind()).
+     */
+    public function scopeNotStartedBookings(Builder $query): Builder
+    {
+        return $query->where('origin', self::ORIGIN_RESERVATION)
+            ->whereNotIn('status', [ReservationStatus::Enregistree, ReservationStatus::Terminee]);
+    }
+
+    /**
+     * How the file is shown to staff: "affectation" (guest moved in, see isStay()) or
+     * "reservation" (booked ahead, not arrived). Both live in this table; the UI never mixes them
+     * (badge, color, icon and reference differ — see components/file-badge).
+     */
+    public function kind(): string
+    {
+        return $this->isStay() ? self::ORIGIN_AFFECTATION : self::ORIGIN_RESERVATION;
+    }
+
+    public function kindLabel(): string
+    {
+        return $this->isStay() ? 'Affectation' : 'Réservation';
+    }
+
+    /**
+     * Staff-facing reference: AFF-000012 for an affectation, RES-000013 for a réservation (a
+     * réservation whose guest arrived becomes AFF- with the same number, see bookingReference()).
+     */
+    public function reference(): string
+    {
+        return ($this->isStay() ? 'AFF-' : 'RES-').str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * The original réservation's reference (RES-…) for a file booked ahead, else null.
+     */
+    public function bookingReference(): ?string
+    {
+        return $this->isBooking() ? 'RES-'.str_pad((string) $this->id, 6, '0', STR_PAD_LEFT) : null;
+    }
+
+    /**
+     * The page of this file on its own side (affectation page or réservation page).
+     */
+    public function fileUrl(): string
+    {
+        return $this->isStay() ? route('admin.affectations.show', $this) : route('admin.reservations.edit', $this);
+    }
+
+    /**
      * A booking not started yet (en attente / confirmée).
      */
     public function isPendingBooking(): bool

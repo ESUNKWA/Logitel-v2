@@ -10,6 +10,13 @@
     <div class="admin-card">
         <form method="GET" class="row g-2 mb-3">
             <div class="col-auto">
+                <select name="type" class="form-select" onchange="this.form.submit()" aria-label="Type de dossier">
+                    <option value="">Affectations et réservations</option>
+                    <option value="affectation" @selected(request('type') === 'affectation')>Affectations</option>
+                    <option value="reservation" @selected(request('type') === 'reservation')>Réservations</option>
+                </select>
+            </div>
+            <div class="col-auto">
                 <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="">Tous les statuts</option>
                     @foreach ($statuses as $status)
@@ -24,6 +31,7 @@
                 <tr>
                     <th>Numéro</th>
                     <th>Client</th>
+                    <th>Dossier</th>
                     <th>Émise le</th>
                     <th>Montant</th>
                     <th>Statut</th>
@@ -35,6 +43,7 @@
                     <tr>
                         <td>{{ $invoice->number }}</td>
                         <td>{{ $invoice->reservation?->guest?->fullName() }}</td>
+                        <td><x-file-badge :file="$invoice->reservation" :link="true" /></td>
                         <td>{{ $invoice->issued_at->format('d/m/Y') }}</td>
                         <td>{{ number_format((float) $invoice->amount, 0, ',', ' ') }} FCFA</td>
                         <td><span class="badge bg-{{ $invoice->status->getColor() }}">{{ $invoice->status->getLabel() }}</span></td>
@@ -44,7 +53,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Aucune facture pour l'instant.</td>
+                        <td colspan="7" class="text-center text-muted py-4">Aucune facture pour l'instant.</td>
                     </tr>
                 @endforelse
             </tbody>

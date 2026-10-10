@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="admin-page-header">
-        <h1>Nouvelle réservation</h1>
+        <h1><x-kind-icon kind="reservation" />Nouvelle réservation</h1>
     </div>
 
     <div class="admin-card">

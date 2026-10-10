@@ -2666,3 +2666,60 @@ a.home-stat:hover { color: var(--ek-ink); border-color: var(--ek-primary-100); }
     .home-methods__row { grid-template-columns: 1fr auto; }
     .home-methods__bar { grid-column: 1 / -1; order: 3; }
 }
+
+/* ================================================================== Affectation vs réservation (never mixed up)
+   Affectation = guest moved in: amber + key. Réservation = booked ahead: blue + calendar
+   (same blue as the "Réservée" room state). See components/file-badge and kind-icon. */
+:root {
+    --ek-stay: #c76a0a;
+    --ek-stay-rgb: 199, 106, 10;
+    --ek-booking: #2378b5;
+    --ek-booking-rgb: 35, 120, 181;
+}
+
+.file-kind { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; vertical-align: middle; }
+
+.file-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.6;
+}
+
+.file-badge--affectation { color: var(--ek-stay); background: rgba(var(--ek-stay-rgb), .12); border: 1px solid rgba(var(--ek-stay-rgb), .3); }
+.file-badge--reservation { color: var(--ek-booking); background: rgba(var(--ek-booking-rgb), .1); border: 1px solid rgba(var(--ek-booking-rgb), .3); }
+
+.file-ref {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--ek-ink);
+    white-space: nowrap;
+}
+
+a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
+
+.kind-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.kind-icon--affectation { color: var(--ek-stay); background: rgba(var(--ek-stay-rgb), .14); }
+.kind-icon--reservation { color: var(--ek-booking); background: rgba(var(--ek-booking-rgb), .12); }
+
+/* The menu entries carry the same colors as their pages. */
+.admin-sidebar__nav a .fa-key { color: #f0a54a; }
+.admin-sidebar__nav a .fa-calendar-alt { color: #7fb8e6; }

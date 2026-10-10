@@ -16,7 +16,11 @@ class GuestController extends Controller
     public function index(Request $request): View
     {
         $guests = Guest::query()
-            ->withCount('reservations')
+            // Affectations and réservations counted apart (same table, never mixed in the UI).
+            ->withCount([
+                'reservations as stays_count' => fn ($q) => $q->stays(),
+                'reservations as bookings_count' => fn ($q) => $q->notStartedBookings(),
+            ])
             ->when($request->string('q')->toString(), function ($query, string $q) {
                 $query->where(function ($query) use ($q) {
                     $query->where('first_name', 'like', "%{$q}%")

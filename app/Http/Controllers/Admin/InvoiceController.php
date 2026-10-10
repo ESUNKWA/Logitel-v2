@@ -15,6 +15,9 @@ class InvoiceController extends Controller
         $invoices = Invoice::query()
             ->with(['reservation.guest'])
             ->when($request->string('status')->toString(), fn ($query, $status) => $query->where('status', $status))
+            // Affectations and réservations share the table but are filtered/labelled apart.
+            ->when($request->string('type')->toString() === 'affectation', fn ($query) => $query->whereHas('reservation', fn ($r) => $r->stays()))
+            ->when($request->string('type')->toString() === 'reservation', fn ($query) => $query->whereHas('reservation', fn ($r) => $r->notStartedBookings()))
             ->orderByDesc('issued_at')
             ->paginate(15)
             ->withQueryString();

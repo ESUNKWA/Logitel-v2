@@ -273,7 +273,7 @@
     <div class="dash-grid dash-grid--lists">
         <div class="admin-card mb-0">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0"><i class="fas fa-sign-in-alt text-primary me-2"></i>Prochaines arrivées</h5>
+                <h5 class="mb-0"><x-kind-icon kind="reservation" />Prochaines arrivées <span class="text-muted small fw-normal">(réservations)</span></h5>
                 @can('reservations.view')
                     <a href="{{ route('admin.reservations.index') }}" class="small">Tout voir</a>
                 @endcan
@@ -283,10 +283,10 @@
                 <tbody>
                     @forelse ($upcomingArrivals as $reservation)
                         <tr>
-                            <td>{{ $reservation->guest?->fullName() }}</td>
+                            <td>{{ $reservation->guest?->fullName() }}<div><a href="{{ route('admin.reservations.edit', $reservation) }}" class="file-ref">{{ $reservation->reference() }}</a></div></td>
                             <td>N°{{ $reservation->room?->number }}</td>
                             <td>{{ $reservation->check_in->format('d/m H\hi') }}</td>
-                            <td><span class="badge bg-{{ $reservation->status->getColor() }}">{{ $reservation->status->getLabel() }}</span></td>
+                            <td><span class="badge bg-{{ $reservation->status->reservationColor() }}">{{ $reservation->status->reservationLabel() }}</span></td>
                         </tr>
                     @empty
                         <tr><td colspan="4" class="text-center text-muted py-4">Aucune arrivée prévue.</td></tr>
@@ -297,7 +297,7 @@
 
         <div class="admin-card mb-0">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0"><i class="fas fa-sign-out-alt text-warning me-2"></i>Départs du jour</h5>
+                <h5 class="mb-0"><x-kind-icon kind="affectation" />Départs du jour <span class="text-muted small fw-normal">(affectations)</span></h5>
                 @can('rooms.view')
                     <a href="{{ route('admin.rooms.index', ['status' => 'occupee']) }}" class="small">Chambres occupées</a>
                 @endcan
@@ -307,7 +307,7 @@
                 <tbody>
                     @forelse ($todayDepartures as $stay)
                         <tr>
-                            <td>{{ $stay->guest?->fullName() }}</td>
+                            <td>{{ $stay->guest?->fullName() }}<div><span class="file-ref">{{ $stay->reference() }}</span></div></td>
                             <td>N°{{ $stay->room?->number }}</td>
                             <td>{{ $stay->check_out->format('d/m H\hi') }}</td>
                             <td class="text-end">

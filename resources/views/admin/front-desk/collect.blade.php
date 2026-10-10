@@ -20,15 +20,16 @@
             @php
                 $file = $invoice->reservation;
                 $remaining = max(0, (float) $invoice->amount - (float) $invoice->payments_sum_amount);
-                $kind = match (true) {
-                    $file?->status === \App\Enums\ReservationStatus::Enregistree => ['Séjour en cours', 'danger'],
-                    $file?->status === \App\Enums\ReservationStatus::Terminee => ['Séjour terminé', 'secondary'],
-                    default => ['Réservation', 'info'],
+                $state = match (true) {
+                    $file?->status === \App\Enums\ReservationStatus::Enregistree => 'en cours',
+                    $file?->status === \App\Enums\ReservationStatus::Terminee => 'terminée',
+                    default => 'à venir',
                 };
             @endphp
             <div class="fd-item">
                 <div class="fd-item__main">
-                    <div class="fd-item__title">{{ $file?->guest?->fullName() }} <span class="badge bg-{{ $kind[1] }}">{{ $kind[0] }}</span></div>
+                    <div class="fd-item__title">{{ $file?->guest?->fullName() }}</div>
+                    <div><x-file-badge :file="$file" :link="true" /> <span class="small text-muted">{{ $state }}</span></div>
                     <div>Chambre N°{{ $file?->room?->number }} · facture {{ $invoice->number }}</div>
                     <div class="small text-muted">{{ $file?->check_in?->format('d/m H\hi') }} → {{ $file?->check_out?->format('d/m H\hi') }}</div>
                 </div>

@@ -9,7 +9,7 @@
 
     <div class="admin-page-header">
         <div>
-            <h1>Arrivées du jour</h1>
+            <h1><x-kind-icon kind="reservation" />Arrivées du jour</h1>
             <div class="dash-subtitle">Réservations attendues aujourd'hui, pas encore arrivées.</div>
         </div>
         @can('reservations.manage')
@@ -26,7 +26,7 @@
             @endphp
             <div class="fd-item">
                 <div class="fd-item__main">
-                    <div class="fd-item__title">{{ $booking->guest?->fullName() }}</div>
+                    <div class="fd-item__title">{{ $booking->guest?->fullName() }} <span class="file-ref ms-1">{{ $booking->reference() }}</span></div>
                     <div>Chambre N°{{ $booking->room?->number }} <span class="text-muted">· {{ $booking->room?->roomType?->name }}</span>@if ($booking->guest?->phone) · <a href="tel:{{ $booking->guest->phone }}">{{ $booking->guest->phone }}</a>@endif</div>
                     <div class="small text-muted">{{ $booking->billingLabel() }} · départ {{ $booking->check_out->format('d/m H\hi') }}</div>
                 </div>

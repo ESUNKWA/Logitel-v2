@@ -5,7 +5,7 @@
         <a href="{{ route('admin.rooms.board') }}" class="{{ request()->routeIs('admin.rooms.*') ? 'active' : '' }}"><i class="far fa-hotel"></i><span>Chambres</span></a>
     @endcan
     @can('affectations.view')
-        <a href="{{ route('admin.affectations.index') }}" class="{{ request()->routeIs('admin.affectations.*') ? 'active' : '' }}"><i class="far fa-key"></i><span>Séjours</span></a>
+        <a href="{{ route('admin.affectations.index') }}" class="{{ request()->routeIs('admin.affectations.*') ? 'active' : '' }}"><i class="far fa-key"></i><span>Affect.</span></a>
     @endcan
     @can('reservations.view')
         <a href="{{ route('admin.reservations.index') }}" class="{{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}"><i class="far fa-calendar-alt"></i><span>Réserv.</span></a>

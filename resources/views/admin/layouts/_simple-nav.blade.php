@@ -19,7 +19,7 @@
         <a href="{{ route('admin.rooms.board') }}" class="{{ $isActive('admin.rooms.*') }}"><i class="far fa-hotel"></i> Chambres</a>
     @endcan
     @can('affectations.view')
-        <a href="{{ route('admin.affectations.index') }}" class="{{ $isActive('admin.affectations.*') }}"><i class="far fa-key"></i> Séjours</a>
+        <a href="{{ route('admin.affectations.index') }}" class="{{ $isActive('admin.affectations.*') }}"><i class="far fa-key"></i> Affectations</a>
     @endcan
     @can('reservations.view')
         <a href="{{ route('admin.reservations.index') }}" class="{{ $isActive('admin.reservations.*') }}"><i class="far fa-calendar-alt"></i> Réservations</a>

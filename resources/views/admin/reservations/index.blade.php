@@ -5,7 +5,7 @@
 @section('content')
     <div class="admin-page-header">
         <div>
-            <h1>Réservations</h1>
+            <h1><x-kind-icon kind="reservation" />Réservations</h1>
             <div class="dash-subtitle">Séjours réservés à l'avance. Les clients déjà installés sont dans <a href="{{ route('admin.affectations.index') }}">Affectations</a>.</div>
         </div>
         @can('reservations.manage')
@@ -52,7 +52,16 @@
             <tbody>
                 @forelse ($reservations as $reservation)
                     <tr>
-                        <td>{{ $reservation->guest?->fullName() }}</td>
+                        <td>
+                            {{ $reservation->guest?->fullName() }}
+                            <div>
+                                <span class="file-ref">{{ $reservation->bookingReference() }}</span>
+                                @if ($reservation->hasStarted())
+                                    <span class="small text-muted">→</span>
+                                    <a href="{{ route('admin.affectations.show', $reservation) }}" class="file-ref">{{ $reservation->reference() }}</a>
+                                @endif
+                            </div>
+                        </td>
                         <td>N°{{ $reservation->room?->number }}</td>
                         <td>{{ $reservation->pricing_mode->getLabel() }}<div class="small text-muted">{{ $reservation->pricing_mode->durationLabel($reservation->duration) }}</div></td>
                         <td>

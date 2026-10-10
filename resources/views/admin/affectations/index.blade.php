@@ -11,7 +11,7 @@
 
     <div class="admin-page-header">
         <div>
-            <h1>Affectations</h1>
+            <h1><x-kind-icon kind="affectation" />Affectations</h1>
             <div class="dash-subtitle">Séjours en cours et passés. Pour installer un client, cliquez sur une chambre libre du tableau des chambres.</div>
         </div>
         @can('rooms.view')
@@ -151,7 +151,7 @@
                         $overdue = $stay->status === \App\Enums\ReservationStatus::Enregistree && $stay->check_out->isPast();
                     @endphp
                     <tr>
-                        <td><strong>N°{{ $stay->room?->number }}</strong><div class="small text-muted">{{ $stay->room?->roomType?->name }}</div></td>
+                        <td><strong>N°{{ $stay->room?->number }}</strong><div class="small text-muted">{{ $stay->room?->roomType?->name }}</div><a href="{{ route('admin.affectations.show', $stay) }}" class="file-ref">{{ $stay->reference() }}</a></td>
                         <td>{{ $stay->guest?->fullName() }}<div class="small text-muted">{{ $stay->guest?->phone }}</div></td>
                         <td>{{ $stay->pricing_mode->getLabel() }}<div class="small text-muted">{{ $stay->billingLabel() }}</div></td>
                         <td class="text-nowrap">{{ $stay->check_in->format('d/m/Y') }}<div class="small text-muted">{{ $stay->check_in->format('H\hi') }}</div></td>

@@ -9,7 +9,7 @@
 
     <div class="admin-page-header">
         <div>
-            <h1>Départs</h1>
+            <h1><x-kind-icon kind="affectation" />Départs</h1>
             <div class="dash-subtitle">Séjours qui se terminent aujourd'hui (les dépassés en premier).</div>
         </div>
         @can('affectations.view')
@@ -25,7 +25,7 @@
             @endphp
             <div class="fd-item {{ $overdue ? 'is-overdue' : '' }}">
                 <div class="fd-item__main">
-                    <div class="fd-item__title">Chambre N°{{ $stay->room?->number }} <small>{{ $stay->room?->roomType?->name }}</small></div>
+                    <div class="fd-item__title">Chambre N°{{ $stay->room?->number }} <small>{{ $stay->room?->roomType?->name }}</small> <span class="file-ref ms-1">{{ $stay->reference() }}</span></div>
                     <div>{{ $stay->guest?->fullName() }}@if ($stay->guest?->phone) · <a href="tel:{{ $stay->guest->phone }}">{{ $stay->guest->phone }}</a>@endif</div>
                     <div class="small text-muted">{{ $stay->billingLabel() }} · entrée {{ $stay->check_in->format('d/m H\hi') }}</div>
                 </div>

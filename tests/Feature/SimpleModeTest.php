@@ -181,7 +181,7 @@ class SimpleModeTest extends TestCase
         $user = User::factory()->simpleUi()->create();
 
         $this->actingAs($user)->get('/admin/a-encaisser')->assertOk()
-            ->assertSee('Awa Koné')->assertSee('Séjour en cours')->assertSee('20 000 FCFA')
+            ->assertSee('Awa Koné')->assertSee('file-badge--affectation', false)->assertSee($open->reference())->assertSee('en cours')->assertSee('20 000 FCFA')
             ->assertSee(route('admin.invoices.show', $open->invoice), false)
             ->assertDontSee('Moussa Traoré')->assertDontSee('Eva Gnaoré');
     }

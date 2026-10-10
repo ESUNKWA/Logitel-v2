@@ -11,12 +11,12 @@
 
     <div class="admin-page-header">
         <div>
-            <h1>Chambre N°{{ $affectation->room?->number }} — {{ $affectation->guest?->fullName() }}</h1>
+            <h1><x-kind-icon kind="affectation" />Chambre N°{{ $affectation->room?->number }} — {{ $affectation->guest?->fullName() }}</h1>
             <div class="dash-subtitle">
-                Affectation #{{ $affectation->id }}
+                <x-file-badge :file="$affectation" />
                 <span class="badge bg-{{ $affectation->status->affectationColor() }} ms-1">{{ $affectation->status->affectationLabel() }}</span>
                 @if ($affectation->isBooking())
-                    · issue d'une réservation (client arrivé)
+                    · issue de la réservation <span class="file-ref">{{ $affectation->bookingReference() }}</span> (client arrivé)
                 @endif
                 @if ($affectation->stayRequest)
                     · issue de la <a href="{{ route('admin.stay-requests.show', $affectation->stayRequest) }}">demande client N°{{ $affectation->stayRequest->id }}</a>
