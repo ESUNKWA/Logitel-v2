@@ -11,6 +11,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\StayRequest;
 use App\Support\BusinessDay;
+use App\Support\FinanceStats;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,7 +41,34 @@ class FrontDeskController extends Controller
                 'chercher' => $user->can('guests.view'),
             ],
             'roomCounts' => $user->can('rooms.view') ? DashboardController::roomCounts() : null,
+            'finance' => $user->can('dashboard.revenue') ? $this->financeFigures() : null,
         ]);
+    }
+
+    /**
+     * Today's money at a glance (cash received by method, month to date, open balances).
+     * Only computed for staff holding dashboard.revenue.
+     *
+     * @return array<string, mixed>
+     */
+    private function financeFigures(): array
+    {
+        [$dayStart, $dayEnd] = BusinessDay::current();
+        [$monthStart, $monthEnd] = BusinessDay::monthBounds(BusinessDay::today());
+        [$outstanding, $outstandingCount] = FinanceStats::outstanding();
+
+        return [
+            'today' => FinanceStats::cashBetween($dayStart, $dayEnd),
+            'todayCount' => FinanceStats::paymentsCountBetween($dayStart, $dayEnd),
+            'byMethod' => FinanceStats::cashByMethod($dayStart, $dayEnd),
+            'month' => FinanceStats::cashBetween($monthStart, $monthEnd),
+            'outstanding' => $outstanding,
+            'outstandingCount' => $outstandingCount,
+            'discountsToday' => (float) Reservation::query()
+                ->where('discount_at', '>=', $dayStart)->where('discount_at', '<', $dayEnd)
+                ->where('status', '!=', ReservationStatus::Annulee)
+                ->sum('discount_amount'),
+        ];
     }
 
     /**

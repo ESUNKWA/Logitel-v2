@@ -12,6 +12,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Support\BusinessDay;
+use App\Support\FinanceStats;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -153,6 +154,9 @@ class DashboardController extends Controller
             'outstandingCount' => $openInvoices->count(),
             'dailyRevenue' => $this->dailyRevenue($today, $dayEnd),
             'revenueByMode' => $this->revenueByMode($monthStart, $monthEnd),
+            // Cash received per payment method (espèces / Orange Money / Wave), today and this month.
+            'cashByMethodToday' => FinanceStats::cashByMethod($dayStart, $dayEnd),
+            'cashByMethodMonth' => FinanceStats::cashByMethod($monthStart, $monthEnd),
         ];
     }
 

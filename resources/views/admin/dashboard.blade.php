@@ -249,6 +249,22 @@
                         </li>
                     @endforeach
                 </ul>
+
+                {{-- Cash received per payment method (this month, today in small). --}}
+                <h6 class="mt-4 mb-2">Encaissé par mode de paiement <span class="text-muted small fw-normal">— ce mois (aujourd'hui)</span></h6>
+                <ul class="dash-hbars">
+                    @foreach ($cashByMethodMonth as $i => $row)
+                        <li tabindex="0" data-tip="{{ $row['method']->getLabel() }} : {{ $fcfa($row['amount']) }} FCFA ce mois, {{ $fcfa($cashByMethodToday[$i]['amount']) }} FCFA aujourd'hui">
+                            <div class="dash-hbars__label">
+                                <span>{{ $row['method']->getLabel() }}</span>
+                                <span class="dash-hbars__value">{{ $fcfa($row['amount']) }} <small>FCFA · {{ $row['share'] }} % ({{ $fcfa($cashByMethodToday[$i]['amount']) }} aujourd'hui)</small></span>
+                            </div>
+                            <div class="dash-hbars__track">
+                                <div class="dash-hbars__bar" style="width: {{ $row['share'] }}%"></div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
             </figure>
         </div>
     @endcan
