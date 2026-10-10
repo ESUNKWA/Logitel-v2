@@ -1,10 +1,10 @@
 @extends('layouts.hotel')
 
-@section('title', "Séjour détente, deux fois plus de plaisir - Hôtel Evation")
+@section('title', "Séjour détente, deux fois plus de plaisir - Hôtel Evasion")
 
 @section('content')
 
-<x-page-hero title="Séjour détente, deux fois plus de plaisir" subtitle="Profitez de belles réductions chez Hôtel Evation" breadcrumb="Détails d'une offre" />
+<x-page-hero title="Séjour détente, deux fois plus de plaisir" subtitle="Profitez de belles réductions chez Hôtel Evasion" breadcrumb="Détails d'une offre" />
 
 <section class="luxivo-offer-details-sec pt-120 pb-75">
     <div class="container">
@@ -46,7 +46,7 @@
             <div class="col-xl-4">
                 <div class="offer-sidebar-area sticky-widget">
                     <div class="offer-widget-box mb-40">
-                        <h3>Pourquoi choisir Hôtel Evation</h3>
+                        <h3>Pourquoi choisir Hôtel Evasion</h3>
                         <ul class="check-list style-one">
                             <li><i class="fas fa-badge-check"></i>Transparence – aucun frais caché</li>
                             <li><i class="fas fa-badge-check"></i>Transfert aéroport offert</li>

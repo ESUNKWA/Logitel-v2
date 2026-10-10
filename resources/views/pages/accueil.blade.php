@@ -1,7 +1,7 @@
 @extends('layouts.hotel')
 
-@section('title', 'Hôtel Evation - Hôtel & Resort')
-@section('meta_description', 'Hôtel Evation - Hôtel, Resort, Chambres')
+@section('title', 'Hôtel Evasion - Hôtel & Resort')
+@section('meta_description', 'Hôtel Evasion - Hôtel, Resort, Chambres')
 
 @section('content')
 
@@ -20,7 +20,7 @@
             <div class="row justify-content-center">
                 <div class="col-lg-6">
                     <div class="text-box" data-aos="fade-up" data-aos-duration="2600">
-                        <p>Plongez dans le luxe et la sérénité avec des vues imprenables, dans des chambres élégantes pensées pour votre confort à Hôtel Evation.</p>
+                        <p>Plongez dans le luxe et la sérénité avec des vues imprenables, dans des chambres élégantes pensées pour votre confort à Hôtel Evasion.</p>
                         <div class="hero-button">
                             <a href="{{ route('rooms.index') }}" class="theme-btn style-one">Découvrir nos chambres<i class="far fa-arrow-right"></i></a>
                         </div>
@@ -141,7 +141,7 @@
                         <span class="sub-title" data-aos="fade-up" data-aos-duration="1000">À propos de notre hôtel</span>
                         <h2 data-aos="fade-up" data-aos-duration="1200">Séjournez dans un cadre luxueux, où que vous soyez.</h2>
                     </div>
-                    <p>Hôtel Evation est bien plus qu'un hôtel de luxe ; c'est une oasis de tranquillité. Grâce à son emplacement exceptionnel, ses hébergements raffinés et une offre de restauration soignée, il offre à ses hôtes une expérience inoubliable.</p>
+                    <p>Hôtel Evasion est bien plus qu'un hôtel de luxe ; c'est une oasis de tranquillité. Grâce à son emplacement exceptionnel, ses hébergements raffinés et une offre de restauration soignée, il offre à ses hôtes une expérience inoubliable.</p>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="luxivo-iconic-left-box style-one mb-40" data-aos="fade-up" data-aos-duration="1000">
@@ -392,7 +392,7 @@
                         <div class="quote"><i class="fas fa-quote-left"></i></div>
                         <div class="ratings"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
                     </div>
-                    <p>"Un séjour à Hôtel Evation, c'est le luxe et la sérénité réunis. Le personnel est aux petits soins et les chambres sont d'un confort remarquable."</p>
+                    <p>"Un séjour à Hôtel Evasion, c'est le luxe et la sérénité réunis. Le personnel est aux petits soins et les chambres sont d'un confort remarquable."</p>
                     <div class="author-thumb-item">
                         <div class="author-thumb"><img src="{{ asset('assets/images/stock/'.$t['img']) }}" alt="{{ $t['name'] }}"></div>
                         <div class="author-info">
@@ -498,7 +498,7 @@
             @foreach([
                 ['img' => 'gallery-1.jpg', 'title' => "L'expérience de luxe : ce qui rend notre hôtel unique"],
                 ['img' => 'about-1.jpg', 'title' => 'Découvrez le charme de notre expérience signature'],
-                ['img' => 'choose-1.jpg', 'title' => "L'histoire d'Hôtel Evation, où le luxe rencontre l'authenticité"],
+                ['img' => 'choose-1.jpg', 'title' => "L'histoire d'Hôtel Evasion, où le luxe rencontre l'authenticité"],
             ] as $post)
             <div class="col-lg-4 col-md-6">
                 <div class="luxivo-blog-post-item style-one mb-40">

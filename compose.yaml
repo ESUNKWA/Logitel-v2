@@ -1,4 +1,4 @@
-# Hôtel Evation — PRODUCTION (VPS). Usage: see DOCKER.md
+# Hôtel Evasion — PRODUCTION (VPS). Usage: see DOCKER.md
 #   cp .env.production.example .env.production   (then fill it in)
 #   docker compose up -d --build
 services:

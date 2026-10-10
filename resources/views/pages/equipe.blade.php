@@ -1,10 +1,10 @@
 @extends('layouts.hotel')
 
-@section('title', "Notre équipe - Hôtel Evation")
+@section('title', "Notre équipe - Hôtel Evasion")
 
 @section('content')
 
-<x-page-hero title="Notre équipe" subtitle="Découvrez les visages qui font Hôtel Evation" breadcrumb="Équipe" />
+<x-page-hero title="Notre équipe" subtitle="Découvrez les visages qui font Hôtel Evasion" breadcrumb="Équipe" />
 
 <section class="luxivo-team-sec gray-color pt-115 pb-90">
     <div class="container">

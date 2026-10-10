@@ -17,7 +17,7 @@ class HotelInfo
 
     public function name(): string
     {
-        return $this->get('name') !== '' ? $this->get('name') : 'Hôtel Evation';
+        return $this->get('name') !== '' ? $this->get('name') : 'Hôtel Evasion';
     }
 
     /**
@@ -33,7 +33,7 @@ class HotelInfo
     }
 
     /**
-     * Up to two initials for the brand badge: "Hôtel Evation" → "EK".
+     * Up to two initials for the brand badge: "Hôtel Evasion" → "EK".
      */
     public function initials(): string
     {

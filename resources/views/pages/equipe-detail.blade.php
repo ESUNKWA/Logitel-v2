@@ -1,10 +1,10 @@
 @extends('layouts.hotel')
 
-@section('title', "Awa Traoré - Hôtel Evation")
+@section('title', "Awa Traoré - Hôtel Evasion")
 
 @section('content')
 
-<x-page-hero title="Détails du membre" subtitle="Découvrez les visages qui font Hôtel Evation" breadcrumb="Détails d'un membre" />
+<x-page-hero title="Détails du membre" subtitle="Découvrez les visages qui font Hôtel Evasion" breadcrumb="Détails d'un membre" />
 
 <section class="luxivo-team-details-sec pt-120 pb-100">
     <div class="container">
@@ -20,7 +20,7 @@
                         <div class="member-info">
                             <h4 class="title">Awa Traoré</h4>
                             <span class="position">Directrice Générale</span>
-                            <p>Passionnée d'hôtellerie depuis plus de dix ans, Awa veille chaque jour à ce que chaque client d'Hôtel Evation vive une expérience à la hauteur de ses attentes.</p>
+                            <p>Passionnée d'hôtellerie depuis plus de dix ans, Awa veille chaque jour à ce que chaque client d'Hôtel Evasion vive une expérience à la hauteur de ses attentes.</p>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="info-box mb-30">
@@ -61,7 +61,7 @@
                 <div class="col-lg-7">
                     <div class="luxivo-content-box pe-xl-5 mb-5 mb-xl-0">
                         <h3 class="mb-15">Parcours professionnel</h3>
-                        <p class="mb-15">Awa a débuté sa carrière dans l'hôtellerie internationale avant de rejoindre Hôtel Evation pour y insuffler une hospitalité résolument tournée vers l'excellence et le service personnalisé.</p>
+                        <p class="mb-15">Awa a débuté sa carrière dans l'hôtellerie internationale avant de rejoindre Hôtel Evasion pour y insuffler une hospitalité résolument tournée vers l'excellence et le service personnalisé.</p>
                         <p class="mb-15">Elle supervise aujourd'hui l'ensemble des opérations de l'hôtel, en veillant à ce que chaque équipe partage la même exigence de qualité au service des clients.</p>
                     </div>
                 </div>

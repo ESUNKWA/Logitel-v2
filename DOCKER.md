@@ -1,4 +1,4 @@
-# Hôtel Evation — Déploiement avec Docker
+# Hôtel Evasion — Déploiement avec Docker
 
 L'application tourne dans **deux conteneurs** :
 

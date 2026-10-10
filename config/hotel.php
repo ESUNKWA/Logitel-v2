@@ -38,7 +38,7 @@ return [
     // receipt, back-office, guest request pages and the public site's contact blocks.
     // Empty values are simply not displayed.
     'info' => [
-        'name' => 'Hôtel Evation',
+        'name' => 'Hôtel Evasion',
         'tagline' => '',
         'phone' => '',
         'phone2' => '',

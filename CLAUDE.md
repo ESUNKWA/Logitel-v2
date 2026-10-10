@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Hôtel Evation**, a hotel in Côte d'Ivoire (Bouaké, per the sibling asset folder — not yet confirmed with the client), built on Laravel 12. The app has **two independent halves**:
+**Hôtel Evasion**, a hotel in Côte d'Ivoire (Bouaké, per the sibling asset folder — not yet confirmed with the client), built on Laravel 12. The app has **two independent halves**:
 
 1. **Public marketing site** — fully static Blade/Bootstrap pages (no database involvement at all). Styled with the "Luxivo" Bootstrap 5 HTML template originally supplied at `../EspaceKatioka-Gestion-hotel/`.
 2. **Hotel management back-office** (`/admin`) — real, database-backed staff tooling: room inventory & availability, guest records, reservations/stays, invoicing & payments. Staff-only; there is no public-facing account system or online booking integration — the public site's booking/contact forms remain decorative by design (see below).

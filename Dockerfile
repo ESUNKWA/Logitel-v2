@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Hôtel Evation — image of the Laravel app served by FrankenPHP (Caddy + PHP in one process).
+# Hôtel Evasion — image of the Laravel app served by FrankenPHP (Caddy + PHP in one process).
 #   target "prod" (default): code and Composer dependencies baked in, no dev tools.
 #   target "dev":            same runtime, the code is bind-mounted by compose.dev.yaml.
 # See DOCKER.md.

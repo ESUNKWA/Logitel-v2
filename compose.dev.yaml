@@ -1,4 +1,4 @@
-# Hôtel Evation — DEVELOPMENT. Code bind-mounted (changes are live), debug on.
+# Hôtel Evasion — DEVELOPMENT. Code bind-mounted (changes are live), debug on.
 #   docker compose -f compose.dev.yaml up --build
 #   → http://localhost:8080   (PostgreSQL on localhost:5433, user/pass: katioka/katioka)
 # APP_KEY comes from your local .env (mounted with the code); the DB settings below override it.

@@ -1,10 +1,10 @@
 @extends('layouts.hotel')
 
-@section('title', "Salle de sport équipée - Hôtel Evation")
+@section('title', "Salle de sport équipée - Hôtel Evasion")
 
 @section('content')
 
-<x-page-hero title="Salle de sport équipée" subtitle="Chez Hôtel Evation, nous soignons chaque détail de votre expérience" breadcrumb="Détails d'un service" />
+<x-page-hero title="Salle de sport équipée" subtitle="Chez Hôtel Evasion, nous soignons chaque détail de votre expérience" breadcrumb="Détails d'un service" />
 
 <section class="luxivo-service-details-sec pt-120 pb-95">
     <div class="container">
@@ -73,7 +73,7 @@
                 <h3>Questions fréquentes</h3>
                 <div class="accordion" id="accordionOne">
                     @foreach([
-                        ["Quelles sont les heures d'ouverture de la salle de sport ?", "La salle de sport d'Hôtel Evation est accessible 24h/24 pour tous les clients de l'hôtel."],
+                        ["Quelles sont les heures d'ouverture de la salle de sport ?", "La salle de sport d'Hôtel Evasion est accessible 24h/24 pour tous les clients de l'hôtel."],
                         ["L'accès est-il inclus dans le prix de la chambre ?", "Oui, l'accès à la salle de sport est offert à tous nos hôtes, sans frais supplémentaires."],
                         ["Un coach sportif est-il disponible ?", "Un accompagnement est possible sur demande auprès de la réception, selon disponibilité."],
                         ["Faut-il réserver un créneau à l'avance ?", "Non, l'accès est libre, mais nous recommandons d'éviter les heures de forte affluence."],
