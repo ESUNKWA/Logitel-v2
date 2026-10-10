@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\RoomAssignmentController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\RoomTypeController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\Site\GalleryController;
 use App\Http\Controllers\Admin\Site\HomeContentController;
 use App\Http\Controllers\Admin\Site\ServiceController;
 use App\Http\Controllers\Admin\StayRequestController;
@@ -116,6 +117,10 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         // « Site web »: content of the public website managed from here.
         Route::get('/site/accueil', [HomeContentController::class, 'edit'])->middleware('can:site.manage')->name('site.home.edit');
         Route::put('/site/accueil', [HomeContentController::class, 'update'])->middleware('can:site.manage')->name('site.home.update');
+        Route::get('/site/galerie', [GalleryController::class, 'index'])->middleware('can:site.manage')->name('site.gallery.index');
+        Route::post('/site/galerie', [GalleryController::class, 'store'])->middleware('can:site.manage')->name('site.gallery.store');
+        Route::put('/site/galerie', [GalleryController::class, 'update'])->middleware('can:site.manage')->name('site.gallery.update');
+        Route::delete('/site/galerie/{photo}', [GalleryController::class, 'destroy'])->middleware('can:site.manage')->name('site.gallery.destroy');
         Route::resource('site/services', ServiceController::class)->except(['show'])->middleware('can:site.manage')
             ->names('site.services')->parameters(['services' => 'service']);
 

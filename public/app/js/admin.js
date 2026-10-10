@@ -1219,6 +1219,7 @@
 
     document.querySelectorAll('[data-image-uploader]').forEach(function (box) {
         var max = parseInt(box.dataset.max, 10) || 5;
+        var limitLabel = box.dataset.limitLabel || 'par chambre';
         var input = box.querySelector('[data-photo-input]');
         var grid = box.querySelector('[data-photo-grid]');
         var addTile = box.querySelector('[data-add-tile]');
@@ -1289,7 +1290,7 @@
                 refresh();
                 var notes = [];
                 if (ignoredCount) {
-                    notes.push(ignoredCount + ' photo(s) ignorée(s) : maximum ' + max + ' par chambre.');
+                    notes.push(ignoredCount + ' photo(s) ignorée(s) : maximum ' + max + ' ' + limitLabel + '.');
                 }
                 if (ignoredType) {
                     notes.push(ignoredType + ' fichier(s) ignoré(s) : formats acceptés JPG, PNG, WebP.');
@@ -1305,7 +1306,7 @@
             cb.addEventListener('change', function () {
                 if (!cb.checked && total() > max) {
                     cb.checked = true; // restoring it would exceed the limit
-                    status.textContent = 'Retirez d\'abord une nouvelle photo : maximum ' + max + ' par chambre.';
+                    status.textContent = 'Retirez d\'abord une nouvelle photo : maximum ' + max + ' ' + limitLabel + '.';
                 }
                 cb.closest('[data-existing-photo]').classList.toggle('is-removed', cb.checked);
                 refresh();

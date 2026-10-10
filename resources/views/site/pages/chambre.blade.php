@@ -184,8 +184,6 @@
                             <div class="widget-content">
                                 @if ($requestable)
                                     <p><span class="site-badge-free"><i class="fas fa-circle"></i> Libre en ce moment</span></p>
-                                    <p>Vous êtes à l'hôtel ? Faites votre demande depuis votre téléphone, la réception la valide.</p>
-                                    <a href="{{ route('stay-request.create', $room) }}" class="theme-btn style-one w-100 mb-3">Demander cette chambre</a>
                                 @endif
                                 @if ($hotelInfo->phones())
                                     <p class="mb-2">Pour réserver, appelez la réception :</p>

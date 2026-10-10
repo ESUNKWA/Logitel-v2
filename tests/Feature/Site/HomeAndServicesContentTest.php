@@ -18,7 +18,7 @@ class HomeAndServicesContentTest extends TestCase
     {
         $this->get('/')->assertOk()
             ->assertSee('Bienvenue à')
-            ->assertSee('Demander une chambre')
+            ->assertSee('Une question sur nos chambres ?')
             ->assertDontSee('Notre hôtel & resort de luxe', false)
             ->assertDontSee('100k+')
             ->assertDontSee('8k+')

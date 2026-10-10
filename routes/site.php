@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Site\GalleryController;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\RoomController;
 use App\Http\Controllers\Site\ServiceController;
@@ -21,7 +22,7 @@ Route::domain(config('routing.site_domain'))->group(function () {
 
     // Content managed in the application (« Site web »).
     Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
-    Route::view('/galerie', 'site.pages.galerie')->name('gallery');
+    Route::get('/galerie', [GalleryController::class, 'index'])->name('gallery');
     Route::view('/contact', 'site.pages.contact')->name('contact');
 
     // Guest's room request from their phone on arrival (QR code in the lobby): pick a free room,

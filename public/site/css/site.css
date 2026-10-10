@@ -125,3 +125,8 @@
 @media (max-width: 991.98px) {
     .luxivo-hero_one:after { background: rgba(22, 25, 33, .5); }
 }
+
+/* Gallery managed in the application: uniform 4:3 crops, optional caption */
+.site-gallery-item .thumbnail img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.site-gallery-item figcaption { padding: 10px 4px 0; font-size: 15px; color: var(--heading-color, #161921); }
+.luxivo-instagram-sec .luxivo-gallery-item .thumbnail img { aspect-ratio: 1 / 1; object-fit: cover; width: 100%; }

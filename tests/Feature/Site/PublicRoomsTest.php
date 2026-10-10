@@ -53,7 +53,7 @@ class PublicRoomsTest extends TestCase
 
     public function test_the_list_says_so_when_nothing_is_published_yet(): void
     {
-        $this->get('/chambres')->assertOk()->assertSee('bientôt présentées')->assertSee(route('stay-request.index'), false);
+        $this->get('/chambres')->assertOk()->assertSee('bientôt présentées')->assertSee(route('contact'), false);
     }
 
     public function test_the_list_offers_type_filters_when_there_are_several_types(): void
@@ -105,14 +105,14 @@ class PublicRoomsTest extends TestCase
         $this->get('/chambres/'.$room->id.'/ancien-nom')->assertRedirect($room->publicUrl());
     }
 
-    public function test_a_free_room_can_be_requested_from_its_page(): void
+    public function test_the_room_page_says_when_it_is_free_without_linking_the_request_page(): void
     {
         $free = $this->room(['number' => 'F-1']);
         $busy = $this->room(['number' => 'B-1']);
         $stay = Reservation::factory()->create(['room_id' => $busy->id, 'pricing_mode' => 'heure', 'unit_rate' => 5000, 'check_in' => now()->subHour(), 'duration' => 3, 'status' => 'confirmee']);
         $stay->update(['status' => 'enregistree']);
 
-        $this->get($free->publicUrl())->assertSee('Libre en ce moment')->assertSee(route('stay-request.create', $free), false);
+        $this->get($free->publicUrl())->assertSee('Libre en ce moment')->assertDontSee(route('stay-request.create', $free), false);
         $this->get($busy->fresh()->publicUrl())->assertOk()->assertDontSee('Libre en ce moment')->assertDontSee(route('stay-request.create', $busy), false);
     }
 

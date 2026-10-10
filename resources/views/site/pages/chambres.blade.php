@@ -25,9 +25,8 @@
             <div class="site-empty text-center">
                 <i class="far fa-bed"></i>
                 <h4>Nos chambres seront bientôt présentées ici.</h4>
-                <p>En attendant, contactez-nous ou, si vous êtes déjà sur place, faites votre demande depuis votre téléphone.</p>
-                <a href="{{ route('stay-request.index') }}" class="theme-btn style-one me-2">Demander une chambre <i class="far fa-arrow-right"></i></a>
-                <a href="{{ route('contact') }}" class="theme-btn style-two">Nous contacter</a>
+                <p>En attendant, notre réception vous renseigne volontiers.</p>
+                <a href="{{ route('contact') }}" class="theme-btn style-one">Nous contacter <i class="far fa-arrow-right"></i></a>
             </div>
         </div>
     @else
@@ -65,10 +64,10 @@
     <div class="container">
         <div class="site-cta__box">
             <div>
-                <h3>Vous êtes déjà à l'hôtel ?</h3>
-                <p>Choisissez une chambre libre depuis votre téléphone : la réception valide votre demande et vous accueille.</p>
+                <h3>Une question sur nos chambres ?</h3>
+                <p>Notre réception vous renseigne sur nos tarifs et nos disponibilités.</p>
             </div>
-            <a href="{{ route('stay-request.index') }}" class="theme-btn style-one">Demander une chambre <i class="far fa-arrow-right"></i></a>
+            <a href="{{ route('contact') }}" class="theme-btn style-one">Nous contacter <i class="far fa-arrow-right"></i></a>
         </div>
     </div>
 </section>

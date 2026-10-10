@@ -2751,3 +2751,13 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 .site-testimonial-field { padding: 10px; border: 1px solid var(--ek-border); border-radius: var(--ek-radius-sm); background: var(--ek-bg); }
 .service-thumb { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; }
 .service-icon-thumb { width: 64px; height: 48px; border-radius: 8px; display: grid; place-items: center; background: var(--ek-primary-50); color: var(--ek-primary); font-size: 1.2rem; }
+
+/* Site web → Galerie */
+.gallery-admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.gallery-admin-item { background: #fff; border: 1px solid var(--ek-border, #e3e8ef); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.gallery-admin-item.is-hidden .gallery-admin-item__img img { opacity: .4; filter: grayscale(1); }
+.gallery-admin-item__img { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #f1f4f8; }
+.gallery-admin-item__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-admin-item__fields { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.gallery-admin-item__order { width: 76px; flex: 0 0 76px; }
+.gallery-admin-save { position: sticky; bottom: 0; padding: 14px 0; margin-top: 8px; background: linear-gradient(transparent, var(--ek-bg, #f5f7fa) 35%); text-align: right; z-index: 5; }

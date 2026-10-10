@@ -68,6 +68,9 @@
                         <a href="{{ route('admin.site.services.index') }}" class="{{ request()->routeIs('admin.site.services.*') ? 'active' : '' }}">
                             <i class="far fa-concierge-bell"></i> Services
                         </a>
+                        <a href="{{ route('admin.site.gallery.index') }}" class="{{ request()->routeIs('admin.site.gallery.*') ? 'active' : '' }}">
+                            <i class="far fa-images"></i> Galerie
+                        </a>
                     @endcan
                     @can('rooms.manage')
                         <div class="admin-sidebar__section">Configuration</div>

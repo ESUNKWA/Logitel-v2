@@ -1,58 +1,59 @@
 @extends('site.layouts.app')
 
-@section('title', "Galerie - Hôtel Evasion")
+@section('title', 'Galerie - '.$hotelInfo->name())
 
 @section('content')
 
-<x-site::page-hero title="Galerie" subtitle="Découvrez l'univers d'Hôtel Evasion en images" breadcrumb="Galerie" />
+<x-site::page-hero title="Galerie" :subtitle="'Découvrez '.$hotelInfo->name().' en images'" breadcrumb="Galerie" />
 
+{{-- Photos: « Site web → Galerie » in the application. --}}
 <section class="luxivo-gallery pt-120 pb-90">
-    <div class="container">
-        <div class="row">
-            @php
-                $images = ['hero-bg.jpg','about-1.jpg','about-2.jpg','choose-1.jpg','room-3.jpg','bathroom-2.jpg','gallery-1.jpg','gallery-2.jpg','facilities-1.jpg'];
-                $cols = ['col-lg-3 col-md-6 col-sm-12','col-lg-3 col-md-6 col-sm-12','col-lg-6 col-sm-12','col-lg-6 col-sm-12','col-lg-3 col-md-6 col-sm-12','col-lg-3 col-md-6 col-sm-12','col-lg-3 col-md-6 col-sm-12','col-lg-3 col-md-6 col-sm-12','col-lg-6 col-sm-12'];
-            @endphp
-            @foreach($images as $i => $img)
-            <div class="{{ $cols[$i] }}">
-                <div class="luxivo-gallery-item style-two mb-30">
-                    <div class="thumbnail">
-                        <img src="{{ asset('site/images/stock/'.$img) }}" alt="galerie">
-                        <div class="hover-content">
-                            <a href="{{ asset('site/images/stock/'.$img) }}" class="img-popup icon-btn"><i class="fas fa-plus"></i></a>
-                        </div>
-                    </div>
+    @if ($photos->isEmpty())
+        <div class="container">
+            <div class="site-empty text-center">
+                <i class="fal fa-images"></i>
+                <h4>Galerie bientôt disponible</h4>
+                <p>Nos photos seront bientôt présentées ici. En attendant, découvrez nos chambres.</p>
+                <a href="{{ route('rooms.index') }}" class="theme-btn style-one mt-3">Nos chambres <i class="far fa-arrow-right"></i></a>
+            </div>
+        </div>
+    @else
+        @if ($categories->count() > 1)
+            <div class="container">
+                <div class="luxivo-filter-nav text-center mb-50">
+                    <ul class="filter-nav-items">
+                        <li class="active" data-filter="*">Toutes</li>
+                        @foreach ($categories as $category)
+                            <li data-filter=".{{ \App\Models\GalleryPhoto::categoryFilter($category) }}">{{ $category }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             </div>
-            @endforeach
+        @endif
+        <div class="container">
+            <div class="luxivo-isotope">
+                <div class="row isotope-grid">
+                    @foreach ($photos as $photo)
+                        <div class="col-lg-4 col-md-6 col-sm-12 isotope-filter-item {{ $photo->category ? \App\Models\GalleryPhoto::categoryFilter(trim($photo->category)) : '' }}">
+                            <figure class="luxivo-gallery-item style-two site-gallery-item mb-30">
+                                <div class="thumbnail">
+                                    <img src="{{ $photo->url() }}" alt="{{ $photo->caption ?: $hotelInfo->name() }}">
+                                    <div class="hover-content">
+                                        <a href="{{ $photo->url() }}" class="img-popup icon-btn" title="{{ $photo->caption }}" aria-label="Agrandir"><i class="fas fa-plus"></i></a>
+                                    </div>
+                                </div>
+                                @if ($photo->caption)
+                                    <figcaption>{{ $photo->caption }}</figcaption>
+                                @endif
+                            </figure>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
-    </div>
+    @endif
 </section>
 
-<section class="luxivo-instagram-sec pt-110 pb-120">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="text-box text-center mb-55">
-                    <h5>Suivez-nous sur Instagram</h5>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container-fluid">
-        <div class="gallery-slider">
-            @foreach(['room-4.jpg','room-5.jpg','room-8.jpg','bathroom-3.jpg','bathroom-4.jpg','gallery-3.jpg','gallery-4.jpg'] as $img)
-            <div class="luxivo-gallery-item style-one">
-                <div class="thumbnail">
-                    <img src="{{ asset('site/images/stock/'.$img) }}" alt="galerie">
-                    <div class="hover-content">
-                        <a href="#" class="icon-btn"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</section>
+@include('site.partials.photo-strip')
 
 @endsection

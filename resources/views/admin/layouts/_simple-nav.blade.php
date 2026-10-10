@@ -55,6 +55,7 @@
             <li><h6 class="dropdown-header"><i class="far fa-globe"></i> Site web</h6></li>
             <li><a class="dropdown-item" href="{{ route('admin.site.home.edit') }}"><i class="far fa-home"></i> Accueil du site</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.site.services.index') }}"><i class="far fa-concierge-bell"></i> Services</a></li>
+            <li><a class="dropdown-item" href="{{ route('admin.site.gallery.index') }}"><i class="far fa-images"></i> Galerie</a></li>
         @endcan
         @if ($canConfigure)
             <li><hr class="dropdown-divider"></li>

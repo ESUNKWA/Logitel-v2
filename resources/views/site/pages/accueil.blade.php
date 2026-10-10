@@ -38,15 +38,15 @@
     </div>
 </section>
 
-{{-- Guests already at the hotel: room request from their phone. --}}
+{{-- The guests' room request (/demande) is reached only through the lobby QR code, never linked from the site. --}}
 <section class="site-cta pt-60 pb-60">
     <div class="container">
         <div class="site-cta__box">
             <div>
-                <h3>Vous êtes déjà à l'hôtel ?</h3>
-                <p>Choisissez une chambre libre depuis votre téléphone : la réception valide votre demande et vous accueille.</p>
+                <h3>Une question sur nos chambres ?</h3>
+                <p>Notre réception vous renseigne sur nos tarifs et nos disponibilités.</p>
             </div>
-            <a href="{{ route('stay-request.index') }}" class="theme-btn style-one">Demander une chambre <i class="far fa-arrow-right"></i></a>
+            <a href="{{ route('contact') }}" class="theme-btn style-one">Nous contacter <i class="far fa-arrow-right"></i></a>
         </div>
     </div>
 </section>
@@ -325,30 +325,6 @@
 </section>
 
 
-<section class="luxivo-instagram-sec pt-110 pb-120">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="text-box text-center mb-55">
-                    <h5>Suivez-nous sur Instagram</h5>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container-fluid">
-        <div class="gallery-slider" data-aos="fade-up" data-aos-duration="1000">
-            @foreach(['hero-bg.jpg','gallery-1.jpg','gallery-2.jpg','gallery-3.jpg','gallery-4.jpg','about-2.jpg','choose-1.jpg'] as $img)
-            <div class="luxivo-gallery-item style-one">
-                <div class="thumbnail">
-                    <img src="{{ asset('site/images/stock/'.$img) }}" alt="galerie">
-                    <div class="hover-content">
-                        <a href="https://www.instagram.com/" target="_blank" class="icon-btn"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</section>
+@include('site.partials.photo-strip')
 
 @endsection

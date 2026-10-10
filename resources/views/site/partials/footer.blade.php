@@ -84,9 +84,9 @@
                 <div class="col-xl-4 col-md-6 col-sm-12 order-2 order-xl-3">
                     <div class="footer-widget footer-nav-widget mb-40">
                         <div class="widget-content">
-                            <h4 class="widget-title">Vous êtes sur place ?</h4>
-                            <p>Choisissez une chambre libre depuis votre téléphone : la réception valide votre demande et vous accueille.</p>
-                            <a href="{{ route('stay-request.index') }}" class="theme-btn style-one mt-2">Demander une chambre<i class="far fa-arrow-right"></i></a>
+                            <h4 class="widget-title">Une question ?</h4>
+                            <p>Notre réception vous renseigne sur nos chambres, nos tarifs et nos disponibilités.</p>
+                            <a href="{{ route('contact') }}" class="theme-btn style-one mt-2">Nous contacter<i class="far fa-arrow-right"></i></a>
                         </div>
                     </div>
                 </div>
