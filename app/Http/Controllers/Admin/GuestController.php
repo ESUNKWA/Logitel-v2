@@ -25,6 +25,7 @@ class GuestController extends Controller
                 $query->where(function ($query) use ($q) {
                     $query->where('first_name', 'like', "%{$q}%")
                         ->orWhere('last_name', 'like', "%{$q}%")
+                        ->orWhere('company_name', 'like', "%{$q}%")
                         ->orWhere('phone', 'like', "%{$q}%");
                 });
             })
@@ -44,7 +45,7 @@ class GuestController extends Controller
 
     public function store(GuestRequest $request): RedirectResponse
     {
-        Guest::create($request->validated());
+        Guest::create($request->guestAttributes());
 
         return redirect()
             ->route('admin.guests.index')
@@ -58,7 +59,7 @@ class GuestController extends Controller
 
     public function update(GuestRequest $request, Guest $guest): RedirectResponse
     {
-        $guest->update($request->validated());
+        $guest->update($request->guestAttributes());
 
         return redirect()
             ->route('admin.guests.index')
@@ -92,12 +93,13 @@ class GuestController extends Controller
         $guests = Guest::query()
             ->where('first_name', 'like', "%{$q}%")
             ->orWhere('last_name', 'like', "%{$q}%")
+            ->orWhere('company_name', 'like', "%{$q}%")
             ->orWhere('phone', 'like', "%{$q}%")
             ->limit(15)
             ->get()
             ->map(fn (Guest $guest) => [
                 'id' => $guest->id,
-                'label' => $guest->fullName().($guest->phone ? " — {$guest->phone}" : ''),
+                'label' => ($guest->isCompany() ? '🏢 ' : '').$guest->fullName().($guest->phone ? " — {$guest->phone}" : ''),
             ]);
 
         return response()->json($guests);

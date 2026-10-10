@@ -29,7 +29,7 @@
             <div class="fd-item">
                 <div class="fd-item__main">
                     <div class="fd-item__title">{{ $file?->guest?->fullName() }}</div>
-                    <div><x-file-badge :file="$file" :link="true" /> <span class="small text-muted">{{ $state }}</span></div>
+                    <div><x-admin::file-badge :file="$file" :link="true" /> <span class="small text-muted">{{ $state }}</span></div>
                     <div>Chambre N°{{ $file?->room?->number }} · facture {{ $invoice->number }}</div>
                     <div class="small text-muted">{{ $file?->check_in?->format('d/m H\hi') }} → {{ $file?->check_out?->format('d/m H\hi') }}</div>
                 </div>

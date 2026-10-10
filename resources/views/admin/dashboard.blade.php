@@ -273,7 +273,7 @@
     <div class="dash-grid dash-grid--lists">
         <div class="admin-card mb-0">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0"><x-kind-icon kind="reservation" />Prochaines arrivées <span class="text-muted small fw-normal">(réservations)</span></h5>
+                <h5 class="mb-0"><x-admin::kind-icon kind="reservation" />Prochaines arrivées <span class="text-muted small fw-normal">(réservations)</span></h5>
                 @can('reservations.view')
                     <a href="{{ route('admin.reservations.index') }}" class="small">Tout voir</a>
                 @endcan
@@ -297,7 +297,7 @@
 
         <div class="admin-card mb-0">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0"><x-kind-icon kind="affectation" />Départs du jour <span class="text-muted small fw-normal">(affectations)</span></h5>
+                <h5 class="mb-0"><x-admin::kind-icon kind="affectation" />Départs du jour <span class="text-muted small fw-normal">(affectations)</span></h5>
                 @can('rooms.view')
                     <a href="{{ route('admin.rooms.index', ['status' => 'occupee']) }}" class="small">Chambres occupées</a>
                 @endcan

@@ -51,7 +51,7 @@ class HotelInfo
      * Built-in photo behind the login page (a hotel with its pool at dusk), used until the hotel
      * uploads its own.
      */
-    public const DEFAULT_LOGIN_BACKGROUND = 'images/login-default.jpg';
+    public const DEFAULT_LOGIN_BACKGROUND = 'app/images/login-default.jpg';
 
     /**
      * Photo behind the staff login page: the uploaded one, else the built-in default.

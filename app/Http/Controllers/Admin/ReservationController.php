@@ -55,7 +55,6 @@ class ReservationController extends Controller
     {
         return view('admin.reservations.create', [
             'reservation' => new Reservation,
-            'guests' => Guest::query()->orderBy('last_name')->get(),
             'statuses' => [ReservationStatus::EnAttente, ReservationStatus::Confirmee],
         ]);
     }
@@ -70,7 +69,7 @@ class ReservationController extends Controller
             [$start, $end] = $request->period();
             Room::lockAvailable((int) $request->validated('room_id'), $start, $end, null, 'room_id');
 
-            $reservation = Reservation::create([...$request->reservationAttributes(), 'origin' => Reservation::ORIGIN_RESERVATION]);
+            $reservation = Reservation::create([...$request->reservationAttributes(), 'guest_id' => $request->resolveGuestId(), 'origin' => Reservation::ORIGIN_RESERVATION]);
 
             if ($request->paymentLines() !== []) {
                 $reservation->invoice->settle($request->paymentLines(), now(), 'Acompte à la réservation');
@@ -103,7 +102,7 @@ class ReservationController extends Controller
 
         return view('admin.reservations.edit', [
             'reservation' => $reservation,
-            'guests' => Guest::query()->orderBy('last_name')->get(),
+
             'statuses' => [ReservationStatus::EnAttente, ReservationStatus::Confirmee],
             'currentRoomOption' => $reservation->room ? [
                 'id' => $reservation->room->id,
@@ -121,7 +120,7 @@ class ReservationController extends Controller
             [$start, $end] = $request->period();
             Room::lockAvailable((int) $request->validated('room_id'), $start, $end, $reservation->id, 'room_id');
 
-            $reservation->update($request->reservationAttributes());
+            $reservation->update([...$request->reservationAttributes(), 'guest_id' => $request->resolveGuestId()]);
         });
 
         return redirect()

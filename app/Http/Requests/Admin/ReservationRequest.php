@@ -7,6 +7,7 @@ use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Http\Requests\Admin\Concerns\ValidatesDiscount;
 use App\Http\Requests\Admin\Concerns\ValidatesPaymentLines;
+use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Rules\RoomIsAvailableForDates;
@@ -47,7 +48,15 @@ class ReservationRequest extends FormRequest
         $reservation = $this->route('reservation');
 
         return [
-            'guest_id' => ['required', 'exists:guests,id'],
+            // The client: an existing one, or a new one entered here — only the phone is
+            // required (client request); natural person or company.
+            'guest_id' => ['nullable', 'exists:guests,id'],
+            'new_client_type' => ['nullable', 'in:'.Guest::TYPE_PERSON.','.Guest::TYPE_COMPANY],
+            'new_first_name' => ['nullable', 'string', 'max:255'],
+            'new_last_name' => ['nullable', 'string', 'max:255'],
+            'new_company_name' => ['nullable', 'string', 'max:255'],
+            'new_tax_id' => ['nullable', 'string', 'max:100'],
+            'new_phone' => ['required_without:guest_id', 'nullable', 'string', 'max:50'],
             'pricing_mode' => ['nullable', new Enum(PricingMode::class)],
             'check_in' => ['required', 'date'],
             'duration' => ['required_without:check_out', 'nullable', 'integer', 'min:1', 'max:365'],
@@ -154,14 +163,42 @@ class ReservationRequest extends FormRequest
     {
         [$start, , $duration] = $this->period();
 
-        $data = collect($this->validated())->except(['check_out', 'payments', 'discount_type', 'discount_value', 'discount_reason'])->all();
+        $data = collect($this->validated())->except([
+            'check_out', 'payments', 'discount_type', 'discount_value', 'discount_reason',
+            'new_client_type', 'new_first_name', 'new_last_name', 'new_company_name', 'new_tax_id', 'new_phone',
+        ])->all();
 
         return [...$data, ...$this->discountAttributes(), 'unit_rate' => $this->unitRate(), 'pricing_mode' => $this->pricingMode(), 'check_in' => $start, 'duration' => $duration];
     }
 
+    /**
+     * The chosen client, or a new one created from the fields typed here. Call inside the
+     * write transaction.
+     */
+    public function resolveGuestId(): int
+    {
+        if (filled($this->validated('guest_id'))) {
+            return (int) $this->validated('guest_id');
+        }
+
+        $company = $this->validated('new_client_type') === Guest::TYPE_COMPANY;
+
+        return Guest::create([
+            'type' => $company ? Guest::TYPE_COMPANY : Guest::TYPE_PERSON,
+            'first_name' => trim((string) $this->validated('new_first_name')),
+            'last_name' => trim((string) $this->validated('new_last_name')),
+            'company_name' => $company ? $this->validated('new_company_name') : null,
+            'tax_id' => $company ? $this->validated('new_tax_id') : null,
+            'phone' => trim((string) $this->validated('new_phone')),
+        ])->id;
+    }
+
     public function messages(): array
     {
-        return $this->paymentLineMessages();
+        return [
+            ...$this->paymentLineMessages(),
+            'new_phone.required_without' => 'Choisissez un client existant ou saisissez au moins le téléphone du nouveau client.',
+        ];
     }
 
     /**
@@ -175,6 +212,9 @@ class ReservationRequest extends FormRequest
             'duration' => 'durée',
             'unit_rate' => 'tarif',
             'check_in' => 'arrivée',
+            'new_phone' => 'téléphone du client',
+            'new_company_name' => 'raison sociale',
+            'new_tax_id' => 'n° RCCM / NCC',
             ...$this->discountAttributeNames(),
         ];
     }

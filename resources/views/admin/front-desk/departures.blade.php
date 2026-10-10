@@ -9,7 +9,7 @@
 
     <div class="admin-page-header">
         <div>
-            <h1><x-kind-icon kind="affectation" />Départs</h1>
+            <h1><x-admin::kind-icon kind="affectation" />Départs</h1>
             <div class="dash-subtitle">Séjours qui se terminent aujourd'hui (les dépassés en premier).</div>
         </div>
         @can('affectations.view')

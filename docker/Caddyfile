@@ -24,7 +24,7 @@
 	}
 
 	# Static assets (CSS, JS, fonts, photos) can be cached by browsers.
-	@static path /assets/* /css/* /js/* /storage/*
+	@static path /site/* /app/* /vendor/* /storage/*
 	header @static Cache-Control "public, max-age=604800"
 
 	php_server

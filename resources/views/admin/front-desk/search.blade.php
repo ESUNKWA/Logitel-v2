@@ -57,7 +57,7 @@
                             <div class="fd-item__title">{{ $guest->fullName() }}</div>
                             <div>@if ($guest->phone)<a href="tel:{{ $guest->phone }}">{{ $guest->phone }}</a> · @endif{{ $guest->reservations->count() }} séjour(s) / réservation(s)</div>
                             @if ($last)
-                                <div class="small text-muted">Dernier : <x-file-badge :file="$last" /> chambre N°{{ $last->room?->number }}, {{ $last->check_in->format('d/m/Y') }} — {{ $last->isStay() ? $last->status->affectationLabel() : $last->status->reservationLabel() }}</div>
+                                <div class="small text-muted">Dernier : <x-admin::file-badge :file="$last" /> chambre N°{{ $last->room?->number }}, {{ $last->check_in->format('d/m/Y') }} — {{ $last->isStay() ? $last->status->affectationLabel() : $last->status->reservationLabel() }}</div>
                             @endif
                         </div>
                         <div class="fd-item__actions">
@@ -88,7 +88,7 @@
                     <div class="fd-item">
                         <div class="fd-item__main">
                             <div class="fd-item__title">{{ $invoice->number }} <span class="badge bg-{{ $invoice->status->getColor() }}">{{ $invoice->status->getLabel() }}</span></div>
-                            <div><x-file-badge :file="$invoice->reservation" /></div>
+                            <div><x-admin::file-badge :file="$invoice->reservation" /></div>
                             <div>{{ $invoice->reservation?->guest?->fullName() }} · {{ number_format((float) $invoice->amount, 0, ',', ' ') }} FCFA</div>
                         </div>
                         <div class="fd-item__actions">

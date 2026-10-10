@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomAmenity;
 use App\Enums\RoomStatus;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class Room extends Model
@@ -205,6 +207,63 @@ class Room extends Model
     public function isRequested(): bool
     {
         return $this->status === RoomStatus::Disponible && ! $this->isReserved() && $this->pendingRequest !== null;
+    }
+
+    /**
+     * Rooms shown on the public website: marked published, of an active room type. The site
+     * never lists anything else.
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('is_published', true)->whereHas('roomType', fn (Builder $type) => $type->where('is_active', true));
+    }
+
+    public function isPubliclyVisible(): bool
+    {
+        return (bool) $this->is_published && (bool) $this->roomType?->is_active;
+    }
+
+    /**
+     * Public page: /chambres/{id}/{slug-of-the-name}.
+     */
+    public function publicUrl(): string
+    {
+        return route('rooms.show', ['room' => $this, 'slug' => $this->publicSlug()]);
+    }
+
+    public function publicSlug(): string
+    {
+        return Str::slug($this->displayName()) ?: 'chambre';
+    }
+
+    public function coverUrl(): ?string
+    {
+        return $this->images->first()?->url();
+    }
+
+    /**
+     * The formulas offered for this room with their price (room type's rates), in display order.
+     *
+     * @return list<array{mode: PricingMode, rate: float}>
+     */
+    public function publicRates(): array
+    {
+        return collect(PricingMode::cases())
+            ->map(fn (PricingMode $mode) => ['mode' => $mode, 'rate' => $mode->rateFor($this->roomType)])
+            ->filter(fn (array $r) => $r['rate'] !== null)
+            ->map(fn (array $r) => ['mode' => $r['mode'], 'rate' => (float) $r['rate']])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The cheapest formula ("à partir de"), or null when the type has no rate.
+     *
+     * @return array{mode: PricingMode, rate: float}|null
+     */
+    public function lowestRate(): ?array
+    {
+        return collect($this->publicRates())->sortBy('rate')->first();
     }
 
     /**

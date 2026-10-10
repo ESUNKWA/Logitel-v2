@@ -5,7 +5,7 @@
 @section('content')
     <div class="admin-page-header">
         <div>
-            <h1><x-kind-icon kind="reservation" />Réservations</h1>
+            <h1><x-admin::kind-icon kind="reservation" />Réservations</h1>
             <div class="dash-subtitle">Séjours réservés à l'avance. Les clients déjà installés sont dans <a href="{{ route('admin.affectations.index') }}">Affectations</a>.</div>
         </div>
         @can('reservations.manage')

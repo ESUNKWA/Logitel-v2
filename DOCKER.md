@@ -175,6 +175,15 @@ docker compose restart app
    ```
 3. `docker compose up -d`
 
+**Site et application sur deux sous-domaines** (recommandé) : créez deux enregistrements A (ex. `www.hotel-evasion.ci` et `gestion.hotel-evasion.ci`), puis dans `.env.production` :
+   ```
+   SERVER_NAME="www.hotel-evasion.ci, gestion.hotel-evasion.ci"
+   SITE_DOMAIN=www.hotel-evasion.ci
+   ADMIN_DOMAIN=gestion.hotel-evasion.ci
+   APP_URL=https://gestion.hotel-evasion.ci
+   ```
+   Le site répond alors sur `www…` et l'application à la racine de `gestion…` (plus de `/admin`). **Réimprimez l'affiche QR code** : l'adresse de la page de demande change.
+
 Caddy obtient et renouvelle **automatiquement** un certificat Let's Encrypt gratuit (les ports 80 et 443 doivent être ouverts). Le HTTPS est fortement recommandé : la page `/demande` est ouverte par les clients sur leur téléphone et la connexion du personnel transporte des mots de passe.
 
 ---

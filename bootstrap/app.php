@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
+        // Two distinct halves: the public website and the management application (see
+        // config/routing.php for giving each its own sub-domain).
+        web: __DIR__.'/../routes/site.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function (): void {

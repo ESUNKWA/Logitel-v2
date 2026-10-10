@@ -16,14 +16,51 @@
     data-day-hours="{{ config('hotel.day_hours') }}"
     data-stay-hours="{{ config('hotel.stay_min_hours') }}"
 >
-    <div class="col-md-6">
-        <label class="form-label" for="guest_id">Client</label>
-        <select class="form-select" id="guest_id" name="guest_id" required>
-            <option value="">— Choisir —</option>
-            @foreach ($guests as $guest)
-                <option value="{{ $guest->id }}" @selected(old('guest_id', $reservation->guest_id) == $guest->id)>{{ $guest->fullName() }}{{ $guest->phone ? ' — '.$guest->phone : '' }}</option>
-            @endforeach
-        </select>
+    {{-- Client: search an existing one, or enter a new one (only the phone is required),
+         natural person or company. --}}
+    @php
+        $currentGuest = $reservation->guest;
+        $guestLabel = old('guest_label', $currentGuest ? $currentGuest->fullName().($currentGuest->phone ? ' — '.$currentGuest->phone : '') : '');
+        $newType = old('new_client_type', \App\Models\Guest::TYPE_PERSON);
+    @endphp
+    <div class="col-12">
+        <div class="booking-client" data-client-form>
+            <label class="form-label" for="booking-guest-search">Client existant</label>
+            <div class="position-relative">
+                <input type="text" class="form-control" id="booking-guest-search" name="guest_label" autocomplete="off"
+                    placeholder="Rechercher par nom, entreprise ou téléphone…" value="{{ $guestLabel }}"
+                    data-guest-search data-guest-search-url="{{ route('admin.guests.search') }}" data-guest-id-target="#booking-guest-id">
+                <div class="list-group position-absolute w-100" style="z-index: 1080;" data-guest-search-results></div>
+                <input type="hidden" id="booking-guest-id" name="guest_id" value="{{ old('guest_id', $reservation->guest_id) }}">
+            </div>
+
+            <p class="text-muted small mt-3 mb-2">Ou nouveau client <span class="fw-semibold">(seul le téléphone est obligatoire)</span> :</p>
+            <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Type de client">
+                <input type="radio" class="btn-check" name="new_client_type" id="new-type-physique" value="physique" data-client-type @checked($newType !== 'morale')>
+                <label class="btn btn-outline-primary" for="new-type-physique"><i class="far fa-user me-1"></i> Particulier</label>
+                <input type="radio" class="btn-check" name="new_client_type" id="new-type-morale" value="morale" data-client-type @checked($newType === 'morale')>
+                <label class="btn btn-outline-primary" for="new-type-morale"><i class="far fa-building me-1"></i> Entreprise</label>
+            </div>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input type="tel" class="form-control @error('new_phone') is-invalid @enderror" name="new_phone" value="{{ old('new_phone') }}" placeholder="Téléphone *" aria-label="Téléphone du nouveau client">
+                    @error('new_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4" data-client-only="morale">
+                    <input type="text" class="form-control" name="new_company_name" value="{{ old('new_company_name') }}" placeholder="Raison sociale" aria-label="Raison sociale">
+                </div>
+                <div class="col-md-4" data-client-only="morale">
+                    <input type="text" class="form-control" name="new_tax_id" value="{{ old('new_tax_id') }}" placeholder="N° RCCM / NCC" aria-label="N° RCCM / NCC">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="new_first_name" value="{{ old('new_first_name') }}" placeholder="Prénom" aria-label="Prénom">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="new_last_name" value="{{ old('new_last_name') }}" placeholder="Nom" aria-label="Nom">
+                </div>
+            </div>
+            <div class="form-text" data-client-only="morale">Pour une entreprise, prénom et nom sont ceux de la personne à contacter.</div>
+        </div>
     </div>
     <div class="col-md-6">
         <label class="form-label" for="status">Statut</label>

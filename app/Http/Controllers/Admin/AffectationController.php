@@ -127,6 +127,7 @@ class AffectationController extends Controller
                 ->whereRaw('lower(first_name) like ?', [$needle])
                 ->orWhereRaw('lower(last_name) like ?', [$needle])
                 ->orWhereRaw("lower(first_name || ' ' || last_name) like ?", [$needle])
+                ->orWhereRaw('lower(company_name) like ?', [$needle])
                 ->orWhere('phone', 'like', '%'.$filters['q'].'%')));
         }
 

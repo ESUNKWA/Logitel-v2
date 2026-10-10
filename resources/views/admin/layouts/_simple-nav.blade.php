@@ -50,6 +50,12 @@
             <li><a class="dropdown-item" href="{{ route('admin.front-desk.collect') }}"><i class="far fa-coins"></i> À encaisser</a></li>
         @endcan
         <li><a class="dropdown-item" href="{{ route('admin.stats') }}"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>
+        @can('site.manage')
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header"><i class="far fa-globe"></i> Site web</h6></li>
+            <li><a class="dropdown-item" href="{{ route('admin.site.home.edit') }}"><i class="far fa-home"></i> Accueil du site</a></li>
+            <li><a class="dropdown-item" href="{{ route('admin.site.services.index') }}"><i class="far fa-concierge-bell"></i> Services</a></li>
+        @endcan
         @if ($canConfigure)
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header"><i class="far fa-cog"></i> Configuration</h6></li>

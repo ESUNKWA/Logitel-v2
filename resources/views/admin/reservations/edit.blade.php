@@ -5,9 +5,9 @@
 @section('content')
     <div class="admin-page-header">
         <div>
-            <h1><x-kind-icon kind="reservation" />{{ $reservation->guest->fullName() }}</h1>
+            <h1><x-admin::kind-icon kind="reservation" />{{ $reservation->guest->fullName() }}</h1>
             <div class="dash-subtitle">
-                <x-file-badge :file="$reservation" /> ·
+                <x-admin::file-badge :file="$reservation" /> ·
                 <span class="badge bg-{{ $reservation->status->reservationColor() }}">{{ $reservation->status->reservationLabel() }}</span>
                 · arrivée prévue le {{ $reservation->check_in->format('d/m/Y à H\hi') }}
                 · créée par {{ $reservation->creator?->name ?? '—' }} le {{ $reservation->created_at?->format('d/m/Y à H\hi') }}

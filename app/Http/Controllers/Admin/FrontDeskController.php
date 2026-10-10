@@ -143,6 +143,7 @@ class FrontDeskController extends Controller
                     ->whereRaw('lower(first_name) like ?', [$needle])
                     ->orWhereRaw('lower(last_name) like ?', [$needle])
                     ->orWhereRaw("lower(first_name || ' ' || last_name) like ?", [$needle])
+                    ->orWhereRaw('lower(company_name) like ?', [$needle])
                     ->orWhere('phone', 'like', '%'.$q.'%'))
                 ->with(['reservations' => fn ($r) => $r->with('room')->latest('check_in')->limit(50)])
                 ->orderBy('last_name')

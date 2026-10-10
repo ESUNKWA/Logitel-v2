@@ -19,7 +19,7 @@
                 <h5>Détails</h5>
                 <dl class="row mb-0">
                     <dt class="col-5">Dossier</dt>
-                    <dd class="col-7"><x-file-badge :file="$invoice->reservation" :link="true" /></dd>
+                    <dd class="col-7"><x-admin::file-badge :file="$invoice->reservation" :link="true" /></dd>
                     <dt class="col-5">Client</dt>
                     <dd class="col-7">{{ $invoice->reservation?->guest?->fullName() }}</dd>
                     <dt class="col-5">Chambre</dt>

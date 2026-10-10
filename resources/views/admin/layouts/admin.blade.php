@@ -3,14 +3,15 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noindex, nofollow">
         <title>@yield('title', 'Tableau de bord') — {{ $hotelInfo->name() }}</title>
-        <link rel="shortcut icon" href="{{ asset('assets/images/favicon.png') }}" type="image/png">
+        <link rel="shortcut icon" href="{{ asset('app/images/favicon.png') }}" type="image/png">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-        <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome/css/all.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('assets/css/plugins/bootstrap.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('app/css/admin.css') }}">
         @stack('styles')
     </head>
     @php($simpleUi = (bool) auth()->user()?->usesSimpleUi())
@@ -57,6 +58,15 @@
                     @can('invoices.view')
                         <a href="{{ route('admin.invoices.index') }}" class="{{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
                             <i class="far fa-file-invoice-dollar"></i> Factures
+                        </a>
+                    @endcan
+                    @can('site.manage')
+                        <div class="admin-sidebar__section">Site web</div>
+                        <a href="{{ route('admin.site.home.edit') }}" class="{{ request()->routeIs('admin.site.home.*') ? 'active' : '' }}">
+                            <i class="far fa-globe"></i> Accueil du site
+                        </a>
+                        <a href="{{ route('admin.site.services.index') }}" class="{{ request()->routeIs('admin.site.services.*') ? 'active' : '' }}">
+                            <i class="far fa-concierge-bell"></i> Services
                         </a>
                     @endcan
                     @can('rooms.manage')
@@ -179,9 +189,9 @@
             <div class="request-alerts" id="requestAlerts" data-feed-url="{{ route('admin.stay-requests.feed') }}" aria-live="polite"></div>
         @endcan
 
-        <script src="{{ asset('assets/js/plugins/popper.min.js') }}"></script>
-        <script src="{{ asset('assets/js/plugins/bootstrap.min.js') }}"></script>
-        <script src="{{ asset('js/admin.js') }}"></script>
+        <script src="{{ asset('vendor/bootstrap/popper.min.js') }}"></script>
+        <script src="{{ asset('vendor/bootstrap/bootstrap.min.js') }}"></script>
+        <script src="{{ asset('app/js/admin.js') }}"></script>
         @stack('scripts')
     </body>
 </html>

@@ -19,6 +19,11 @@ class Guest extends Model
 
     public const WALK_IN_LAST_NAME = 'de passage';
 
+    /** Natural person (default) or legal entity (company, NGO, administration…). */
+    public const TYPE_PERSON = 'physique';
+
+    public const TYPE_COMPANY = 'morale';
+
     protected $fillable = [
         'first_name',
         'last_name',
@@ -29,6 +34,9 @@ class Guest extends Model
         'nationality',
         'address',
         'notes',
+        'type',
+        'company_name',
+        'tax_id',
     ];
 
     protected static function booted(): void
@@ -47,8 +55,38 @@ class Guest extends Model
         return $this->hasMany(Reservation::class);
     }
 
+    public function isCompany(): bool
+    {
+        return $this->type === self::TYPE_COMPANY;
+    }
+
+    /**
+     * The name shown everywhere: the company name for a legal entity, the person's name
+     * otherwise — or "Client sans nom" when only a phone was given.
+     */
     public function fullName(): string
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        $person = trim("{$this->first_name} {$this->last_name}");
+
+        if ($this->isCompany()) {
+            return trim((string) $this->company_name) ?: ($person !== '' ? $person : 'Entreprise sans nom');
+        }
+
+        return $person !== '' ? $person : 'Client sans nom';
+    }
+
+    /**
+     * For a company: its contact person ("Prénom Nom"), if given.
+     */
+    public function contactName(): ?string
+    {
+        $person = trim("{$this->first_name} {$this->last_name}");
+
+        return $this->isCompany() && $person !== '' ? $person : null;
+    }
+
+    public function typeLabel(): string
+    {
+        return $this->isCompany() ? 'Personne morale' : 'Personne physique';
     }
 }

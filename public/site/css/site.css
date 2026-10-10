@@ -1,0 +1,127 @@
+/* Hôtel website — our own additions on top of the Luxivo template (style.css / brand.css stay
+   untouched). Uses the template's variables (--primary-color, --heading-color, --heading-font). */
+
+/* Room without a photo yet: a neutral block instead of a misleading stock picture. */
+.room-photo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(135deg, #eef0ec, #dde2da);
+    color: var(--primary-color);
+    font-size: 54px;
+    border-radius: inherit;
+}
+
+.room-photo-placeholder--large { aspect-ratio: 21 / 9; font-size: 80px; border-radius: 20px; }
+
+.room-type-label {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(109, 124, 106, .14);
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .03em;
+}
+
+.luxivo-room-item .price small { font-size: 13px; font-weight: 400; opacity: .85; }
+.luxivo-room-item .price-line { color: #fff; margin-bottom: 12px; font-weight: 600; }
+.luxivo-room-item .price-line small { font-weight: 400; opacity: .85; }
+
+/* Rates table on a room page */
+.site-rates th { font-family: var(--heading-font); font-weight: 400; font-size: 20px; color: var(--heading-color); white-space: nowrap; }
+.site-rates td, .site-rates th { padding: 14px 10px; vertical-align: middle; border-color: rgba(22, 25, 33, .08); }
+.site-rates strong { color: var(--heading-color); font-size: 18px; }
+
+/* Room gallery (photos after the cover) */
+.site-room-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.site-room-gallery__item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; transition: opacity .2s ease; }
+.site-room-gallery__item:hover img { opacity: .85; }
+
+.site-badge-free { display: inline-flex; align-items: center; gap: 6px; color: #1f8f5f; font-weight: 600; }
+.site-badge-free i { font-size: 9px; }
+
+/* Empty state & call to action */
+.site-empty { max-width: 640px; margin: 0 auto 40px; padding: 40px 24px; border: 1px dashed rgba(22, 25, 33, .15); border-radius: 20px; }
+.site-empty > i { font-size: 46px; color: var(--primary-color); margin-bottom: 16px; }
+.site-empty h4 { margin-bottom: 10px; }
+
+.site-cta__box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 36px 40px;
+    border-radius: 20px;
+    background: var(--heading-color);
+    color: #fff;
+}
+
+.site-cta__box h3 { color: #fff; margin-bottom: 6px; }
+.site-cta__box p { margin: 0; color: rgba(255, 255, 255, .8); }
+
+@media (max-width: 575px) {
+    .site-cta__box { padding: 28px 22px; }
+}
+
+/* Room cards (list, "other rooms"): the template's overlay card needs a tall picture — landscape
+   photos left the title box taller than the card. Portrait crop, whatever the uploaded photo. */
+.luxivo-room-item.style-four .room-image img,
+.luxivo-room-item.style-four .room-photo-placeholder {
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 30px;
+}
+
+/* Home hero: the template only caps its two floating photos below 1650 px — above that they
+   render at their real size (1600 px wide photos) and cover the whole banner and the title.
+   Fixed sizes at every width, the portrait one cropped, and kept clear of the title. */
+.luxivo-hero_one .hero-image img { width: 100%; height: auto; display: block; }
+
+.luxivo-hero_one .hero-image.hero-image_one { width: 360px; max-width: 360px; }
+.luxivo-hero_one .hero-image.hero-image_one img { aspect-ratio: 3 / 2; object-fit: cover; }
+
+.luxivo-hero_one .hero-image.hero-image_two { width: 340px; max-width: 340px; }
+.luxivo-hero_one .hero-image.hero-image_two img { aspect-ratio: 4 / 5; object-fit: cover; }
+
+@media (max-width: 1650px) {
+    .luxivo-hero_one .hero-image.hero-image_one { width: 300px; max-width: 300px; }
+    /* Lower and narrower, so it no longer runs into the big title. */
+    .luxivo-hero_one .hero-image.hero-image_two { width: 270px; max-width: 270px; top: auto; bottom: 170px; }
+}
+
+@media (max-width: 1199.98px) {
+    .luxivo-hero_one .hero-image.hero-image_one { width: 220px; max-width: 220px; }
+    .luxivo-hero_one .hero-image.hero-image_two { width: 210px; max-width: 210px; bottom: 220px; }
+}
+
+/* Services managed in the application (home + /services) */
+.site-service-card { background: #fff; border: 1px solid rgba(22, 25, 33, .08); border-radius: 16px; overflow: hidden; transition: box-shadow .2s, transform .2s; }
+.site-service-card:hover { box-shadow: 0 14px 34px rgba(22, 25, 33, .08); transform: translateY(-3px); }
+.site-service-card__photo { aspect-ratio: 16 / 10; overflow: hidden; }
+.site-service-card__photo img { width: 100%; height: 100%; object-fit: cover; }
+.site-service-card__icon { padding: 32px 28px 0; font-size: 34px; color: var(--primary-color); }
+.site-service-card__body { padding: 22px 28px 28px; }
+.site-service-card__body h4 { margin-bottom: 10px; }
+.site-service-card__body p { margin: 0; }
+.site-service-card__category { display: block; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--primary-color); margin-bottom: 6px; }
+
+/* Testimonials without photo: initials */
+.site-initials { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--primary-color); color: #fff; font-size: 22px; font-weight: 600; flex-shrink: 0; }
+
+/* « À propos » with a single photo: the template's 400px pillar is meant to sit beside photo 2 */
+.luxivo-about_one .luxivo-image-box.site-about--single .luxivo-experience-box { height: auto; border-radius: 30px; }
+@media (min-width: 768px) {
+    .luxivo-about_one .luxivo-image-box.site-about--single .luxivo-experience-box { bottom: 30px; right: 30px; }
+}
+
+/* Home banner: the template's 96 % overlay hid the photo — lighter gradient, darker on the text side */
+.luxivo-hero_one:after { background: linear-gradient(90deg, rgba(22, 25, 33, .62) 0%, rgba(22, 25, 33, .42) 55%, rgba(22, 25, 33, .3) 100%); }
+.luxivo-hero_one .hero-content h1, .luxivo-hero_one .text-box p { text-shadow: 0 2px 14px rgba(0, 0, 0, .45); }
+@media (max-width: 991.98px) {
+    .luxivo-hero_one:after { background: rgba(22, 25, 33, .5); }
+}

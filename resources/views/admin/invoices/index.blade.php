@@ -43,7 +43,7 @@
                     <tr>
                         <td>{{ $invoice->number }}</td>
                         <td>{{ $invoice->reservation?->guest?->fullName() }}</td>
-                        <td><x-file-badge :file="$invoice->reservation" :link="true" /></td>
+                        <td><x-admin::file-badge :file="$invoice->reservation" :link="true" /></td>
                         <td>{{ $invoice->issued_at->format('d/m/Y') }}</td>
                         <td>{{ number_format((float) $invoice->amount, 0, ',', ' ') }} FCFA</td>
                         <td><span class="badge bg-{{ $invoice->status->getColor() }}">{{ $invoice->status->getLabel() }}</span></td>

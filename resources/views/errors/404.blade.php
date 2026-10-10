@@ -1,10 +1,10 @@
-@extends('layouts.hotel')
+@extends('site.layouts.app')
 
 @section('title', "Page introuvable - Hôtel Evasion")
 
 @section('content')
 
-<x-page-hero title="404" subtitle="Page introuvable, mais nous allons vous aider à vous y retrouver." breadcrumb="404" />
+<x-site::page-hero title="404" subtitle="Page introuvable, mais nous allons vous aider à vous y retrouver." breadcrumb="404" />
 
 <section class="luxivo-error-sec pt-120 pb-120">
     <div class="container">

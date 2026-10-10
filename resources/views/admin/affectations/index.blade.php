@@ -11,7 +11,7 @@
 
     <div class="admin-page-header">
         <div>
-            <h1><x-kind-icon kind="affectation" />Affectations</h1>
+            <h1><x-admin::kind-icon kind="affectation" />Affectations</h1>
             <div class="dash-subtitle">Séjours en cours et passés. Pour installer un client, cliquez sur une chambre libre du tableau des chambres.</div>
         </div>
         @can('rooms.view')

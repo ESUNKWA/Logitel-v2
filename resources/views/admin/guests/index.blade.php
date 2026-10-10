@@ -31,7 +31,18 @@
             <tbody>
                 @forelse ($guests as $guest)
                     <tr>
-                        <td>{{ $guest->fullName() }}</td>
+                        <td>
+                            @if ($guest->isCompany())
+                                <i class="far fa-building text-muted me-1" title="Personne morale"></i>
+                            @endif
+                            {{ $guest->fullName() }}
+                            @if ($guest->contactName())
+                                <div class="small text-muted">Contact : {{ $guest->contactName() }}</div>
+                            @endif
+                            @if ($guest->isCompany() && $guest->tax_id)
+                                <div class="small text-muted">RCCM / NCC : {{ $guest->tax_id }}</div>
+                            @endif
+                        </td>
                         <td>{{ $guest->phone }}</td>
                         <td>{{ $guest->email ?: '—' }}</td>
                         <td class="text-center">{{ $guest->stays_count }}</td>

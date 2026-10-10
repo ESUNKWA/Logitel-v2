@@ -93,6 +93,14 @@
 
             <hr class="sep">
             <div class="row"><span>Client</span><span class="strong">{{ $reservation->guest?->fullName() }}</span></div>
+            @if ($reservation->guest?->isCompany())
+                @if ($reservation->guest->tax_id)
+                    <div class="row"><span>RCCM / NCC</span><span>{{ $reservation->guest->tax_id }}</span></div>
+                @endif
+                @if ($reservation->guest->contactName())
+                    <div class="row"><span>Contact</span><span>{{ $reservation->guest->contactName() }}</span></div>
+                @endif
+            @endif
             @if ($reservation->guest?->phone)
                 <div class="row"><span>Tél.</span><span>{{ $reservation->guest->phone }}</span></div>
             @endif

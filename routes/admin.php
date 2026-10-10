@@ -1,5 +1,11 @@
 <?php
 
+/*
+ * The management APPLICATION (the public website lives in routes/site.php).
+ * Views in resources/views/admin, assets in public/admin, controllers in App\Http\Controllers\Admin.
+ * Under /admin on a shared address, or at the root of its own sub-domain (config/routing.php).
+ */
+
 use App\Http\Controllers\Admin\AffectationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
@@ -18,6 +24,8 @@ use App\Http\Controllers\Admin\RoomAssignmentController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\RoomTypeController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\Site\HomeContentController;
+use App\Http\Controllers\Admin\Site\ServiceController;
 use App\Http\Controllers\Admin\StayRequestController;
 use App\Http\Controllers\Admin\UiModeController;
 use App\Http\Controllers\Admin\UserController;
@@ -30,7 +38,7 @@ use Illuminate\Support\Facades\Route;
  * App\Enums\Permission), except the few listed in PermissionTest::UNGUARDED_ROUTES.
  * That test fails if a new route is added without one.
  */
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_prefix'))->name('admin.')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('login.attempt');
 
@@ -104,6 +112,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::resource('users', UserController::class)->except(['show', 'destroy'])->middleware('can:users.manage');
         Route::resource('roles', RoleController::class)->except(['show'])->middleware('can:roles.manage');
+
+        // « Site web »: content of the public website managed from here.
+        Route::get('/site/accueil', [HomeContentController::class, 'edit'])->middleware('can:site.manage')->name('site.home.edit');
+        Route::put('/site/accueil', [HomeContentController::class, 'update'])->middleware('can:site.manage')->name('site.home.update');
+        Route::resource('site/services', ServiceController::class)->except(['show'])->middleware('can:site.manage')
+            ->names('site.services')->parameters(['services' => 'service']);
 
         Route::get('/hotel', [HotelInfoController::class, 'edit'])->middleware('can:settings.manage')->name('hotel.edit');
         Route::put('/hotel', [HotelInfoController::class, 'update'])->middleware('can:settings.manage')->name('hotel.update');

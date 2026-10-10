@@ -74,7 +74,7 @@
                         </tr>
                     @endif
                     <tr>
-                        <td>{{ $room->number }}</td>
+                        <td>{{ $room->number }}@if ($room->isPubliclyVisible()) <a href="{{ $room->publicUrl() }}" target="_blank" rel="noopener" class="badge bg-success text-decoration-none ms-1" title="Visible sur le site — ouvrir la page">Publiée <i class="fas fa-external-link-alt"></i></a>@endif</td>
                         <td>{{ $room->roomType?->name }}</td>
                         <td>{{ $room->floor ?: '—' }}</td>
                         @php($stay = $room->currentStay ?? $room->pendingArrival)
