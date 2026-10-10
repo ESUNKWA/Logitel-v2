@@ -165,6 +165,9 @@
                         <td class="text-nowrap">{{ $stay->adults }} ad.@if ($stay->children) · {{ $stay->children }} enf.@endif</td>
                         <td class="text-nowrap">
                             <strong>{{ $fcfa($stay->total_amount) }} FCFA</strong>
+                            @if ($stay->hasDiscount())
+                                <div class="small text-success" title="{{ $stay->discountLabel() }}">remise − {{ $fcfa($stay->discount_amount) }}</div>
+                            @endif
                             <div class="small text-muted">encaissé {{ $fcfa($paidAmount) }}@if ($remaining > 0) · <span class="text-danger">reste {{ $fcfa($remaining) }}</span>@endif</div>
                             @if ($stay->invoice)
                                 <span class="badge bg-{{ $stay->invoice->status->getColor() }}">{{ $stay->invoice->status->getLabel() }}</span>

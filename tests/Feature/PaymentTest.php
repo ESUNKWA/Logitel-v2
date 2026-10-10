@@ -214,10 +214,13 @@ class PaymentTest extends TestCase
 
         $this->actingAs(User::factory()->create())->post("/admin/rooms/{$room->id}/assign", [
             'new_first_name' => 'Awa', 'new_last_name' => 'Koné', 'new_phone' => '0102',
-            'pricing_mode' => 'heure', 'duration' => 1, 'unit_rate' => 0, 'adults' => 1, 'children' => 0,
+            'pricing_mode' => 'heure', 'duration' => 1, 'adults' => 1, 'children' => 0,
+            // The rate can't be lowered any more: a free stay is a 100 % discount.
+            'discount_type' => 'pourcentage', 'discount_value' => 100, 'discount_reason' => 'Geste commercial',
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(1, Reservation::count());
+        $this->assertSame('0.00', (string) Reservation::sole()->total_amount);
     }
 
     public function test_overpayment_at_assignment_cancels_the_whole_assignment(): void

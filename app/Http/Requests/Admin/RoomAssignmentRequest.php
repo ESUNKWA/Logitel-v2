@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\PricingMode;
+use App\Http\Requests\Admin\Concerns\ValidatesDiscount;
 use App\Http\Requests\Admin\Concerns\ValidatesPaymentLines;
 use App\Models\Room;
 use Illuminate\Foundation\Http\FormRequest;
@@ -12,11 +13,13 @@ use Illuminate\Validation\Validator;
 
 /**
  * An "affectation": the guest moves in now. The arrival is the server's current time (never
- * submitted); the client picks the pricing mode, the duration in that mode's unit and the rate
- * (pre-filled from the room type, editable for discounts/negotiated prices).
+ * submitted); staff pick the pricing mode and the duration in that mode's unit. The rate is
+ * always the room type's (not editable — client request); a reduction goes through the
+ * optional discount (amount or percentage), so it stays visible and traced.
  */
 class RoomAssignmentRequest extends FormRequest
 {
+    use ValidatesDiscount;
     use ValidatesPaymentLines;
 
     protected function prepareForValidation(): void
@@ -51,9 +54,9 @@ class RoomAssignmentRequest extends FormRequest
             'new_phone' => ['nullable', 'string', 'max:50'],
             'pricing_mode' => ['required', new Enum(PricingMode::class)],
             'duration' => ['required', 'integer', 'min:1', 'max:365'],
-            'unit_rate' => ['required', 'numeric', 'min:0', 'max:99999999'],
             'adults' => ['required', 'integer', 'min:1'],
             'children' => ['required', 'integer', 'min:0'],
+            ...$this->discountRules(),
             // An affectation is paid in full at check-in (one or several methods); checked in after().
             ...$this->paymentLineRules(required: false),
         ];
@@ -72,12 +75,17 @@ class RoomAssignmentRequest extends FormRequest
 
                 if ($mode->rateFor($room->roomType) === null) {
                     $validator->errors()->add('pricing_mode', "Le mode « {$mode->getLabel()} » n'est pas proposé pour ce type de chambre (aucun tarif défini).");
+
+                    return;
                 }
 
-                // Nothing is billed yet: the due amount is the stay's total (rate × duration), and it
-                // must be cashed in full — no more, no less (a free stay needs no payment).
-                if (is_numeric($this->input('unit_rate')) && is_numeric($this->input('duration'))) {
-                    $total = bcmul((string) $this->input('unit_rate'), (string) (int) $this->input('duration'), 2);
+                // Nothing is billed yet: the due amount is the stay's total (room type rate ×
+                // duration − discount), and it must be cashed in full — no more, no less (a free
+                // stay needs no payment).
+                if (is_numeric($this->input('duration'))) {
+                    $subtotal = bcmul($this->unitRate(), (string) (int) $this->input('duration'), 2);
+                    $this->checkDiscount($validator, $subtotal);
+                    $total = $this->totalAfterDiscount($subtotal);
                     $this->checkNotAboveDue($validator, $total);
                     $this->checkCashReceivedEntered($validator);
 
@@ -103,6 +111,14 @@ class RoomAssignmentRequest extends FormRequest
         $room = $this->route('room');
 
         return $room instanceof Room ? $room : null;
+    }
+
+    /**
+     * The room type's rate for the chosen mode (the form's rate field is display only).
+     */
+    public function unitRate(): string
+    {
+        return (string) ($this->pricingMode()?->rateFor($this->targetRoom()?->roomType) ?? '0');
     }
 
     public function pricingMode(): ?PricingMode
@@ -138,6 +154,7 @@ class RoomAssignmentRequest extends FormRequest
             'pricing_mode' => 'mode',
             'duration' => 'durée',
             'unit_rate' => 'tarif',
+            ...$this->discountAttributeNames(),
             'new_first_name' => 'prénom du client',
             'new_last_name' => 'nom du client',
             'new_phone' => 'téléphone du client',

@@ -172,7 +172,7 @@ class AffectationController extends Controller
     {
         abort_unless($affectation->isStay(), 404);
 
-        $affectation->load(['guest', 'room.roomType', 'invoice.payments', 'creator', 'checkedInBy', 'checkedOutBy', 'cancelledBy', 'stayRequest']);
+        $affectation->load(['guest', 'room.roomType', 'invoice.payments', 'creator', 'checkedInBy', 'checkedOutBy', 'cancelledBy', 'stayRequest', 'discountedBy']);
 
         return view('admin.affectations.show', ['affectation' => $affectation]);
     }
@@ -187,7 +187,7 @@ class AffectationController extends Controller
             [, $end] = $affectation->pricing_mode->resolve($affectation->check_in, (int) $request->validated('duration'));
             Room::lockAvailable($affectation->room_id, $affectation->check_in, $end, $affectation->id, 'duration');
 
-            $affectation->update($request->validated());
+            $affectation->update($request->stayAttributes());
         });
 
         return redirect()

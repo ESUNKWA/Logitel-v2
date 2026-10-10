@@ -209,9 +209,9 @@
 
     {{-- Room assignment modal, shared by every clickable room card (see public/js/admin.js) --}}
     <div class="modal fade" id="assignRoomModal" tabindex="-1" aria-hidden="true" data-reopen-room="{{ $reopenRoomId }}">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
             <div class="modal-content">
-                <form method="POST" action="">
+                <form method="POST" action="" class="modal-form">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title" data-room-label>Affecter une chambre</h5>
@@ -310,8 +310,11 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label" for="assign-rate">Tarif <span data-rate-unit></span> (FCFA)</label>
-                                <input type="text" inputmode="numeric" autocomplete="off" data-money class="form-control" id="assign-rate" name="unit_rate" value="{{ old('unit_rate') }}" data-unit-rate-input required>
-                                <div class="form-text">Pré-rempli avec le tarif du type de chambre, modifiable (remise, prix négocié).</div>
+                                <input type="text" class="form-control rate-locked" id="assign-rate" value="" data-money data-unit-rate-input readonly tabindex="-1">
+                                <div class="form-text">Tarif du type de chambre (non modifiable). Pour une réduction, utilisez la remise.</div>
+                            </div>
+                            <div class="col-12">
+                                @include('admin.partials._discount-fields', ['idPrefix' => 'assign'])
                             </div>
                             <div class="col-12">
                                 <div class="alert alert-primary mb-0 py-3 fs-6" data-stay-preview>Choisissez un mode.</div>

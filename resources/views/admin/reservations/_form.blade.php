@@ -73,7 +73,8 @@
 
     <div class="col-md-4">
         <label class="form-label" for="unit_rate">Tarif <span data-booking-rate-unit>{{ $mode->rateUnit() }}</span> (FCFA)</label>
-        <input type="text" inputmode="numeric" autocomplete="off" data-money class="form-control" id="unit_rate" name="unit_rate" value="{{ old('unit_rate', $reservation->unit_rate !== null ? number_format((float) $reservation->unit_rate, 0, ',', ' ') : null) }}" data-rate-target data-booking-rate required>
+        <input type="text" class="form-control rate-locked" id="unit_rate" value="{{ $reservation->unit_rate !== null ? number_format((float) $reservation->unit_rate, 0, ',', ' ') : '' }}" data-money data-rate-target data-booking-rate readonly tabindex="-1">
+        <div class="form-text">Tarif du type de chambre (non modifiable).</div>
     </div>
     <div class="col-md-4">
         <label class="form-label" for="adults">Adultes</label>
@@ -82,6 +83,10 @@
     <div class="col-md-4">
         <label class="form-label" for="children">Enfants</label>
         <input type="number" min="0" class="form-control" id="children" name="children" value="{{ old('children', $reservation->children ?? 0) }}" required>
+    </div>
+
+    <div class="col-12">
+        @include('admin.partials._discount-fields', ['file' => $reservation->exists ? $reservation : null, 'idPrefix' => 'booking'])
     </div>
 
     <div class="col-12">

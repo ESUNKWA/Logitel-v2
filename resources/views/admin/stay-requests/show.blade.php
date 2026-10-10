@@ -144,8 +144,11 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="assign-rate">Tarif <span data-rate-unit></span> (FCFA)</label>
-                            <input type="text" inputmode="numeric" autocomplete="off" data-money class="form-control" id="assign-rate" name="unit_rate" value="{{ old('unit_rate', number_format((float) $stayRequest->unit_rate, 0, ',', ' ')) }}" data-unit-rate-input required>
-                            <div class="form-text">Tarif du type de chambre au moment de la demande, modifiable (remise, prix négocié).</div>
+                            <input type="text" class="form-control rate-locked" id="assign-rate" value="{{ number_format((float) $stayRequest->pricing_mode->rateFor($type), 0, ',', ' ') }}" data-money data-unit-rate-input readonly tabindex="-1">
+                            <div class="form-text">Tarif du type de chambre (non modifiable). Pour une réduction, utilisez la remise.</div>
+                        </div>
+                        <div class="col-12">
+                            @include('admin.partials._discount-fields', ['idPrefix' => 'approve'])
                         </div>
                         <div class="col-12">
                             <div class="alert alert-primary mb-0 py-3 fs-6" data-stay-preview>Choisissez un mode.</div>

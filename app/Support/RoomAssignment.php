@@ -57,7 +57,8 @@ class RoomAssignment
                 'adults' => $data['adults'],
                 'children' => $data['children'],
                 'status' => ReservationStatus::Confirmee,
-                'unit_rate' => $data['unit_rate'],
+                'unit_rate' => $request->unitRate(), // the room type's rate, never the submitted one
+                ...$request->discountAttributes(),
                 'origin' => Reservation::ORIGIN_AFFECTATION,
             ]);
 

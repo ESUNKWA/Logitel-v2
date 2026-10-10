@@ -90,8 +90,8 @@ class RoomListTest extends TestCase
             'duration' => $duration,
             'adults' => 1,
             'children' => 0,
-            'unit_rate' => 75000,
-            'payments' => [['method' => 'wave', 'amount' => 75000 * $duration]], // paid in full
+            // paid in full, at the room type's rate (the only one billed)
+            'payments' => [['method' => 'wave', 'amount' => (float) PricingMode::from($mode)->rateFor($room->roomType) * $duration]],
         ])->assertRedirect(route('admin.rooms.board'))->assertSessionHasNoErrors();
     }
 
@@ -137,8 +137,7 @@ class RoomListTest extends TestCase
                 'duration' => 1,
                 'adults' => 1,
                 'children' => 0,
-                'unit_rate' => 75000,
-                'payments' => [['method' => 'wave', 'amount' => 75000]],
+                'payments' => [['method' => 'wave', 'amount' => 5000]], // the type's hourly rate
             ])->assertSessionHasErrors('pricing_mode');
 
             $this->assertSame($status, $room->fresh()->status);

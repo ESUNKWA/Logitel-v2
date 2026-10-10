@@ -188,13 +188,15 @@ class StayRequestTest extends TestCase
         $request = StayRequest::sole();
 
         $this->approve($request, [
-            'pricing_mode' => 'journee', 'duration' => 1, 'unit_rate' => 12000,
+            'pricing_mode' => 'journee', 'duration' => 1,
+            'discount_type' => 'montant', 'discount_value' => 3000,
             'payments' => [['method' => 'orange_money', 'amount' => 12000]],
         ])->assertSessionHasNoErrors();
 
         $stay = Reservation::sole();
         $this->assertSame('journee', $stay->pricing_mode->value);
-        $this->assertSame('12000.00', (string) $stay->total_amount);
+        $this->assertSame('15000.00', (string) $stay->unit_rate); // the room type's day rate
+        $this->assertSame('12000.00', (string) $stay->total_amount); // − 3 000 discount
     }
 
     public function test_an_existing_client_is_recognised_by_phone_unless_told_otherwise(): void

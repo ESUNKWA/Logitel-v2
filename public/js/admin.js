@@ -96,6 +96,47 @@
         return end;
     };
 
+    // --- Discount ("remise", [data-discount]): amount in FCFA or percentage of the subtotal.
+    // Same rule as Reservation::discountFor(): capped at the subtotal, percentage rounded to the franc.
+    var discountAmount = function (scope, subtotal) {
+        var box = scope ? scope.querySelector('[data-discount]') : null;
+        if (!box || subtotal <= 0) {
+            return 0;
+        }
+        var value = moneyValue(box.querySelector('[data-discount-value]'));
+        var amount = box.querySelector('[data-discount-type]').value === 'pourcentage'
+            ? Math.round(subtotal * Math.min(value, 100) / 100)
+            : value;
+        return Math.max(0, Math.min(amount, subtotal));
+    };
+
+    // The server refuses these (typo protection); the preview says so instead of showing 0 FCFA.
+    var discountTooHigh = function (scope, subtotal) {
+        var box = scope ? scope.querySelector('[data-discount]') : null;
+        if (!box) {
+            return false;
+        }
+        var value = moneyValue(box.querySelector('[data-discount-value]'));
+        return box.querySelector('[data-discount-type]').value === 'pourcentage' ? value > 100 : value > subtotal;
+    };
+
+    // "Total : 15 000 FCFA", or "Sous-total 15 000 FCFA − remise 1 500 FCFA = Total : 13 500 FCFA".
+    var totalText = function (subtotal, discount, tooHigh) {
+        if (tooHigh) {
+            return 'Total : ' + formatAmount(subtotal) + ' — ⚠ la remise dépasse le montant du séjour';
+        }
+        return (discount > 0 ? 'Sous-total ' + formatAmount(subtotal) + ' − remise ' + formatAmount(discount) + ' = ' : '')
+            + 'Total : ' + formatAmount(subtotal - discount);
+    };
+
+    var bindDiscount = function (scope, refresh) {
+        var box = scope ? scope.querySelector('[data-discount]') : null;
+        if (box) {
+            box.querySelector('[data-discount-value]').addEventListener('input', refresh);
+            box.querySelector('[data-discount-type]').addEventListener('change', refresh);
+        }
+    };
+
     // --- Room assignment modal (room board) ---
     // Each clickable room card carries data-assign-url / data-room-number / data-room-type and
     // data-hourly-rate / data-night-rate / data-stay-rate (empty = mode not offered for the type).
@@ -132,12 +173,15 @@
         var duration = Math.max(1, parseInt(durationInput.value, 10) || 1);
         var rate = moneyValue(rateInput);
         var departure = departureFor(checked.value, new Date(), duration, config);
+        var subtotal = rate * duration;
+        var tooHigh = discountTooHigh(stayScope, subtotal);
+        var discount = tooHigh ? 0 : discountAmount(stayScope, subtotal);
 
-        preview.textContent = 'Départ prévu : ' + formatDateTime(departure) + ' — Total : ' + formatAmount(rate * duration);
+        preview.textContent = 'Départ prévu : ' + formatDateTime(departure) + ' — ' + totalText(subtotal, discount, tooHigh);
 
         var paymentBox = stayScope.querySelector('[data-payment-lines]');
         if (paymentBox && paymentBox.paymentLines) {
-            paymentBox.paymentLines.setDue(rate * duration);
+            paymentBox.paymentLines.setDue(subtotal - discount);
         }
     };
 
@@ -156,7 +200,7 @@
             radio.addEventListener('change', function () { selectMode(radio); });
         });
         stayForm.querySelector('[data-duration-input]').addEventListener('input', refreshStayPreview);
-        stayForm.querySelector('[data-unit-rate-input]').addEventListener('input', refreshStayPreview);
+        bindDiscount(stayScope, refreshStayPreview);
     }
 
     // restore = true when reopening after a failed submission: the fields already hold the user's
@@ -177,6 +221,14 @@
         var assignPayments = assignModal.querySelector('[data-payment-lines]');
         if (!restore && assignPayments && assignPayments.paymentLines) {
             assignPayments.paymentLines.reset();
+        }
+
+        // A new room starts without a discount (after a failed submission it's kept).
+        var discountBox = assignModal.querySelector('[data-discount]');
+        if (!restore && discountBox) {
+            discountBox.querySelector('[data-discount-value]').value = '';
+            discountBox.querySelector('[data-discount-type]').value = 'montant';
+            discountBox.querySelector('[data-discount-reason]').value = '';
         }
 
         assignModal.querySelector('[data-room-label]').textContent =
@@ -204,8 +256,7 @@
             });
 
             if (kept) {
-                kept.checked = true; // keep the submitted mode, duration and (possibly negotiated) rate
-                refreshStayPreview();
+                selectMode(kept); // keep the submitted mode and duration; the rate is the room type's
             } else {
                 stayForm.querySelector('[data-duration-input]').value = 1;
                 var initial = preferred || firstEnabled;
@@ -1030,13 +1081,16 @@
 
             var duration = Math.max(1, parseInt(bookingDuration.value, 10) || 1);
             var rate = moneyValue(bookingRate);
-            var total = rate * duration;
+            var subtotal = rate * duration;
+            var tooHigh = discountTooHigh(bookingForm, subtotal);
+            var discount = tooHigh ? 0 : discountAmount(bookingForm, subtotal);
+            var total = subtotal - discount;
 
             if (bookingCheckIn.value) {
                 var start = new Date(mode === 'nuitee' ? bookingCheckIn.value + 'T' + bookingConfig.nightFrom : bookingCheckIn.value);
                 bookingPreview.textContent = 'Arrivée : ' + formatDateTime(start)
                     + ' — Départ prévu : ' + formatDateTime(departureFor(mode, start, duration, bookingConfig))
-                    + ' — Total : ' + formatAmount(total);
+                    + ' — ' + totalText(subtotal, discount, tooHigh);
             } else {
                 bookingPreview.textContent = "Renseignez l'arrivée.";
             }
@@ -1053,6 +1107,8 @@
                 refreshBooking();
             });
         });
+        bindDiscount(bookingForm, refreshBooking);
+
         [bookingCheckIn, bookingDuration, bookingRate].forEach(function (input) {
             input.addEventListener('input', refreshBooking);
             input.addEventListener('change', refreshBooking);

@@ -156,14 +156,26 @@ class StayPricingTest extends TestCase
         $this->assertSame(0, Reservation::count());
     }
 
-    public function test_negotiated_rate_is_billed(): void
+    public function test_the_rate_is_always_the_room_types_and_a_reduction_is_a_discount(): void
     {
         $this->travelTo('2026-10-07 10:00:00');
         $room = $this->room();
 
-        $this->assign($room, 'heure', 2, rate: 4000)->assertSessionHasNoErrors();
+        // A different submitted rate is ignored (the rate field isn't editable any more)…
+        $this->assign($room, 'heure', 2, rate: 4000)->assertSessionHasErrors('payments'); // 8 000 paid, 10 000 due
+        $this->assertSame(0, Reservation::count());
 
-        $this->assertSame('8000.00', $room->reservations()->firstOrFail()->total_amount);
+        // …a reduction goes through the discount instead: 10 000 − 2 000 = 8 000.
+        $this->actingAs(User::factory()->create())->post("/admin/rooms/{$room->id}/assign", [
+            'new_first_name' => 'Awa', 'new_last_name' => 'Koné', 'new_phone' => '0102',
+            'pricing_mode' => 'heure', 'duration' => 2, 'adults' => 1, 'children' => 0,
+            'discount_type' => 'montant', 'discount_value' => 2000,
+            'payments' => [['method' => 'wave', 'amount' => 8000]],
+        ])->assertSessionHasNoErrors();
+
+        $stay = $room->reservations()->firstOrFail();
+        $this->assertSame('5000.00', (string) $stay->unit_rate);
+        $this->assertSame('8000.00', (string) $stay->total_amount);
     }
 
     public function test_departure_and_total_are_never_taken_from_input(): void

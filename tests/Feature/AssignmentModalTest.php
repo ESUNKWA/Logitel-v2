@@ -47,7 +47,7 @@ class AssignmentModalTest extends TestCase
     {
         $room = $this->room();
 
-        $this->submit($room, ['new_first_name' => 'Awa', 'new_phone' => str_repeat('7', 60), 'payments' => [['method' => 'wave', 'amount' => 5000]]])
+        $this->submit($room, ['new_first_name' => 'Awa', 'new_phone' => str_repeat('7', 60), 'discount_value' => '1000', 'discount_reason' => 'Fidélité', 'payments' => [['method' => 'wave', 'amount' => 5000]]])
             ->assertOk()
             ->assertSee('data-reopen-room="'.$room->id.'"', false)
             // inline, under the field
@@ -56,7 +56,10 @@ class AssignmentModalTest extends TestCase
             // what the user typed is still there
             ->assertSee('name="new_first_name" value="Awa"', false)
             ->assertSee('name="duration" value="3"', false)
-            ->assertSee('name="unit_rate" value="4500"', false)
+            ->assertSee('data-unit-rate-input readonly', false) // the rate is the room type's, not an input
+            ->assertSee('name="discount_value" placeholder="0"', false)
+            ->assertSee('value="1000"', false)
+            ->assertSee('value="Fidélité"', false)
             ->assertSee('id="mode-heure" value="heure" data-mode-option checked', false)
             ->assertSee('name="payments[0][amount]" value="5000"', false)
             // not duplicated in a page-level alert behind the modal

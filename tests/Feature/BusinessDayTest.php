@@ -111,8 +111,8 @@ class BusinessDayTest extends TestCase
         $room = Room::factory()->create(['status' => RoomStatus::Disponible]);
         $this->actingAs(User::factory()->create())->post("/admin/rooms/{$room->id}/assign", [
             'new_first_name' => 'Ama', 'new_last_name' => 'Kouassi', 'new_phone' => '0101',
-            'pricing_mode' => 'nuitee', 'duration' => 1, 'unit_rate' => 40000, 'adults' => 1, 'children' => 0,
-            'payments' => [['method' => 'wave', 'amount' => 40000]],
+            'pricing_mode' => 'nuitee', 'duration' => 1, 'adults' => 1, 'children' => 0,
+            'payments' => [['method' => 'wave', 'amount' => 75000]], // the room type's night rate
         ])->assertSessionHasNoErrors();
         $this->assertSame('2026-10-08 11:00', $room->reservations()->firstOrFail()->check_out->format('Y-m-d H:i'));
     }

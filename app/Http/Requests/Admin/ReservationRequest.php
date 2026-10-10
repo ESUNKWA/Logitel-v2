@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
+use App\Http\Requests\Admin\Concerns\ValidatesDiscount;
 use App\Http\Requests\Admin\Concerns\ValidatesPaymentLines;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -20,10 +21,12 @@ use Illuminate\Validation\Validator;
  * a nuitée arrival is a date — the night starts at 22:00). Arrivals now or in the past are
  * affectations, made from the room board, not réservations. An optional deposit ("acompte")
  * can be taken when booking. The legacy date-based shape (check_in → check_out, as nuitées)
- * is still accepted: the duration is then inferred.
+ * is still accepted: the duration is then inferred. The rate is the room type's (not editable),
+ * kept as booked when neither the room nor the mode changes; reductions are discounts.
  */
 class ReservationRequest extends FormRequest
 {
+    use ValidatesDiscount;
     use ValidatesPaymentLines;
 
     public function authorize(): bool
@@ -52,9 +55,9 @@ class ReservationRequest extends FormRequest
             'adults' => ['required', 'integer', 'min:1'],
             'children' => ['required', 'integer', 'min:0'],
             'status' => ['required', Rule::in([ReservationStatus::EnAttente->value, ReservationStatus::Confirmee->value])],
-            'unit_rate' => ['required', 'numeric', 'min:0', 'max:99999999'],
             'room_id' => ['required', 'exists:rooms,id', new RoomIsAvailableForDates($reservation?->id)],
             'notes' => ['nullable', 'string'],
+            ...$this->discountRules(),
             // Deposit (acompte) at booking only; later payments go through the invoice.
             ...$this->paymentLineRules(required: false),
         ];
@@ -64,7 +67,7 @@ class ReservationRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
-                if ($validator->errors()->hasAny(['check_in', 'duration', 'check_out', 'unit_rate', 'room_id', 'pricing_mode'])) {
+                if ($validator->errors()->hasAny(['check_in', 'duration', 'check_out', 'room_id', 'pricing_mode'])) {
                     return;
                 }
 
@@ -85,9 +88,13 @@ class ReservationRequest extends FormRequest
                 }
                 if ($room && $mode->rateFor($room->roomType) === null) {
                     $validator->errors()->add('pricing_mode', "Le mode « {$mode->getLabel()} » n'est pas proposé pour ce type de chambre (aucun tarif défini).");
+
+                    return;
                 }
 
-                $total = bcmul((string) $this->input('unit_rate'), (string) $duration, 2);
+                $subtotal = bcmul($this->unitRate(), (string) $duration, 2);
+                $this->checkDiscount($validator, $subtotal);
+                $total = $this->totalAfterDiscount($subtotal);
 
                 if ($existing instanceof Reservation) {
                     $paid = $existing->invoice?->amountPaid() ?? '0';
@@ -102,6 +109,22 @@ class ReservationRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    /**
+     * The rate billed: unchanged for an existing booking keeping its room and mode (its price
+     * stays the one agreed when booking), otherwise the room type's current rate for the mode.
+     */
+    public function unitRate(): string
+    {
+        $existing = $this->route('reservation');
+        $mode = $this->pricingMode();
+
+        if ($existing instanceof Reservation && (int) $existing->room_id === (int) $this->input('room_id') && $existing->pricing_mode === $mode) {
+            return (string) $existing->unit_rate;
+        }
+
+        return (string) ($mode->rateFor(Room::with('roomType')->find($this->input('room_id'))?->roomType) ?? '0');
     }
 
     public function pricingMode(): PricingMode
@@ -131,9 +154,9 @@ class ReservationRequest extends FormRequest
     {
         [$start, , $duration] = $this->period();
 
-        $data = collect($this->validated())->except(['check_out', 'payments'])->all();
+        $data = collect($this->validated())->except(['check_out', 'payments', 'discount_type', 'discount_value', 'discount_reason'])->all();
 
-        return [...$data, 'pricing_mode' => $this->pricingMode(), 'check_in' => $start, 'duration' => $duration];
+        return [...$data, ...$this->discountAttributes(), 'unit_rate' => $this->unitRate(), 'pricing_mode' => $this->pricingMode(), 'check_in' => $start, 'duration' => $duration];
     }
 
     public function messages(): array
@@ -152,6 +175,7 @@ class ReservationRequest extends FormRequest
             'duration' => 'durée',
             'unit_rate' => 'tarif',
             'check_in' => 'arrivée',
+            ...$this->discountAttributeNames(),
         ];
     }
 }

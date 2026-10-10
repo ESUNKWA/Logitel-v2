@@ -49,7 +49,14 @@ class Reservation extends Model
         'origin',
         'total_amount',
         'notes',
+        'discount_type',
+        'discount_value',
+        'discount_reason',
     ];
+
+    public const DISCOUNT_AMOUNT = 'montant';
+
+    public const DISCOUNT_PERCENT = 'pourcentage';
 
     protected function casts(): array
     {
@@ -66,6 +73,9 @@ class Reservation extends Model
             'cancelled_at' => 'datetime',
             'is_guaranteed' => 'boolean',
             'total_amount' => 'decimal:2',
+            'discount_value' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'discount_at' => 'datetime',
         ];
     }
 
@@ -169,6 +179,55 @@ class Reservation extends Model
             ->whereNull('overdue_acknowledged_at');
     }
 
+    /**
+     * The discount in FCFA for a subtotal: a percentage (capped at 100 %, rounded to the whole
+     * franc) or an amount (capped at the subtotal), so the total never goes below zero.
+     */
+    public static function discountFor(string $subtotal, ?string $type, string $value): string
+    {
+        if (bccomp($value, '0', 2) <= 0 || bccomp($subtotal, '0', 2) <= 0) {
+            return '0.00';
+        }
+
+        $discount = match ($type) {
+            self::DISCOUNT_PERCENT => number_format(round((float) $subtotal * min((float) $value, 100) / 100), 2, '.', ''),
+            self::DISCOUNT_AMOUNT => $value,
+            default => '0.00',
+        };
+
+        return bccomp($discount, $subtotal, 2) > 0 ? bcadd($subtotal, '0', 2) : bcadd($discount, '0', 2);
+    }
+
+    /**
+     * unit_rate × duration, before the discount.
+     */
+    public function subtotal(): string
+    {
+        return bcmul((string) $this->unit_rate, (string) $this->duration, 2);
+    }
+
+    public function hasDiscount(): bool
+    {
+        return bccomp((string) $this->discount_amount, '0', 2) > 0;
+    }
+
+    /**
+     * "10 %" or "2 000 FCFA" (+ the reason), for lists, invoices and receipts.
+     */
+    public function discountLabel(bool $withReason = true): string
+    {
+        $label = $this->discount_type === self::DISCOUNT_PERCENT
+            ? rtrim(rtrim(number_format((float) $this->discount_value, 2, ',', ' '), '0'), ',').' %'
+            : number_format((float) $this->discount_amount, 0, ',', ' ').' FCFA';
+
+        return $label.($withReason && $this->discount_reason ? ' — '.$this->discount_reason : '');
+    }
+
+    public function discountedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'discount_by');
+    }
+
     public function checkedInBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
@@ -245,8 +304,24 @@ class Reservation extends Model
                 $reservation->overdue_acknowledged_by = null;
             }
 
+            // Total = subtotal − discount, always derived (never trusted from input).
             if ($reservation->unit_rate !== null) {
-                $reservation->total_amount = bcmul((string) $reservation->unit_rate, (string) $reservation->duration, 2);
+                $subtotal = bcmul((string) $reservation->unit_rate, (string) $reservation->duration, 2);
+                $discount = self::discountFor($subtotal, $reservation->discount_type, (string) ($reservation->discount_value ?? '0'));
+
+                if (bccomp($discount, '0', 2) <= 0) {
+                    $reservation->discount_type = null;
+                    $reservation->discount_value = 0;
+                }
+                $reservation->discount_amount = $discount;
+                $reservation->total_amount = bcsub($subtotal, $discount, 2);
+
+                // Who granted the discount, and when (re-stamped when it changes; never from input).
+                if ($reservation->isDirty(['discount_type', 'discount_value', 'discount_amount'])) {
+                    $granted = bccomp($discount, '0', 2) > 0;
+                    $reservation->discount_by = $granted ? (Auth::id() ?? $reservation->discount_by) : null;
+                    $reservation->discount_at = $granted ? now() : null;
+                }
             }
         });
 

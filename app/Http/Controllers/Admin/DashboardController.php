@@ -143,6 +143,12 @@ class DashboardController extends Controller
                 ->where('check_in', '<', $monthEnd)
                 ->where('status', '!=', ReservationStatus::Annulee)
                 ->sum('total_amount'),
+            // Discounts granted on those same stays (the figure above is after discounts).
+            'monthlyDiscounts' => (float) Reservation::query()
+                ->where('check_in', '>=', $monthStart)
+                ->where('check_in', '<', $monthEnd)
+                ->where('status', '!=', ReservationStatus::Annulee)
+                ->sum('discount_amount'),
             'outstandingAmount' => (float) $openInvoices->sum(fn (Invoice $invoice) => max(0, (float) $invoice->amount - (float) $invoice->payments_sum_amount)),
             'outstandingCount' => $openInvoices->count(),
             'dailyRevenue' => $this->dailyRevenue($today, $dayEnd),

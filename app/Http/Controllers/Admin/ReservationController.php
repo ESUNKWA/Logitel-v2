@@ -108,7 +108,7 @@ class ReservationController extends Controller
             'currentRoomOption' => $reservation->room ? [
                 'id' => $reservation->room->id,
                 'label' => "N°{$reservation->room->number} — {$reservation->room->roomType?->name}",
-                'rate' => $reservation->pricing_mode->rateFor($reservation->room->roomType),
+                'rate' => $reservation->unit_rate, // the rate agreed when booking (kept while room and mode don't change)
             ] : null,
         ]);
     }

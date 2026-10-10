@@ -2567,3 +2567,41 @@ a.home-tile:focus-visible { outline: 3px solid rgba(var(--tile-rgb), .4); outlin
 @media (prefers-reduced-motion: reduce) {
     .rate-grid > summary::after { transition: none; }
 }
+
+/* ------------------------------------------------------------------ Discount ("remise") */
+.discount-fields__type { max-width: 92px; flex: 0 0 auto; }
+.rate-locked { background: var(--ek-bg) !important; color: var(--ek-ink); font-weight: 600; }
+
+/* ------------------------------------------------------------------ Modals whose header/body/footer sit inside a <form>
+   (assignment modal): Bootstrap's scrollable modal expects them as direct children of
+   .modal-content, so the form must pass the flex layout on — otherwise the body isn't height
+   constrained, the overflow is clipped and nothing below the fold can be reached on phones. */
+.modal-dialog-scrollable .modal-content > form.modal-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+.modal-dialog-scrollable .modal-content > form.modal-form > .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.modal-content > form.modal-form > .modal-header,
+.modal-content > form.modal-form > .modal-footer { flex-shrink: 0; }
+
+@media (max-width: 575.98px) {
+    /* Full screen on phones: more room to type, the "Affecter" button always visible at the bottom. */
+    .modal-fullscreen-sm-down .modal-content > form.modal-form { height: 100%; }
+    .modal-fullscreen-sm-down .modal-body.p-4 { padding: 16px !important; }
+    .modal-fullscreen-sm-down .modal-footer { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+    .modal-fullscreen-sm-down .modal-footer .btn { flex: 1 1 0; }
+    .modal-fullscreen-sm-down .btn-group { flex-wrap: wrap; }
+    .modal-fullscreen-sm-down .btn-group > .btn { flex: 1 1 45%; border-radius: 8px !important; margin: 2px; }
+}

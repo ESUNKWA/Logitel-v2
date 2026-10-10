@@ -31,6 +31,12 @@
                     @if ($invoice->reservation)
                         <dt class="col-5">Formule</dt>
                         <dd class="col-7">{{ $invoice->reservation->pricing_mode->getLabel() }} : {{ $invoice->reservation->billingLabel() }}</dd>
+                        @if ($invoice->reservation->hasDiscount())
+                            <dt class="col-5">Sous-total</dt>
+                            <dd class="col-7">{{ number_format((float) $invoice->reservation->subtotal(), 0, ',', ' ') }} FCFA</dd>
+                            <dt class="col-5">Remise</dt>
+                            <dd class="col-7"><span class="text-success fw-semibold">− {{ number_format((float) $invoice->reservation->discount_amount, 0, ',', ' ') }} FCFA</span> <span class="small text-muted">({{ $invoice->reservation->discountLabel() }})</span></dd>
+                        @endif
                     @endif
                     <dt class="col-5">Émise le</dt>
                     <dd class="col-7">{{ $invoice->issued_at->format('d/m/Y') }}</dd>

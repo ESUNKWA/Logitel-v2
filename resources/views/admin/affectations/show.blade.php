@@ -55,6 +55,10 @@
                     <dd class="col-7">{{ $affectation->guest?->fullName() }}@if ($affectation->guest?->phone) — {{ $affectation->guest->phone }}@endif</dd>
                     <dt class="col-5">Formule</dt>
                     <dd class="col-7">{{ $affectation->pricing_mode->getLabel() }} : {{ $affectation->billingLabel() }}</dd>
+                    @if ($affectation->hasDiscount())
+                        <dt class="col-5">Remise</dt>
+                        <dd class="col-7"><span class="text-success fw-semibold">− {{ number_format((float) $affectation->discount_amount, 0, ',', ' ') }} FCFA</span> <span class="small text-muted">({{ $affectation->discountLabel() }}@if ($affectation->discountedBy) · par {{ $affectation->discountedBy->name }}@endif)</span></dd>
+                    @endif
                     <dt class="col-5">Entrée</dt>
                     <dd class="col-7">{{ $affectation->check_in->format('d/m/Y à H\hi') }}</dd>
                     <dt class="col-5">Sortie prévue</dt>
@@ -120,7 +124,10 @@
                                 </div>
                                 <div class="col-sm-6">
                                     <label class="form-label" for="unit_rate">Tarif {{ $affectation->pricing_mode->rateUnit() }} (FCFA)</label>
-                                    <input type="text" inputmode="numeric" autocomplete="off" data-money class="form-control" id="unit_rate" name="unit_rate" value="{{ old('unit_rate', number_format((float) $affectation->unit_rate, 0, ',', ' ')) }}" required>
+                                    <input type="text" class="form-control rate-locked" id="unit_rate" value="{{ number_format((float) $affectation->unit_rate, 0, ',', ' ') }}" readonly tabindex="-1">
+                                </div>
+                                <div class="col-12">
+                                    @include('admin.partials._discount-fields', ['file' => $affectation, 'idPrefix' => 'stay'])
                                 </div>
                                 <div class="col-sm-6">
                                     <label class="form-label" for="adults">Adultes</label>
@@ -135,7 +142,7 @@
                                     <textarea class="form-control" id="notes" name="notes" rows="2">{{ old('notes', $affectation->notes) }}</textarea>
                                 </div>
                             </div>
-                            <p class="text-muted small mt-2 mb-0">L'heure de sortie et le montant sont recalculés automatiquement ; la facture suit.</p>
+                            <p class="text-muted small mt-2 mb-0">L'heure de sortie et le montant sont recalculés automatiquement (une remise en % suit la nouvelle durée) ; la facture suit.</p>
                             <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
                         </form>
                     </div>

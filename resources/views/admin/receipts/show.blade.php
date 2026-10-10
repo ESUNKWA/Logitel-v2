@@ -107,6 +107,13 @@
 
             <hr class="sep">
             <div class="row"><span>{{ $reservation->pricing_mode->durationLabel($reservation->duration) }} × {{ $fcfa($reservation->unit_rate) }}</span><span></span></div>
+            @if ($reservation->hasDiscount())
+                <div class="row"><span>Sous-total</span><span>{{ $fcfa($reservation->subtotal()) }}</span></div>
+                <div class="row"><span>Remise {{ $reservation->discount_type === \App\Models\Reservation::DISCOUNT_PERCENT ? '('.$reservation->discountLabel(false).')' : '' }}</span><span>− {{ $fcfa($reservation->discount_amount) }}</span></div>
+                @if ($reservation->discount_reason)
+                    <div class="row sub"><span>{{ $reservation->discount_reason }}</span><span></span></div>
+                @endif
+            @endif
             <div class="row total"><span>TOTAL</span><span>{{ $fcfa($invoice->amount) }} FCFA</span></div>
 
             @if ($invoice->payments->isNotEmpty())

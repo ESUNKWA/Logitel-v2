@@ -203,7 +203,7 @@ class AffectationReservationSplitTest extends TestCase
         // …but not into the past, nor below the deposit already taken
         $this->actingAs(User::factory()->create())->put("/admin/reservations/{$booking->id}", [...$payload, 'check_in' => '2026-10-09T14:00'])
             ->assertSessionHasErrors('check_in');
-        $this->actingAs(User::factory()->create())->put("/admin/reservations/{$booking->id}", [...$payload, 'check_in' => '2026-10-12T14:00', 'duration' => 1, 'unit_rate' => 1000])
+        $this->actingAs(User::factory()->create())->put("/admin/reservations/{$booking->id}", [...$payload, 'check_in' => '2026-10-12T14:00', 'duration' => 1, 'discount_type' => 'montant', 'discount_value' => 4000]) // 5 000 − 4 000 < 5 000 deposit
             ->assertSessionHasErrors('duration');
 
         // A booking whose whole period is over must be postponed before the guest can be checked in.

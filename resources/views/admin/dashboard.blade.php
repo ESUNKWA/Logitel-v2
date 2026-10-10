@@ -63,7 +63,12 @@
                 <span class="dash-tile__icon dash-tile__icon--primary"><i class="fas fa-file-invoice-dollar"></i></span>
                 <div class="dash-tile__label">Chiffre d'affaires du mois</div>
                 <div class="dash-tile__value">{{ $fcfa($monthlyRevenue) }} <small>FCFA</small></div>
-                <div class="dash-tile__hint">Facturé (séjours commencés ce mois)</div>
+                <div class="dash-tile__hint">
+                    Facturé (séjours commencés ce mois)
+                    @if ($monthlyDiscounts > 0)
+                        , après <span class="text-success fw-semibold">{{ $fcfa($monthlyDiscounts) }} FCFA</span> de remises
+                    @endif
+                </div>
             </div>
             <div class="dash-tile">
                 <span class="dash-tile__icon dash-tile__icon--danger"><i class="fas fa-hand-holding-usd"></i></span>

@@ -77,6 +77,9 @@
                         </td>
                         <td>
                             {{ number_format((float) $reservation->total_amount, 0, ',', ' ') }} FCFA
+                            @if ($reservation->hasDiscount())
+                                <div class="small text-success" title="{{ $reservation->discountLabel() }}">remise − {{ number_format((float) $reservation->discount_amount, 0, ',', ' ') }}</div>
+                            @endif
                             @if ($reservation->invoice && (float) $reservation->invoice->amountPaid() > 0)
                                 <div class="small text-muted">acompte {{ number_format((float) $reservation->invoice->amountPaid(), 0, ',', ' ') }}</div>
                             @endif
