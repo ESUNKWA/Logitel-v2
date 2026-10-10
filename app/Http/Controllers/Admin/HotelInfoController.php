@@ -22,15 +22,18 @@ class HotelInfoController extends Controller
 
     public function update(HotelInfoRequest $request): RedirectResponse
     {
-        $values = collect($request->validated())->except(['logo', 'remove_logo'])->map(fn ($v) => $v ?? '')->all();
+        $values = collect($request->validated())->except(['logo', 'remove_logo', 'login_background', 'remove_login_background'])->map(fn ($v) => $v ?? '')->all();
 
-        // Logo: stored on the public disk under a random name; the old file is removed.
-        if ($request->hasFile('logo') || $request->boolean('remove_logo')) {
-            $old = (string) config('hotel.info.logo');
-            if ($old !== '') {
-                Storage::disk('public')->delete($old);
+        // Images (logo, login page photo): stored on the public disk under a random name; the
+        // previous file is removed when replaced or removed.
+        foreach (['logo' => 'logo', 'login_background' => 'login_background'] as $field => $key) {
+            if ($request->hasFile($field) || $request->boolean('remove_'.$field)) {
+                $old = (string) config("hotel.info.{$key}");
+                if ($old !== '') {
+                    Storage::disk('public')->delete($old);
+                }
+                $values['hotel_'.$key] = $request->hasFile($field) ? $request->file($field)->store('hotel', 'public') : '';
             }
-            $values['hotel_logo'] = $request->hasFile('logo') ? $request->file('logo')->store('hotel', 'public') : '';
         }
 
         HotelSettings::save($values);

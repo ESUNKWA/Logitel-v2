@@ -54,6 +54,9 @@ class HotelInfoRequest extends FormRequest
             // A real, decodable raster image (no SVG: it could carry scripts).
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:1024', 'dimensions:min_width=50,min_height=20,max_width=4000,max_height=4000'],
             'remove_logo' => ['nullable', 'boolean'],
+            // Login page photo: a real raster image, large enough to cover a screen.
+            'login_background' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=800,min_height=450,max_width=8000,max_height=8000'],
+            'remove_login_background' => ['nullable', 'boolean'],
         ];
     }
 
@@ -80,6 +83,7 @@ class HotelInfoRequest extends FormRequest
             'hotel_facebook' => 'page Facebook',
             'hotel_instagram' => 'compte Instagram',
             'logo' => 'logo',
+            'login_background' => 'image de fond de la connexion',
         ];
     }
 

@@ -48,6 +48,27 @@ class HotelInfo
     }
 
     /**
+     * Built-in photo behind the login page (a hotel with its pool at dusk), used until the hotel
+     * uploads its own.
+     */
+    public const DEFAULT_LOGIN_BACKGROUND = 'images/login-default.jpg';
+
+    /**
+     * Photo behind the staff login page: the uploaded one, else the built-in default.
+     */
+    public function loginBackgroundUrl(): string
+    {
+        return $this->hasCustomLoginBackground()
+            ? asset('storage/'.$this->get('login_background'))
+            : asset(self::DEFAULT_LOGIN_BACKGROUND);
+    }
+
+    public function hasCustomLoginBackground(): bool
+    {
+        return $this->get('login_background') !== '';
+    }
+
+    /**
      * Phone numbers to show (main, second), non-empty only.
      *
      * @return list<string>

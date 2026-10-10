@@ -12,7 +12,7 @@
         <link rel="stylesheet" href="{{ asset('assets/css/plugins/bootstrap.min.css') }}">
         <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     </head>
-    <body class="admin-auth-body">
+    <body class="admin-auth-body has-photo" style="--auth-photo: url('{{ $hotelInfo->loginBackgroundUrl() }}')">
         <div class="admin-auth-card">
             <h1 data-initials="{{ $hotelInfo->initials() }}">{{ $hotelInfo->name() }}</h1>
             <p class="text-muted">Gestion hôtelière — accès personnel</p>

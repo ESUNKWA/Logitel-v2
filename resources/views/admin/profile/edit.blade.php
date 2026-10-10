@@ -10,15 +10,31 @@
     <div class="row g-4">
         <div class="col-lg-5">
             <div class="admin-card">
-                <h5>Mon compte</h5>
-                <dl class="row mb-0">
-                    <dt class="col-5">Nom</dt>
-                    <dd class="col-7">{{ $user->name }}</dd>
-                    <dt class="col-5">E-mail</dt>
-                    <dd class="col-7">{{ $user->email }}</dd>
-                    <dt class="col-5">Rôle</dt>
-                    <dd class="col-7">{{ $user->role?->name ?? 'Aucun' }}</dd>
-                </dl>
+                <h5>Mes informations</h5>
+                <form method="POST" action="{{ route('admin.profile.update') }}">
+                    @csrf
+                    @method('PUT')
+                    <div class="mb-3">
+                        <label class="form-label" for="profile-name">Nom</label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="profile-name" name="name" value="{{ old('name', $user->name) }}" maxlength="255" autocomplete="name" required>
+                        @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="profile-email">E-mail de connexion</label>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="profile-email" name="email" value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="email" required>
+                        @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="confirm_password">Mot de passe actuel <span class="text-muted fw-normal">(seulement pour changer l'e-mail)</span></label>
+                        <input type="password" class="form-control @error('confirm_password') is-invalid @enderror" id="confirm_password" name="confirm_password" autocomplete="current-password">
+                        @error('confirm_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <dl class="row mb-3 small">
+                        <dt class="col-5 text-muted fw-normal">Rôle</dt>
+                        <dd class="col-7 mb-0">{{ $user->role?->name ?? 'Aucun' }} <span class="text-muted">(modifiable par un responsable, menu Personnel)</span></dd>
+                    </dl>
+                    <button type="submit" class="btn btn-primary">Enregistrer mes informations</button>
+                </form>
             </div>
         </div>
 

@@ -2727,3 +2727,18 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 /* Mode simple: no sidebar, so the content uses the whole width (the 1440 px cap of the full
    layout left a blank band on the right of wide screens). */
 .ui-simple .admin-content { max-width: none; }
+
+/* ------------------------------------------------------------------ Login page photo (Configuration → Hôtel) */
+.admin-auth-body.has-photo {
+    background:
+        linear-gradient(160deg, rgba(21, 38, 74, .42) 0%, rgba(21, 38, 74, .12) 55%, rgba(21, 38, 74, .45) 100%),
+        var(--auth-photo) center / cover no-repeat;
+    background-attachment: fixed;
+}
+
+@supports (-webkit-touch-callout: none) {
+    /* iOS ignores fixed backgrounds and repaints badly: scroll with the page there. */
+    .admin-auth-body.has-photo { background-attachment: scroll; }
+}
+
+.login-bg-preview { width: 160px; height: 90px; object-fit: cover; border-radius: 8px; border: 1px solid var(--ek-border); }

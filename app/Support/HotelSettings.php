@@ -45,6 +45,7 @@ class HotelSettings
         'hotel_facebook' => 'hotel.info.facebook',
         'hotel_instagram' => 'hotel.info.instagram',
         'hotel_logo' => 'hotel.info.logo',
+        'hotel_login_background' => 'hotel.info.login_background',
     ];
 
     /**

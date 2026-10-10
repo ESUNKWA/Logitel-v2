@@ -55,6 +55,7 @@ return [
         'facebook' => '',
         'instagram' => '',
         'logo' => '',                  // path on the public disk (uploaded in Configuration → Hôtel)
+        'login_background' => '',      // staff login page photo, same place (empty = navy gradient)
     ],
 
     // Customer receipt (thermal ticket printed after an affectation / a réservation).

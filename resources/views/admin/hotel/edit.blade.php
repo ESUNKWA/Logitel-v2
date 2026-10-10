@@ -55,6 +55,35 @@
         </div>
 
         <div class="admin-card">
+            <h5><i class="far fa-image me-2 text-primary"></i>Page de connexion</h5>
+            <p class="text-muted small">Photo affichée en fond de la page de connexion du personnel (assombrie pour que le formulaire reste lisible). Par défaut, une photo d'hôtel avec piscine ; envoyez une photo de votre établissement pour la remplacer.</p>
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label" for="login_background">Image de fond (JPG, PNG ou WebP, 2 Mo max, 800 × 450 px min.)</label>
+                    <input type="file" class="form-control @error('login_background') is-invalid @enderror" id="login_background" name="login_background" accept="image/jpeg,image/png,image/webp">
+                    @error('login_background')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="form-text">Idéalement une photo de l'hôtel en paysage (façade, réception, chambre).</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="{{ $hotelInfo->loginBackgroundUrl() }}" alt="Image de fond actuelle" class="login-bg-preview">
+                        <div>
+                            @if ($hotelInfo->hasCustomLoginBackground())
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="remove_login_background" value="1" id="remove_login_background">
+                                    <label class="form-check-label" for="remove_login_background">Retirer mon image (revenir à l'image par défaut)</label>
+                                </div>
+                            @else
+                                <div class="small text-muted">Image par défaut</div>
+                            @endif
+                            <a href="{{ route('admin.login') }}" target="_blank" rel="noopener" class="small">Voir la page de connexion</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card">
             <h5><i class="far fa-phone me-2 text-primary"></i>Contact</h5>
             <div class="row g-3">
                 @foreach ([
