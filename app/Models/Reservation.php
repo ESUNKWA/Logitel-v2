@@ -283,6 +283,20 @@ class Reservation extends Model
         return $this->belongsTo(User::class, 'checked_in_by');
     }
 
+    /**
+     * Who gave the room to the guest: for a stay, whoever checked it in (the board assignment,
+     * a validated guest request or a réservation's arrival), else its creator; null for a
+     * booking whose guest hasn't arrived yet. Load `checkedInBy` and `creator` first.
+     */
+    public function assignedBy(): ?User
+    {
+        if (! $this->isStay()) {
+            return null;
+        }
+
+        return $this->checkedInBy ?? ($this->origin === self::ORIGIN_AFFECTATION ? $this->creator : null);
+    }
+
     public function checkedOutBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_out_by');

@@ -67,6 +67,11 @@
                             <i class="far fa-file-invoice-dollar"></i> Factures
                         </a>
                     @endcan
+                    @can('payments.create')
+                        <a href="{{ route('admin.revenue.index') }}" class="{{ request()->routeIs('admin.revenue.*') ? 'active' : '' }}">
+                            <i class="far fa-cash-register"></i> Recettes
+                        </a>
+                    @endcan
                     @canany(['site.manage', 'site.stats'])
                         <div class="admin-sidebar__section">Site web</div>
                     @endcanany

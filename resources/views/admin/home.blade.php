@@ -13,6 +13,10 @@
         <div class="text-muted">{{ ucfirst(now()->translatedFormat('l j F Y')) }} · {{ now()->format('H\hi') }}</div>
     </div>
 
+    @if ($myCash)
+        @include('admin.partials._my-cash')
+    @endif
+
     @if ($finance || $roomCounts)
         @php
             $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
@@ -66,6 +70,10 @@
         </section>
     @endif
 
+    @if ($staffCash !== null)
+        @include('admin.partials._staff-cash')
+    @endif
+
     <div class="home-tiles">
         @if ($t['affecter'] !== null)
             <a href="{{ route('admin.rooms.board') }}#disponible" class="home-tile home-tile--success">
@@ -78,11 +86,11 @@
         @if ($t['departs'] !== null)
             <a href="{{ route('admin.front-desk.departures') }}" class="home-tile {{ $t['departs']['overdue'] ? 'home-tile--danger' : 'home-tile--warning' }}">
                 <span class="home-tile__icon"><i class="fas fa-sign-out-alt"></i></span>
-                <span class="home-tile__label">Départs</span>
+                <span class="home-tile__label">Sorties</span>
                 <span class="home-tile__count">
-                    {{ $plural($t['departs']['today'], 'départ', 'départs') }} aujourd'hui
+                    {{ $plural($t['departs']['today'], 'sortie', 'sorties') }} aujourd'hui
                     @if ($t['departs']['overdue'])
-                        <span class="badge bg-danger">{{ $plural($t['departs']['overdue'], 'dépassé', 'dépassés') }}</span>
+                        <span class="badge bg-danger">{{ $plural($t['departs']['overdue'], 'dépassée', 'dépassées') }}</span>
                     @endif
                 </span>
             </a>
@@ -112,16 +120,6 @@
             </a>
         @endif
 
-        @if ($t['chercher'])
-            <form method="GET" action="{{ route('admin.front-desk.search') }}" class="home-tile home-tile--search" role="search">
-                <span class="home-tile__icon"><i class="fas fa-search"></i></span>
-                <label class="home-tile__label" for="home-search">Chercher</label>
-                <div class="input-group">
-                    <input type="search" class="form-control" id="home-search" name="q" placeholder="Client, téléphone, n° de chambre…" autocomplete="off">
-                    <button class="btn btn-primary" type="submit" aria-label="Chercher"><i class="fas fa-arrow-right"></i></button>
-                </div>
-            </form>
-        @endif
     </div>
 
     @if ($roomCounts)

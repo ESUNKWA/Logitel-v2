@@ -25,6 +25,10 @@
         @endif
     </div>
 
+    @if ($myCash)
+        @include('admin.partials._my-cash')
+    @endif
+
     {{-- ============================================================ Money --}}
     @can('dashboard.revenue')
         <div class="dash-grid dash-grid--money">
@@ -158,6 +162,10 @@
             </div>
         </div>
     </div>
+
+    @isset($staffCash)
+        @include('admin.partials._staff-cash')
+    @endisset
 
     {{-- ============================================================ Charts --}}
     @can('dashboard.revenue')
@@ -297,7 +305,7 @@
 
         <div class="admin-card mb-0">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="mb-0"><x-admin::kind-icon kind="affectation" />Départs du jour <span class="text-muted small fw-normal">(affectations)</span></h5>
+                <h5 class="mb-0"><x-admin::kind-icon kind="affectation" />Sorties du jour <span class="text-muted small fw-normal">(affectations)</span></h5>
                 @can('rooms.view')
                     <a href="{{ route('admin.rooms.index', ['status' => 'occupee']) }}" class="small">Chambres occupées</a>
                 @endcan

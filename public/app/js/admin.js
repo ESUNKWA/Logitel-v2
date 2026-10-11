@@ -1335,3 +1335,59 @@
         refresh();
     });
 })();
+
+// --- Tables as cards on phones ---
+// Every list table of the application (a <table> with a <thead>, not marked .table-keep and not
+// a "Voir les données" twin) gets .table-cards: under 768 px the CSS shows each row as a card,
+// each cell labelled with its column's header (data-label). The title column (data-card-title on
+// its <th>, else the first one) heads the card; « Actions » / unlabelled last columns become the
+// card's buttons; a row made of one wide cell (group heading, "nothing yet") spans the card.
+// Without JS the tables simply scroll sideways as before.
+(function () {
+    'use strict';
+
+    document.querySelectorAll('.admin-content table').forEach(function (table) {
+        if (!table.tHead || table.classList.contains('table-keep') || table.closest('.dash-data, details')) {
+            return;
+        }
+
+        var headers = [];
+        var titleIndex = 0;
+        Array.prototype.forEach.call(table.tHead.rows[table.tHead.rows.length - 1].cells, function (th) {
+            for (var i = 0; i < (th.colSpan || 1); i++) {
+                if (th.hasAttribute('data-card-title')) {
+                    titleIndex = headers.length;
+                }
+                headers.push((th.textContent || '').replace(/\s+/g, ' ').trim());
+            }
+        });
+        var last = headers.length - 1;
+
+        Array.prototype.forEach.call(table.querySelectorAll('tbody tr, tfoot tr'), function (row) {
+            var cells = row.cells;
+            if (cells.length === 1 && (cells[0].colSpan || 1) > 1) {
+                row.classList.add('row-full');
+                return;
+            }
+            var column = 0;
+            Array.prototype.forEach.call(cells, function (cell) {
+                var label = headers[column] || '';
+                if (!cell.hasAttribute('data-label')) {
+                    cell.setAttribute('data-label', label);
+                }
+                if (column === titleIndex) {
+                    cell.classList.add('cell-title');
+                } else if (column === last && (label === '' || /^actions?$/i.test(label))) {
+                    cell.classList.add('cell-actions');
+                }
+                var text = cell.textContent.replace(/\s+/g, '');
+                if (column !== titleIndex && (text === '' || text === '—' || text === '-') && !cell.querySelector('img, input, select, button, a')) {
+                    cell.classList.add('cell-empty');
+                }
+                column += cell.colSpan || 1;
+            });
+        });
+
+        table.classList.add('table-cards');
+    });
+})();

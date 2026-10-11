@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Guest;
@@ -12,6 +13,7 @@ use App\Models\Room;
 use App\Models\StayRequest;
 use App\Support\BusinessDay;
 use App\Support\FinanceStats;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -38,11 +40,32 @@ class FrontDeskController extends Controller
                 'demandes' => $user->can('affectations.view') ? StayRequest::query()->holding()->count() : null,
                 'arrivees' => $user->can('reservations.view') ? $this->arrivalsQuery()->count() : null,
                 'encaisser' => $user->can('invoices.view') ? $this->toCollectQuery()->count() : null,
-                'chercher' => $user->can('guests.view'),
             ],
             'roomCounts' => $user->can('rooms.view') ? DashboardController::roomCounts() : null,
             'finance' => $user->can('dashboard.revenue') ? $this->financeFigures() : null,
+            // The manager sees every staff member's takings; the others only their own.
+            'staffCash' => $user->can('dashboard.revenue') ? FinanceStats::cashByUser(...BusinessDay::current()) : null,
+            'myCash' => $user->can('payments.create') && $user->cannot('dashboard.revenue') ? self::myCash($user->id) : null,
         ]);
+    }
+
+    /**
+     * « Ma recette du jour »: what this staff member cashed during the business day (the
+     * payments they recorded), per method; espèces = what they must hand over.
+     *
+     * @return array{total: float, count: int, byMethod: list<array{method: PaymentMethod, amount: float, share: int}>, cash: float}
+     */
+    public static function myCash(int $userId, ?CarbonInterface $day = null): array
+    {
+        [$from, $to] = BusinessDay::bounds($day ?? BusinessDay::today());
+        $byMethod = FinanceStats::cashByMethod($from, $to, $userId);
+
+        return [
+            'total' => FinanceStats::cashBetween($from, $to, $userId),
+            'count' => FinanceStats::paymentsCountBetween($from, $to, $userId),
+            'byMethod' => $byMethod,
+            'cash' => (float) collect($byMethod)->firstWhere('method', PaymentMethod::Especes)['amount'],
+        ];
     }
 
     /**

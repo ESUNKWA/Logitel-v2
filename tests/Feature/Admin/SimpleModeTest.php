@@ -79,8 +79,8 @@ class SimpleModeTest extends TestCase
             ->assertDontSee('class="admin-sidebar"', false)
             ->assertSee('Bonjour Aminata')
             ->assertSee('Affecter une chambre')->assertSee('1 chambre libre')
-            ->assertSee('Départs')->assertSee('Demandes clients')->assertSee('Arrivées du jour')->assertSee('Encaisser')
-            ->assertSee('name="q"', false)
+            ->assertSee('Sorties')->assertSee('Demandes clients')->assertSee('Arrivées du jour')->assertSee('Encaisser')
+            ->assertDontSee('name="q"', false) // no client search on the home page (client request)
             ->assertSee('class="simple-tabbar"', false)
             ->assertSee('Mode complet');
 
@@ -141,7 +141,7 @@ class SimpleModeTest extends TestCase
         $this->stay($this->room('103'), '2026-10-08 09:00', '2026-10-09 15:00', 'Paul Kouassi'); // leaves tomorrow afternoon
         $user = User::factory()->simpleUi()->create();
 
-        $this->actingAs($user)->get('/admin')->assertSee('2 départs')->assertSee('1 dépassé');
+        $this->actingAs($user)->get('/admin')->assertSee('2 sorties')->assertSee('1 dépassée');
         $this->actingAs($user)->get('/admin/departs')->assertOk()
             ->assertSeeInOrder(['Chambre N°101', 'Dépassé', 'Chambre N°102'])
             ->assertDontSee('Paul Kouassi')

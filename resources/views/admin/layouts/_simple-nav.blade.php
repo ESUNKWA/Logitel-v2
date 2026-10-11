@@ -57,6 +57,9 @@
             <li><a class="dropdown-item" href="{{ route('admin.invoices.index') }}"><i class="far fa-file-invoice-dollar"></i> Factures</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.front-desk.collect') }}"><i class="far fa-coins"></i> À encaisser</a></li>
         @endcan
+        @can('payments.create')
+            <li><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
+        @endcan
         <li><a class="dropdown-item" href="{{ route('admin.stats') }}"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>
         @canany(['site.manage', 'site.stats'])
             <li><hr class="dropdown-divider"></li>

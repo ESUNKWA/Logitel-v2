@@ -95,6 +95,10 @@ class DashboardTest extends TestCase
             ->assertViewMissing('revenueMonth')
             ->assertViewMissing('outstandingAmount')
             ->assertViewHas('occupancyRate')
-            ->assertDontSee('FCFA');
+            // No hotel-wide money; only their own takings (« Ma recette du jour »).
+            ->assertDontSee('Recettes encaissées ce mois')
+            ->assertDontSee("Chiffre d'affaires du mois", false)
+            ->assertDontSee('Reste à encaisser')
+            ->assertSee('Ma recette du jour');
     }
 }

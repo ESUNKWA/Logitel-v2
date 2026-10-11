@@ -1,6 +1,6 @@
 @extends('admin.layouts.admin')
 
-@section('title', 'Départs')
+@section('title', 'Sorties')
 
 @section('content')
     @php
@@ -9,7 +9,7 @@
 
     <div class="admin-page-header">
         <div>
-            <h1><x-admin::kind-icon kind="affectation" />Départs</h1>
+            <h1><x-admin::kind-icon kind="affectation" />Sorties</h1>
             <div class="dash-subtitle">Séjours qui se terminent aujourd'hui (les dépassés en premier).</div>
         </div>
         @can('affectations.view')
@@ -54,7 +54,7 @@
                     @endif
                     @can('affectations.manage')
                         <form method="POST" action="{{ route('admin.affectations.check-out', $stay) }}"
-                            onsubmit="return confirm('{{ $remaining > 0 ? 'Attention : il reste '.$fcfa($remaining).' FCFA à encaisser. ' : '' }}Confirmer le départ du client (chambre N°{{ $stay->room?->number }}) ?');">
+                            onsubmit="return confirm('{{ $remaining > 0 ? 'Attention : il reste '.$fcfa($remaining).' FCFA à encaisser. ' : '' }}Confirmer la sortie du client (chambre N°{{ $stay->room?->number }}) ?');">
                             @csrf
                             <button type="submit" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Check-out</button>
                         </form>
@@ -63,7 +63,7 @@
                 </div>
             </div>
         @empty
-            <div class="fd-empty"><i class="far fa-check-circle"></i> Aucun départ prévu d'ici la fin de la journée.</div>
+            <div class="fd-empty"><i class="far fa-check-circle"></i> Aucune sortie prévue d'ici la fin de la journée.</div>
         @endforelse
     </div>
 @endsection

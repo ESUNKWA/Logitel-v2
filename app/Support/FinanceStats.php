@@ -7,25 +7,33 @@ use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Money figures shared by the front-desk home and the figures dashboard (only ever computed for
- * staff holding `dashboard.revenue`). Cash = payments actually received, by `paid_at`; "today"
- * and "this month" follow the business day (BusinessDay).
+ * Money figures shared by the front-desk home and the figures dashboard. The hotel's totals are
+ * only ever computed for staff holding `dashboard.revenue`; with `$byUser`, the same figures
+ * restricted to the payments one staff member recorded (« Ma recette du jour »). Cash =
+ * payments actually received, by `paid_at`; "today" and "this month" follow the business day.
  */
 class FinanceStats
 {
-    public static function cashBetween(CarbonInterface $from, CarbonInterface $to): float
+    private static function payments(CarbonInterface $from, CarbonInterface $to, ?int $byUser): Builder
     {
-        return (float) Payment::query()->where('paid_at', '>=', $from)->where('paid_at', '<', $to)->sum('amount');
+        return Payment::query()->where('paid_at', '>=', $from)->where('paid_at', '<', $to)
+            ->when($byUser !== null, fn (Builder $q) => $q->where('created_by', $byUser));
     }
 
-    public static function paymentsCountBetween(CarbonInterface $from, CarbonInterface $to): int
+    public static function cashBetween(CarbonInterface $from, CarbonInterface $to, ?int $byUser = null): float
+    {
+        return (float) self::payments($from, $to, $byUser)->sum('amount');
+    }
+
+    public static function paymentsCountBetween(CarbonInterface $from, CarbonInterface $to, ?int $byUser = null): int
     {
         // One "encaissement" may be several lines (mixed payment): count settlements, not rows.
-        return Payment::query()->where('paid_at', '>=', $from)->where('paid_at', '<', $to)
+        return self::payments($from, $to, $byUser)
             ->selectRaw('count(distinct coalesce(cast(settlement as varchar(40)), cast(id as varchar(40)))) as n')->value('n') ?? 0;
     }
 
@@ -34,11 +42,9 @@ class FinanceStats
      *
      * @return list<array{method: PaymentMethod, amount: float, share: int}>
      */
-    public static function cashByMethod(CarbonInterface $from, CarbonInterface $to): array
+    public static function cashByMethod(CarbonInterface $from, CarbonInterface $to, ?int $byUser = null): array
     {
-        $sums = Payment::query()
-            ->where('paid_at', '>=', $from)
-            ->where('paid_at', '<', $to)
+        $sums = self::payments($from, $to, $byUser)
             ->selectRaw('method, sum(amount) as amount')
             ->groupBy('method')
             ->pluck('amount', 'method');
@@ -49,6 +55,38 @@ class FinanceStats
             'amount' => $amount = (float) ($sums[$method->value] ?? 0),
             'share' => $total > 0 ? (int) round($amount / $total * 100) : 0,
         ], PaymentMethod::cases());
+    }
+
+    /**
+     * Cash received per staff member who recorded it (« Recettes par réceptionniste »), largest
+     * first; payments without an author (recorded before authorship existed) are grouped apart.
+     *
+     * @return list<array{user_id: int|null, name: string, total: float, count: int, byMethod: array<string, float>}>
+     */
+    public static function cashByUser(CarbonInterface $from, CarbonInterface $to): array
+    {
+        $amounts = self::payments($from, $to, null)
+            ->selectRaw('created_by, method, sum(amount) as amount')
+            ->groupBy('created_by', 'method')
+            ->toBase()->get();
+        // One "encaissement" may be several lines (mixed payment): count settlements, not rows.
+        $counts = self::payments($from, $to, null)
+            ->selectRaw('created_by, count(distinct coalesce(cast(settlement as varchar(40)), cast(id as varchar(40)))) as n')
+            ->groupBy('created_by')
+            ->toBase()->pluck('n', 'created_by');
+        $names = User::query()->whereIn('id', $amounts->pluck('created_by')->filter()->unique())->pluck('name', 'id');
+
+        return $amounts->groupBy(fn ($r) => (string) $r->created_by)
+            ->map(fn ($lines, $userId) => [
+                'user_id' => $userId === '' ? null : (int) $userId,
+                'name' => $userId === '' ? 'Non attribué (anciens paiements)' : ($names[$userId] ?? 'Compte supprimé'),
+                'total' => (float) $lines->sum('amount'),
+                'count' => (int) ($counts[$userId] ?? 0),
+                'byMethod' => collect(PaymentMethod::cases())->mapWithKeys(fn (PaymentMethod $m) => [$m->value => (float) $lines->where('method', $m->value)->sum('amount')])->all(),
+            ])
+            ->sortByDesc('total')
+            ->values()
+            ->all();
     }
 
     /**

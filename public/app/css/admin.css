@@ -2778,3 +2778,138 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 @media (max-width: 860px) {
     .dash-grid.site-stats-kpis { grid-template-columns: 1fr; }
 }
+
+/* « Ma recette du jour » (home + dashboard) and « Mes encaissements » */
+.my-cash { display: grid; grid-template-columns: minmax(220px, 1.1fr) minmax(0, 1.4fr) auto; gap: 18px; align-items: center; padding: 16px 20px; margin-bottom: 18px; border-radius: var(--ek-radius); background: linear-gradient(135deg, var(--ek-sidebar-from), var(--ek-sidebar-to)); color: #fff; }
+.my-cash__main { display: flex; flex-direction: column; gap: 2px; }
+.my-cash__label { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: rgba(255, 255, 255, .75); }
+.my-cash__label i { color: var(--ek-gold); margin-right: 4px; }
+.my-cash__value { font-size: 1.9rem; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.my-cash__value small { font-size: .9rem; font-weight: 600; color: rgba(255, 255, 255, .7); }
+.my-cash__hint { font-size: .85rem; color: rgba(255, 255, 255, .7); }
+.my-cash__methods { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.my-cash__methods li { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .1); font-size: .85rem; }
+.my-cash__methods li strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.my-cash__methods li.is-empty { opacity: .55; }
+.my-cash__side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.my-cash__drawer { font-size: .85rem; color: rgba(255, 255, 255, .85); white-space: nowrap; }
+.my-cash__drawer strong { color: #fff; }
+@media (max-width: 1100px) {
+    .my-cash { grid-template-columns: 1fr; }
+    .my-cash__side { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+    .my-cash__methods { grid-template-columns: 1fr; }
+    .my-cash__methods li { flex-direction: row; justify-content: space-between; }
+}
+.my-cash-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.my-cash-summary .admin-card { margin-bottom: 0; }
+@media (max-width: 860px) { .my-cash-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media print {
+    .my-cash-summary { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* « Recettes » printed for the till: only the period, totals and lines */
+@media print {
+    .admin-sidebar, .admin-topbar, .simple-tabbar, .revenue-filters, .revenue-actions, .pagination,
+    #checkoutAlerts, #requestAlerts { display: none !important; }
+    .admin-main, .admin-content { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+    body { background: #fff !important; }
+    .admin-card { box-shadow: none !important; break-inside: avoid; }
+    .revenue-table a { color: inherit; text-decoration: none; }
+}
+
+/* ================================================================== Tables as cards on phones
+   admin.js adds .table-cards (+ data-label on every cell) to the application's list tables.
+   Desktop and tablet: unchanged. Under 768 px: one card per row, label on the left, value on
+   the right; the title cell heads the card and the actions sit at the bottom. */
+@media (max-width: 767.98px) {
+    .admin-card:has(> .table-responsive > .table-cards),
+    .admin-card:has(> .table-cards) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
+    .table-responsive:has(> .table-cards) { overflow: visible; }
+
+    .table-cards, .table-cards tbody, .table-cards tfoot { display: block; width: 100%; }
+    .table-cards thead { display: none; }
+    .table-cards tr {
+        display: flex;
+        flex-direction: column;
+        margin: 0 0 12px;
+        padding: 2px 14px 4px;
+        background: var(--ek-surface);
+        border: 1px solid var(--ek-border);
+        border-radius: var(--ek-radius);
+        box-shadow: var(--ek-shadow);
+    }
+    .table-cards tr.table-active { border-color: var(--ek-primary); }
+    .table-cards td, .table-cards th {
+        display: block;
+        position: relative;
+        min-height: 2.1em;
+        padding: 8px 0 8px 40% !important;
+        border: 0;
+        border-bottom: 1px dashed var(--ek-border);
+        background: transparent !important;
+        text-align: left !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        box-shadow: none !important;
+    }
+    .table-cards td::before, .table-cards th::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        top: 8px;
+        width: 37%;
+        padding-right: 8px;
+        font-size: .78rem;
+        font-weight: 600;
+        line-height: 1.5;
+        letter-spacing: .02em;
+        color: var(--ek-muted);
+    }
+    .table-cards td[data-label=""], .table-cards th[data-label=""] { padding-left: 0 !important; }
+    .table-cards td[data-label=""]::before, .table-cards th[data-label=""]::before { content: none; }
+    .table-cards td:last-child, .table-cards th:last-child { border-bottom: 0; }
+    .table-cards tr.row-full td:last-child { border-bottom: 0; }
+    .table-cards .cell-empty { display: none; }
+
+    /* Card heading */
+    .table-cards .cell-title {
+        order: -1;
+        padding: 12px 0 10px !important;
+        border-bottom: 1px solid var(--ek-border) !important;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--ek-ink);
+    }
+    .table-cards .cell-title .small, .table-cards .cell-title small { font-weight: 400; }
+    .table-cards .cell-title::before { content: none; }
+    .table-cards .cell-title strong, .table-cards .cell-title > a:first-child { font-size: 1.05rem; }
+
+    /* Buttons at the bottom, easy to tap */
+    .table-cards .cell-actions {
+        order: 99;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 0 10px !important;
+        border-top: 1px solid var(--ek-border);
+        border-bottom: 0;
+    }
+    .table-cards .cell-actions::before { content: none; }
+    .table-cards .cell-actions > *, .table-cards .cell-actions form { flex: 1 1 0; min-width: 30%; margin: 0 !important; }
+    .table-cards .cell-actions .btn { width: 100%; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+    .table-cards .cell-actions .d-inline, .table-cards .cell-actions .d-flex { display: flex !important; }
+
+    /* A row of one wide cell: a group heading or "nothing yet" */
+    .table-cards tr.row-full { background: transparent; border: 0; box-shadow: none; padding: 0; }
+    .table-cards tr.row-full td, .table-cards tr.row-full th { padding: 10px 2px !important; border: 0; text-align: center !important; }
+    .table-cards tr.row-full th { text-align: left !important; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ek-muted); padding-top: 14px !important; }
+    .table-cards tr.row-full td::before, .table-cards tr.row-full th::before { content: none; }
+
+    /* Totals line (tfoot) */
+    .table-cards tfoot tr { background: var(--ek-bg); }
+
+    /* Hide a secondary column on phones */
+    .table-cards .cell-hide-sm { display: none; }
+}

@@ -109,7 +109,13 @@ class DashboardController extends Controller
 
         if ($request->user()->can('dashboard.revenue')) {
             $data += $this->moneyFigures($today, $dayStart, $dayEnd);
+            $data['staffCash'] = FinanceStats::cashByUser($dayStart, $dayEnd);
         }
+
+        // Staff who cash but don't see the hotel's revenue get their own takings of the day.
+        $data['myCash'] = $request->user()->can('payments.create') && $request->user()->cannot('dashboard.revenue')
+            ? FrontDeskController::myCash($request->user()->id)
+            : null;
 
         return view('admin.dashboard', $data);
     }

@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\RequestQrCodeController;
 use App\Http\Controllers\Admin\ReservationController;
+use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RoomAssignmentController;
 use App\Http\Controllers\Admin\RoomController;
@@ -58,6 +59,9 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::get('/departs', [FrontDeskController::class, 'departures'])->middleware('can:affectations.view')->name('front-desk.departures');
         Route::get('/arrivees', [FrontDeskController::class, 'arrivals'])->middleware('can:reservations.view')->name('front-desk.arrivals');
         Route::get('/a-encaisser', [FrontDeskController::class, 'collect'])->middleware('can:invoices.view')->name('front-desk.collect');
+        // « Recettes »: payments received over a period (the manager sees everyone, others their own).
+        Route::get('/recettes', [RevenueController::class, 'index'])->middleware('can:payments.create')->name('revenue.index');
+        Route::get('/recettes/export', [RevenueController::class, 'export'])->middleware('can:payments.create')->name('revenue.export');
         Route::get('/recherche', [FrontDeskController::class, 'search'])->middleware('can:guests.view')->name('front-desk.search');
 
         Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
