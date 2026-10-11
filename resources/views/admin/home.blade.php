@@ -96,14 +96,6 @@
             </a>
         @endif
 
-        @if ($t['demandes'] !== null)
-            <a href="{{ route('admin.stay-requests.index') }}" class="home-tile home-tile--primary {{ $t['demandes'] ? 'is-attention' : '' }}">
-                <span class="home-tile__icon"><i class="fas fa-mobile-alt"></i></span>
-                <span class="home-tile__label">Demandes clients</span>
-                <span class="home-tile__count">{{ $t['demandes'] ? $plural($t['demandes'], 'en attente', 'en attente') : 'Aucune en attente' }}</span>
-            </a>
-        @endif
-
         @if ($t['arrivees'] !== null)
             <a href="{{ route('admin.front-desk.arrivals') }}" class="home-tile home-tile--info">
                 <span class="home-tile__icon"><i class="fas fa-sign-in-alt"></i></span>
@@ -112,13 +104,6 @@
             </a>
         @endif
 
-        @if ($t['encaisser'] !== null)
-            <a href="{{ route('admin.front-desk.collect') }}" class="home-tile home-tile--gold">
-                <span class="home-tile__icon"><i class="fas fa-coins"></i></span>
-                <span class="home-tile__label">Encaisser</span>
-                <span class="home-tile__count">{{ $t['encaisser'] ? $plural($t['encaisser'], 'solde à régler', 'soldes à régler') : 'Tout est réglé' }}</span>
-            </a>
-        @endif
 
     </div>
 

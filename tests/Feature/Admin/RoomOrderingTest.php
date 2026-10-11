@@ -6,6 +6,7 @@ use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\RoomType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,9 +20,11 @@ class RoomOrderingTest extends TestCase
         $this->travelTo('2026-10-08 10:00:00');
 
         Room::factory()->create(['number' => 'HS-1', 'status' => RoomStatus::HorsService]);
-        Room::factory()->create(['number' => 'L-10', 'status' => RoomStatus::Disponible]);
+        // Same type for the free rooms: the « Libres » panel groups them by type, then by number.
+        $freeType = RoomType::factory()->create(['name' => 'Standard']);
+        Room::factory()->create(['number' => 'L-10', 'room_type_id' => $freeType->id, 'status' => RoomStatus::Disponible]);
         Room::factory()->create(['number' => 'N-1', 'status' => RoomStatus::Nettoyage]);
-        Room::factory()->create(['number' => 'L-2', 'status' => RoomStatus::Disponible]);
+        Room::factory()->create(['number' => 'L-2', 'room_type_id' => $freeType->id, 'status' => RoomStatus::Disponible]);
         Room::factory()->create(['number' => 'O-1', 'status' => RoomStatus::Occupee]);
         $reserved = Room::factory()->create(['number' => 'R-1', 'status' => RoomStatus::Disponible]);
         Reservation::factory()->guaranteed()->create([

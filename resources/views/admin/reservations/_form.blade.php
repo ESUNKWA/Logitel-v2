@@ -127,27 +127,29 @@
     </div>
 
     <div class="col-12">
-        @include('admin.partials._discount-fields', ['file' => $reservation->exists ? $reservation : null, 'idPrefix' => 'booking'])
-    </div>
-
-    <div class="col-12">
-        <div class="alert alert-primary mb-0 py-2" data-booking-preview>—</div>
-    </div>
-
-    <div class="col-12">
         <label class="form-label" for="notes">Notes</label>
         <textarea class="form-control" id="notes" name="notes" rows="2">{{ old('notes', $reservation->notes) }}</textarea>
     </div>
 
-    @if (! $reservation->exists)
-        @can('payments.create')
-            <div class="col-12">
-                <h6 class="text-uppercase text-muted small fw-bold mt-2 mb-1">Acompte <span class="text-lowercase fw-normal">(facultatif)</span></h6>
-                <p class="text-muted small mb-2">Le client peut tout payer, payer une partie, ou rien pour l'instant (espèces, Orange Money, Wave, ou mixte). En espèces, saisissez le montant reçu : la monnaie à rendre s'affiche.</p>
-                @include('admin.payments._lines', ['due' => null, 'required' => false, 'cashReceivedRequired' => true])
-            </div>
-        @endcan
-    @endif
+    {{-- « Règlement », in the order it's typed: discount, total, then the optional deposit. --}}
+    <div class="col-12">
+        <div class="assign-pay">
+            <h6 class="text-uppercase text-muted small fw-bold mb-3">Règlement</h6>
+            <div class="assign-pay__total" data-booking-preview>—</div>
+            @php
+                $discountFields = view('admin.partials._discount-fields', ['file' => $reservation->exists ? $reservation : null, 'idPrefix' => 'booking'])->render();
+                $withDeposit = ! $reservation->exists && auth()->user()->can('payments.create');
+            @endphp
+            @if ($withDeposit)
+                {{-- Deposit lines, then — right under « Ajouter un mode » — the discount and the cash received. --}}
+                <div class="assign-pay__label">Acompte <span class="text-muted fw-normal">— facultatif : tout, une partie ou rien pour l'instant</span></div>
+                @include('admin.payments._lines', ['due' => null, 'required' => false, 'cashReceivedRequired' => true,
+                    'sharedReceived' => true, 'idPrefix' => 'booking', 'afterActions' => $discountFields])
+            @else
+                {!! $discountFields !!}
+            @endif
+        </div>
+    </div>
 </div>
 
 <div class="mt-4">

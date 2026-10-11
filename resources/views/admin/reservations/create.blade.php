@@ -2,6 +2,9 @@
 
 @section('title', 'Nouvelle réservation')
 
+{{-- Messages, errors and confirmations as SweetAlert pop-ups (admin.js). --}}
+@section('sweetalert', '1')
+
 @section('content')
     <div class="admin-page-header">
         <h1><x-admin::kind-icon kind="reservation" />Nouvelle réservation</h1>

@@ -2913,3 +2913,45 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
     /* Hide a secondary column on phones */
     .table-cards .cell-hide-sm { display: none; }
 }
+
+/* Room board, « Libres » tab: one block per room type */
+.room-type-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--ek-border); font-family: var(--ek-font); font-size: 1rem; }
+.room-type-heading:first-of-type { margin-top: 4px; }
+.room-type-heading__name { font-weight: 800; color: var(--ek-ink); }
+.room-type-heading__count { padding: 2px 9px; border-radius: 999px; background: rgba(var(--ek-success-rgb), .14); color: #146c43; font-size: .78rem; font-weight: 700; }
+.room-type-heading__rate { color: var(--ek-muted); font-size: .85rem; }
+
+/* Assignment modal: « Règlement » block — discount, total to pay, then the encaissement */
+.assign-pay { padding: 18px; border-radius: var(--ek-radius); background: #f6f8fb; border: 1px solid var(--ek-border); }
+.assign-pay .discount-fields { margin-bottom: 14px; }
+.assign-pay__total {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--ek-surface);
+    border: 1px solid var(--ek-border);
+    border-left: 4px solid var(--ek-primary);
+    font-weight: 700;
+    color: var(--ek-ink);
+    line-height: 1.5;
+}
+.assign-pay__label { font-weight: 700; color: var(--ek-ink); margin-bottom: 8px; font-size: .9rem; }
+.assign-pay .payment-lines__summary { margin-top: 8px; }
+
+/* Shared « Montant reçu » under the payment actions (desk forms) */
+.payment-lines.has-shared-received .payment-line__change { display: none; }
+.payment-lines.has-shared-received .payment-received .payment-line__change { display: block; margin-top: 6px; }
+.payment-lines.has-shared-received .payment-received .payment-line__change:empty { display: none; }
+.payment-received { margin-top: 14px; }
+.payment-received .input-group > .form-control { border-radius: 10px 0 0 10px; }
+.payment-received .input-group-text { font-size: .78rem; font-weight: 700; color: var(--ek-muted); background: #f6f8fb; border-color: var(--ek-border); border-radius: 0 10px 10px 0; }
+.payment-lines .discount-fields { margin-top: 14px; }
+/* The cash-line marker of the shared « Montant reçu » mode is never displayed (admin.js toggles its hidden flag) */
+.payment-line > span[data-cash-only] { display: none !important; }
+
+/* SweetAlert pop-ups: application font and error list */
+.swal2-popup { font-family: var(--ek-font, inherit); border-radius: var(--ek-radius, 14px); }
+.swal2-title { font-size: 1.25rem; color: var(--ek-ink); }
+.swal2-toast .swal2-title { font-size: .95rem; }
+.swal-error-list { text-align: left; margin: 0; padding-left: 1.2rem; font-size: .95rem; }
+.swal-error-list li + li { margin-top: 4px; }

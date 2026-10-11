@@ -10,7 +10,6 @@ use App\Models\Guest;
 use App\Models\Invoice;
 use App\Models\Reservation;
 use App\Models\Room;
-use App\Models\StayRequest;
 use App\Support\BusinessDay;
 use App\Support\FinanceStats;
 use Carbon\CarbonInterface;
@@ -37,9 +36,7 @@ class FrontDeskController extends Controller
                     'today' => $this->departuresQuery()->count(),
                     'overdue' => Reservation::query()->where('status', ReservationStatus::Enregistree)->where('check_out', '<=', now())->count(),
                 ] : null,
-                'demandes' => $user->can('affectations.view') ? StayRequest::query()->holding()->count() : null,
                 'arrivees' => $user->can('reservations.view') ? $this->arrivalsQuery()->count() : null,
-                'encaisser' => $user->can('invoices.view') ? $this->toCollectQuery()->count() : null,
             ],
             'roomCounts' => $user->can('rooms.view') ? DashboardController::roomCounts() : null,
             'finance' => $user->can('dashboard.revenue') ? $this->financeFigures() : null,

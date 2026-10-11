@@ -154,11 +154,17 @@
                 </header>
 
                 <main class="admin-content">
-                    @if (session('status'))
+                    {{-- A page defining section "sweetalert" gets its messages and errors as SweetAlert pop-ups
+                         (admin.js, #swalFlash) instead of the alert boxes below. --}}
+                    @php($useSweetAlert = \Illuminate\Support\Facades\View::hasSection('sweetalert'))
+                    @if ($useSweetAlert)
+                        <script type="application/json" id="swalFlash">@json(['status' => session('status'), 'errors' => $errors->all()])</script>
+                    @endif
+                    @if (session('status') && ! $useSweetAlert)
                         <div class="alert alert-success">{{ session('status') }}</div>
                     @endif
                     {{-- A view showing its errors inline (e.g. the assignment modal) defines section "inline-errors". --}}
-                    @if ($errors->any() && ! \Illuminate\Support\Facades\View::hasSection('inline-errors'))
+                    @if ($errors->any() && ! $useSweetAlert && ! \Illuminate\Support\Facades\View::hasSection('inline-errors'))
                         <div class="alert alert-danger" data-page-errors>
                             <ul class="mb-0">
                                 @foreach ($errors->all() as $error)
@@ -216,6 +222,9 @@
 
         <script src="{{ asset('vendor/bootstrap/popper.min.js') }}"></script>
         <script src="{{ asset('vendor/bootstrap/bootstrap.min.js') }}"></script>
+        @if ($useSweetAlert ?? false)
+            <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+        @endif
         <script src="{{ asset('app/js/admin.js') }}"></script>
         @stack('scripts')
     </body>

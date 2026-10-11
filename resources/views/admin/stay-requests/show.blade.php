@@ -147,16 +147,18 @@
                             <input type="text" class="form-control rate-locked" id="assign-rate" value="{{ number_format((float) $stayRequest->pricing_mode->rateFor($type), 0, ',', ' ') }}" data-money data-unit-rate-input readonly tabindex="-1">
                             <div class="form-text">Tarif du type de chambre (non modifiable). Pour une réduction, utilisez la remise.</div>
                         </div>
+                        {{-- « Règlement », in the order it's typed: discount, total to pay, encaissement. --}}
                         <div class="col-12">
-                            @include('admin.partials._discount-fields', ['idPrefix' => 'approve'])
-                        </div>
-                        <div class="col-12">
-                            <div class="alert alert-primary mb-0 py-3 fs-6" data-stay-preview>Choisissez un mode.</div>
+                            <div class="assign-pay">
+                                <h6 class="text-uppercase text-muted small fw-bold mb-3">Règlement</h6>
+                                <div class="assign-pay__total" data-stay-preview>Choisissez un mode.</div>
+                                <div class="assign-pay__label">Encaissement <span class="text-muted fw-normal">— totalité du séjour, en un ou plusieurs modes</span></div>
+                                @include('admin.payments._lines', ['due' => null, 'required' => true, 'full' => true, 'cashReceivedRequired' => true,
+                                    'sharedReceived' => true, 'idPrefix' => 'approve',
+                                    'afterActions' => view('admin.partials._discount-fields', ['idPrefix' => 'approve'])->render()])
+                            </div>
                         </div>
                     </div>
-
-                    <h6 class="text-uppercase text-muted small fw-bold mt-4 mb-2">Encaissement <span class="text-lowercase fw-normal">(obligatoire : totalité du séjour)</span></h6>
-                    @include('admin.payments._lines', ['due' => null, 'required' => true, 'full' => true, 'cashReceivedRequired' => true])
 
                     <div class="d-flex justify-content-end mt-3">
                         <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-check"></i> Valider l'affectation et encaisser</button>

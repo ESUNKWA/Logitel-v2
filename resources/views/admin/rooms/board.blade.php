@@ -90,8 +90,21 @@
             {{ $group['label'] }}
             <span class="room-section__count">{{ $group['rooms']->count() }}</span>
         </h2>
+    {{-- Free rooms are grouped by room type (client request); the other states stay one grid. --}}
+    @php($byType = $state === 'disponible' ? $group['rooms']->groupBy(fn ($r) => $r->roomType?->name ?? 'Sans type')->sortKeys(SORT_NATURAL | SORT_FLAG_CASE) : collect(['' => $group['rooms']]))
+    @foreach ($byType as $typeName => $typeRooms)
+    @if ($state === 'disponible')
+        @php($lowest = collect(\App\Enums\PricingMode::cases())->map(fn ($m) => [$m, $m->rateFor($typeRooms->first()->roomType)])->filter(fn ($p) => $p[1] !== null)->sortBy(fn ($p) => (float) $p[1])->first())
+        <h3 class="room-type-heading">
+            <span class="room-type-heading__name">{{ $typeName }}</span>
+            <span class="room-type-heading__count">{{ $typeRooms->count() }} libre{{ $typeRooms->count() > 1 ? 's' : '' }}</span>
+            @if ($lowest)
+                <span class="room-type-heading__rate">dès {{ number_format((float) $lowest[1], 0, ',', ' ') }} F {{ $lowest[0]->rateUnit() }}</span>
+            @endif
+        </h3>
+    @endif
     <div class="room-board">
-        @foreach ($group['rooms'] as $room)
+        @foreach ($typeRooms as $room)
             @php($assignable = $room->isAvailableNow() && $canAssign)
             <div
                 class="room-card room-card--{{ in_array($room->displayState(), ['reservee', 'demande'], true) ? $room->displayState() : $room->status->value }} {{ $assignable ? 'is-clickable' : '' }}"
@@ -203,6 +216,7 @@
             </div>
         @endforeach
     </div>
+    @endforeach
     </section>
     @endif
     @endforeach
@@ -228,8 +242,20 @@
                               </ul>
                           </div>
                       @endif
-                      <div class="row g-4">
-                        <div class="col-lg-5">
+                      {{-- Left: who and what (client, stay). Right: « Règlement », in the order it's typed —
+                           discount, total to pay, then the encaissement (method, amount, cash received →
+                           change). data-stay-form spans both columns: admin.js reads the stay fields and
+                           writes the total in [data-stay-preview]. --}}
+                      @php($nightOpen = \App\Enums\PricingMode::Nuitee->canStartAt(now()))
+                      <div class="row g-4"
+                          data-stay-form
+                          data-night-from="{{ config('hotel.night.from') }}"
+                          data-night-until="{{ config('hotel.night.until') }}"
+                          data-stay-hours="{{ config('hotel.stay_min_hours') }}"
+                          data-day-hours="{{ config('hotel.day_hours') }}"
+                          data-night-open="{{ $nightOpen ? '1' : '0' }}"
+                      >
+                        <div class="col-lg-6">
                         <h6 class="text-uppercase text-muted small fw-bold mb-3">Client <span class="text-lowercase fw-normal">(facultatif)</span></h6>
                         <div class="mb-3 position-relative">
                             <label class="form-label">Rechercher un client existant</label>
@@ -264,26 +290,8 @@
                             </div>
                         </div>
 
-
-                        @can('payments.create')
-                            <h6 class="text-uppercase text-muted small fw-bold mt-4 mb-2">Encaissement <span class="text-lowercase fw-normal">(obligatoire : totalité du séjour)</span></h6>
-                            <p class="text-muted small mb-2">Le client règle tout à l'affectation, en un ou plusieurs modes. En espèces, saisissez le montant reçu : la monnaie à rendre s'affiche.</p>
-                            @include('admin.payments._lines', ['due' => null, 'required' => true, 'full' => true, 'cashReceivedRequired' => true])
-                        @endcan
-                        </div>
-
-                        <div class="col-lg-7 border-start-lg">
-                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Séjour</h6>
-                        @php($nightOpen = \App\Enums\PricingMode::Nuitee->canStartAt(now()))
-                        <div
-                            class="row g-3"
-                            data-stay-form
-                            data-night-from="{{ config('hotel.night.from') }}"
-                            data-night-until="{{ config('hotel.night.until') }}"
-                            data-stay-hours="{{ config('hotel.stay_min_hours') }}"
-                            data-day-hours="{{ config('hotel.day_hours') }}"
-                            data-night-open="{{ $nightOpen ? '1' : '0' }}"
-                        >
+                        <h6 class="text-uppercase text-muted small fw-bold mt-4 mb-3">Séjour</h6>
+                        <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label d-block">Mode</label>
                                 <div class="btn-group w-100" role="group">
@@ -313,13 +321,24 @@
                                 <input type="text" class="form-control rate-locked" id="assign-rate" value="" data-money data-unit-rate-input readonly tabindex="-1">
                                 <div class="form-text">Tarif du type de chambre (non modifiable). Pour une réduction, utilisez la remise.</div>
                             </div>
-                            <div class="col-12">
-                                @include('admin.partials._discount-fields', ['idPrefix' => 'assign'])
-                            </div>
-                            <div class="col-12">
-                                <div class="alert alert-primary mb-0 py-3 fs-6" data-stay-preview>Choisissez un mode.</div>
-                            </div>
                         </div>
+                        </div>
+
+                        <div class="col-lg-6 border-start-lg">
+                          <div class="assign-pay">
+                            <h6 class="text-uppercase text-muted small fw-bold mb-3">Règlement</h6>
+                            <div class="assign-pay__total" data-stay-preview>Choisissez un mode.</div>
+
+                            {{-- Payment lines, then — right under « Ajouter un mode » — the discount and the cash received. --}}
+                            @can('payments.create')
+                                <div class="assign-pay__label">Encaissement <span class="text-muted fw-normal">— totalité du séjour, en un ou plusieurs modes</span></div>
+                                @include('admin.payments._lines', ['due' => null, 'required' => true, 'full' => true, 'cashReceivedRequired' => true,
+                                    'sharedReceived' => true, 'idPrefix' => 'assign',
+                                    'afterActions' => view('admin.partials._discount-fields', ['idPrefix' => 'assign'])->render()])
+                            @else
+                                @include('admin.partials._discount-fields', ['idPrefix' => 'assign'])
+                            @endcan
+                          </div>
                         </div>
                       </div>
                     </div>

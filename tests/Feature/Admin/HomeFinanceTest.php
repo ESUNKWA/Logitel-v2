@@ -50,7 +50,7 @@ class HomeFinanceTest extends TestCase
         $this->stay('102', 2, [['method' => 'orange_money', 'amount' => 10000]]);
         $this->stay('103', 2, [['method' => 'wave', 'amount' => 4000]], '2026-10-07 20:00'); // previous business day, same month
         $this->stay('104', 3, []); // nothing paid: 15 000 outstanding
-        Room::factory()->create(['room_type_id' => $this->type->id, 'status' => RoomStatus::HorsService]);
+        Room::factory()->create(['number' => 'HS-1', 'room_type_id' => $this->type->id, 'status' => RoomStatus::HorsService]);
 
         $this->actingAs(User::factory()->simpleUi()->create())->get('/admin')->assertOk()
             ->assertViewHas('finance', fn ($f) => $f['today'] === 30000.0 && $f['todayCount'] === 2 && $f['month'] === 34000.0

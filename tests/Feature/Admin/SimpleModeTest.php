@@ -79,7 +79,7 @@ class SimpleModeTest extends TestCase
             ->assertDontSee('class="admin-sidebar"', false)
             ->assertSee('Bonjour Aminata')
             ->assertSee('Affecter une chambre')->assertSee('1 chambre libre')
-            ->assertSee('Sorties')->assertSee('Demandes clients')->assertSee('Arrivées du jour')->assertSee('Encaisser')
+            ->assertSee('Sorties')->assertDontSee('home-tile__label">Demandes clients', false)->assertSee('Arrivées du jour')->assertDontSee('home-tile__label">Encaisser', false)
             ->assertDontSee('name="q"', false) // no client search on the home page (client request)
             ->assertSee('class="simple-tabbar"', false)
             ->assertSee('Mode complet');
@@ -127,7 +127,7 @@ class SimpleModeTest extends TestCase
             ->assertDontSee('Configuration');
 
         $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()
-            ->assertSee('Arrivées du jour')->assertSee('Encaisser')
+            ->assertSee('Arrivées du jour')->assertDontSee('home-tile__label">Encaisser', false)
             ->assertDontSee(route('admin.users.index'), false)->assertDontSee(route('admin.settings.edit'), false);
 
         $this->actingAs(User::factory()->simpleUi()->create())->get('/admin')

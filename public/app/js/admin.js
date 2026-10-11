@@ -795,6 +795,14 @@
         var receivedRequired = box.dataset.receivedRequired === '1';
         var amountTouched = false; // in "full" mode the first line follows the due amount until edited
         var methodCount = template.content.querySelectorAll('option').length;
+        // One shared « Montant reçu » field (at the desk) instead of one per line: methods are
+        // distinct, so it belongs to the single cash line, whose hidden "received" it fills.
+        var sharedBox = box.querySelector('[data-received-shared-box]');
+        var sharedInput = sharedBox ? sharedBox.querySelector('[data-received-shared]') : null;
+        var sharedChange = sharedBox ? sharedBox.querySelector('[data-change-shared]') : null;
+        var cashLine = function () {
+            return lines().filter(function (line) { return line.querySelector('[data-field="method"]').value === 'especes'; })[0] || null;
+        };
 
         var lines = function () { return Array.prototype.slice.call(list.querySelectorAll('[data-line]')); };
         var due = function () { return box.dataset.due === '' ? null : parseFloat(box.dataset.due) || 0; };
@@ -864,7 +872,25 @@
 
         var update = function () {
             syncMethods();
+            if (sharedBox) {
+                var cash = cashLine();
+                if (cash) {
+                    cash.querySelector('[data-field="received"]').value = sharedInput.value;
+                }
+            }
             var change = changeTotal();
+            if (sharedBox) {
+                var cashNow = cashLine();
+                var cashAmount = cashNow ? moneyValue(cashNow.querySelector('[data-field="amount"]')) : 0;
+                sharedBox.hidden = !cashNow;
+                sharedInput.required = !!cashNow && receivedRequired && cashAmount > 0;
+                if (!cashNow) {
+                    sharedInput.value = '';
+                }
+                var lineChange = cashNow ? cashNow.querySelector('[data-change]') : null;
+                sharedChange.textContent = lineChange ? lineChange.textContent : '';
+                sharedChange.className = lineChange ? lineChange.className : 'payment-line__change';
+            }
             var paid = total();
             var owed = due();
             summary.className = 'payment-lines__summary';
@@ -926,6 +952,14 @@
         };
 
         lines().forEach(bindLine);
+        if (sharedInput) {
+            // After a failed submission, the cash line's posted value comes back in its hidden input.
+            var restoredCash = cashLine();
+            if (restoredCash) {
+                sharedInput.value = restoredCash.querySelector('[data-field="received"]').value;
+            }
+            sharedInput.addEventListener('input', update);
+        }
         addButton.addEventListener('click', function () {
             addLine().querySelector('[data-field="amount"]').focus();
         });
@@ -957,6 +991,9 @@
                 first.querySelector('[data-field="method"]').selectedIndex = 0;
                 first.querySelector('[data-field="amount"]').value = '';
                 first.querySelector('[data-field="received"]').value = '';
+                if (sharedInput) {
+                    sharedInput.value = '';
+                }
                 amountTouched = false;
                 reindex();
                 update();
@@ -1389,5 +1426,97 @@
         });
 
         table.classList.add('table-cards');
+    });
+})();
+
+// --- SweetAlert pop-ups (pages defining the Blade section "sweetalert", e.g. the réservations) ---
+// #swalFlash carries the flashed status message and the validation errors (rendered as text,
+// never as HTML). Forms with data-confirm ask through SweetAlert instead of window.confirm()
+// (data-confirm-title, data-confirm-button, data-confirm-cancel, data-confirm-danger). Without SweetAlert loaded,
+// the browser's confirm() is used.
+(function () {
+    'use strict';
+
+    var Swal = window.Swal;
+    var theme = {
+        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--ek-primary').trim() || '#24396b',
+        cancelButtonText: 'Annuler',
+        reverseButtons: true,
+    };
+
+    var flash = document.getElementById('swalFlash');
+    if (flash && Swal) {
+        var data = {};
+        try {
+            data = JSON.parse(flash.textContent || '{}');
+        } catch (e) {
+            data = {};
+        }
+        var receiptOpening = !!document.getElementById('receiptModal');
+
+        if (data.errors && data.errors.length) {
+            var list = document.createElement('ul');
+            list.className = 'swal-error-list';
+            data.errors.forEach(function (message) {
+                var item = document.createElement('li');
+                item.textContent = message;
+                list.appendChild(item);
+            });
+            Swal.fire(Object.assign({}, theme, {
+                icon: 'error',
+                title: data.errors.length > 1 ? 'Veuillez corriger ces points' : 'Veuillez corriger ce point',
+                html: list,
+                confirmButtonText: 'Compris',
+            }));
+        } else if (data.status) {
+            // A receipt preview may open right after a booking: a toast doesn't get in its way.
+            Swal.fire({
+                icon: 'success',
+                title: data.status,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: receiptOpening ? 4000 : 6000,
+                timerProgressBar: true,
+            });
+        }
+    }
+
+    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (form.dataset.confirmed === '1') {
+                return;
+            }
+            event.preventDefault();
+            var proceed = function () {
+                form.dataset.confirmed = '1';
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit(event.submitter || undefined);
+                } else {
+                    form.submit();
+                }
+            };
+            if (!Swal) {
+                if (window.confirm(form.dataset.confirm)) {
+                    proceed();
+                }
+                return;
+            }
+            var danger = form.hasAttribute('data-confirm-danger');
+            Swal.fire(Object.assign({}, theme, {
+                icon: danger ? 'warning' : 'question',
+                title: form.dataset.confirmTitle || 'Confirmer',
+                text: form.dataset.confirm,
+                showCancelButton: true,
+                confirmButtonText: form.dataset.confirmButton || 'Confirmer',
+                cancelButtonText: form.dataset.confirmCancel || theme.cancelButtonText,
+                confirmButtonColor: danger ? '#b53441' : theme.confirmButtonColor,
+                focusCancel: danger,
+            })).then(function (result) {
+                if (result.isConfirmed) {
+                    proceed();
+                }
+            });
+        });
     });
 })();

@@ -2,6 +2,9 @@
 
 @section('title', 'Modifier la réservation')
 
+{{-- Messages, errors and confirmations as SweetAlert pop-ups (admin.js). --}}
+@section('sweetalert', '1')
+
 @section('content')
     <div class="admin-page-header">
         <div>
@@ -21,12 +24,12 @@
                 <a href="{{ route('admin.receipts.show', $reservation) }}" class="btn btn-outline-primary" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
             @endcan
             @if (in_array($reservation->status->value, ['en_attente', 'confirmee']))
-                <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" onsubmit="return confirm('Le client est arrivé ? La réservation deviendra une affectation.');">
+                <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" data-confirm="La réservation deviendra une affectation et la chambre passera en « occupée »." data-confirm-title="Le client est arrivé ?" data-confirm-button="Oui, enregistrer l'arrivée">
                     @csrf
                     <button type="submit" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</button>
                 </form>
                 @can('reservations.cancel')
-                    <form method="POST" action="{{ route('admin.reservations.cancel', $reservation) }}" onsubmit="return confirm('Annuler cette réservation ?');">
+                    <form method="POST" action="{{ route('admin.reservations.cancel', $reservation) }}" data-confirm="La réservation sera annulée. Les acomptes déjà encaissés restent sur la facture." data-confirm-title="Annuler cette réservation ?" data-confirm-button="Oui, annuler la réservation" data-confirm-cancel="Non, la garder" data-confirm-danger>
                         @csrf
                         <button type="submit" class="btn btn-outline-danger">Annuler la réservation</button>
                     </form>
