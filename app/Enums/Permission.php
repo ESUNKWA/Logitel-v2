@@ -52,7 +52,7 @@ enum Permission: string
             self::PaymentsCreate => 'Enregistrer un paiement',
             self::PaymentsDelete => 'Supprimer un paiement',
             self::DashboardRevenue => "Voir le chiffre d'affaires sur le tableau de bord",
-            self::AlertsCheckout => "Recevoir l'alarme de fin de séjour (heure de départ atteinte)",
+            self::AlertsCheckout => "Recevoir l'alarme de fin de séjour (sonne en continu jusqu'au check-out ou à la prolongation ; jamais pour le Gérant)",
             self::UsersManage => 'Gérer les comptes du personnel',
             self::RolesManage => 'Gérer les rôles et leurs permissions',
             self::SettingsManage => "Modifier les paramètres de l'hôtel (journée commerciale, horaires des tarifs)",

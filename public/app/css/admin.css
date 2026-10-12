@@ -2955,3 +2955,12 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 .swal2-toast .swal2-title { font-size: .95rem; }
 .swal-error-list { text-align: left; margin: 0; padding-left: 1.2rem; font-size: .95rem; }
 .swal-error-list li + li { margin-top: 4px; }
+
+/* End-of-stay alarm: actions, paused card, sound unlock */
+.checkout-alert__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.checkout-alert__actions .btn { flex: 1 1 auto; }
+.checkout-alert__snoozed { font-size: .82rem; font-weight: 700; color: var(--ek-muted); margin: -4px 0 10px; }
+.checkout-alert.is-snoozed { animation: none; border-left-color: #9aa6b8; border-color: var(--ek-border); }
+.checkout-alert.is-snoozed .checkout-alert__title { color: var(--ek-ink); }
+.checkout-alert.is-snoozed .checkout-alert__title::before { animation: none; content: '\f1f6'; /* fa-bell-slash */ }
+.checkout-alerts__unlock { box-shadow: var(--ek-shadow-lg); font-weight: 700; }

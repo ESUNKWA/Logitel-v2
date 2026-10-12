@@ -183,8 +183,9 @@
             </div>
         </div>
 
-        @can('alerts.checkout')
-            {{-- Checkout alarm panel, filled by public/js/admin.js (polls the feed every 30 s). --}}
+        @if (auth()->user()?->receivesCheckoutAlarm())
+            {{-- End-of-stay alarm, filled by public/js/admin.js: rings continuously until check-out or
+                 extension (Réception only — never the Gérant). --}}
             <div
                 class="checkout-alerts"
                 id="checkoutAlerts"
@@ -192,7 +193,7 @@
                 data-csrf="{{ csrf_token() }}"
                 aria-live="assertive"
             ></div>
-        @endcan
+        @endif
 
         @if (session('receipt') && auth()->user()->can('invoices.view'))
             {{-- Right after an affectation / a réservation: receipt preview, printed from the frame (public/js/admin.js). --}}

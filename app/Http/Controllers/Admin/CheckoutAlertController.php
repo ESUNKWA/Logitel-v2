@@ -8,14 +8,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Checkout alarm feed, polled by public/js/admin.js on every admin page for staff holding the
- * `alerts.checkout` permission: checked-in stays whose departure time has been reached.
+ * End-of-stay alarm feed, polled by public/js/admin.js for staff who receive the alarm
+ * (User::receivesCheckoutAlarm(): the Réception, not the Gérant). Every checked-in stay whose
+ * departure time is reached rings continuously until it is checked out or extended; « Couper 5
+ * minutes » only pauses it (for everyone), then it rings again.
  */
 class CheckoutAlertController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $canOpen = $request->user()->can('affectations.manage');
+        $canHandle = $request->user()->can('affectations.manage');
 
         $alerts = Reservation::query()
             ->overdueCheckouts()
@@ -30,26 +32,29 @@ class CheckoutAlertController extends Controller
                 'phone' => $stay->guest?->phone,
                 'mode' => $stay->pricing_mode->getLabel(),
                 'billing' => $stay->billingLabel(),
-                'check_in' => $stay->check_in->format('d/m/Y H\hi'),
-                'check_out' => $stay->check_out->format('d/m/Y H\hi'),
+                'check_in' => $stay->check_in->format('d/m/Y H\\hi'),
+                'check_out' => $stay->check_out->format('d/m/Y H\\hi'),
                 'overdue_minutes' => (int) $stay->check_out->diffInMinutes(now()),
-                'open_url' => $canOpen ? route('admin.affectations.show', $stay) : null,
-                'acknowledge_url' => route('admin.alerts.checkouts.acknowledge', $stay),
+                'snoozed_until' => $stay->alarmSnoozedUntil()?->format('H\\hi'),
+                'checkout_url' => $canHandle ? route('admin.affectations.show', $stay).'#check-out' : null,
+                'extend_url' => $canHandle ? route('admin.affectations.show', $stay).'#prolonger' : null,
+                'snooze_url' => route('admin.alerts.checkouts.snooze', $stay),
             ]);
 
         return response()->json($alerts);
     }
 
     /**
-     * "Vu": silences the alarm for this stay (for every recipient) until its departure changes.
+     * « Couper 5 minutes »: pauses this stay's alarm for everyone; it rings again afterwards
+     * unless the stay has been checked out or extended in the meantime.
      */
-    public function acknowledge(Request $request, Reservation $reservation): JsonResponse
+    public function snooze(Request $request, Reservation $reservation): JsonResponse
     {
         $reservation->forceFill([
             'overdue_acknowledged_at' => now(),
             'overdue_acknowledged_by' => $request->user()->id,
         ])->saveQuietly();
 
-        return response()->json(['ok' => true]);
+        return response()->json(['snoozed_until' => $reservation->alarmSnoozedUntil()?->format('H\\hi')]);
     }
 }

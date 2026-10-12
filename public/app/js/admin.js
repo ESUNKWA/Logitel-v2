@@ -440,11 +440,12 @@
         });
     }
 
-    // --- Checkout alarm (departure time reached) ---
-    // Rendered only for staff holding the `alerts.checkout` permission (#checkoutAlerts in the
-    // layout). Polls the feed, shows one card per overdue stay and rings until "Vu" is clicked
-    // or the stay is checked out. Browsers only allow sound after a user interaction with the
-    // page, so the audio context is unlocked on the first click/keypress.
+    // --- End-of-stay alarm (departure time reached) ---
+    // Rendered for staff who receive it (#checkoutAlerts: the Réception, never the Gérant). Polls
+    // the feed, shows one card per overdue stay and RINGS CONTINUOUSLY (every few seconds) while
+    // at least one of them isn't paused, until the stay is checked out or extended. « Couper 5
+    // minutes » pauses one stay for everyone. Browsers only allow sound after a user interaction
+    // with the page, so the audio context is unlocked on the first click/keypress.
     var alertsBox = document.getElementById('checkoutAlerts');
     var requestsBox = document.getElementById('requestAlerts');
 
@@ -500,7 +501,10 @@
     };
 
     if (alertsBox && window.fetch) {
-        var POLL_MS = 30000;
+        var POLL_MS = 15000;
+        var RING_EVERY_MS = 4000;
+        var ringing = false;  // at least one overdue stay isn't paused
+        var unlockButton = null;
 
         var overdueLabel = function (minutes) {
             if (minutes < 1) {
@@ -512,33 +516,60 @@
             return 'depuis ' + Math.floor(minutes / 60) + ' h ' + pad(minutes % 60);
         };
 
-        var acknowledge = function (alert, card) {
-            if (!alert.acknowledge_url) { // demo card: nothing stored server-side
-                card.remove();
-                updateTitle();
+        var updateTitle = function (count) {
+            document.title = count ? '(' + count + ') Fin de séjour — ' + baseTitle : baseTitle;
+        };
+
+        // Continuous ringing: one triple beep every RING_EVERY_MS while `ringing`.
+        var ringTick = function () {
+            if (!ringing) {
                 return;
             }
-            fetch(alert.acknowledge_url, {
+            if (ring()) {
+                if (unlockButton) {
+                    unlockButton.remove();
+                    unlockButton = null;
+                }
+            } else if (!unlockButton) {
+                unlockButton = el('button', 'btn btn-sm btn-warning checkout-alerts__unlock', "🔔 Cliquez ici pour activer le son de l'alarme");
+                unlockButton.type = 'button';
+                unlockButton.addEventListener('click', function () {
+                    unlockAudio();
+                    setTimeout(ringTick, 50);
+                });
+                alertsBox.insertBefore(unlockButton, alertsBox.firstChild);
+            }
+        };
+
+        var snooze = function (alert, button) {
+            button.disabled = true;
+            if (!alert.snooze_url) { // demo card: nothing stored server-side
+                var resume = new Date(Date.now() + 5 * 60000);
+                alert.snoozed_until = pad(resume.getHours()) + 'h' + pad(resume.getMinutes());
+                render(currentAlerts);
+                return;
+            }
+            fetch(alert.snooze_url, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': alertsBox.dataset.csrf, Accept: 'application/json' },
             }).then(function (response) {
-                if (response.ok) {
-                    card.remove();
-                    updateTitle();
+                return response.ok ? response.json() : null;
+            }).then(function (data) {
+                if (data) {
+                    alert.snoozed_until = data.snoozed_until;
+                    render(currentAlerts);
                 }
-            });
+                button.disabled = false;
+            }).catch(function () { button.disabled = false; });
         };
 
-        var updateTitle = function () {
-            var count = alertsBox.querySelectorAll('.checkout-alert').length;
-            document.title = count ? '(' + count + ') Départ dépassé — ' + baseTitle : baseTitle;
-        };
-
+        var currentAlerts = [];
         var render = function (alerts) {
-            alertsBox.innerHTML = '';
+            currentAlerts = alerts;
+            Array.prototype.slice.call(alertsBox.querySelectorAll('.checkout-alert')).forEach(function (card) { card.remove(); });
 
             alerts.forEach(function (alert) {
-                var card = el('div', 'checkout-alert');
+                var card = el('div', 'checkout-alert' + (alert.snoozed_until ? ' is-snoozed' : ''));
                 card.setAttribute('role', 'alert');
                 card.appendChild(el('div', 'checkout-alert__title',
                     'Fin de séjour — Chambre N°' + alert.room + (alert.room_type ? ' (' + alert.room_type + ')' : '')));
@@ -548,7 +579,7 @@
                     'Client : ' + (alert.guest || '—') + (alert.phone ? ' — ' + alert.phone : ''),
                     alert.mode + ' : ' + alert.billing,
                     'Arrivée : ' + alert.check_in,
-                    'Départ prévu : ' + alert.check_out + ' (' + overdueLabel(alert.overdue_minutes) + ')',
+                    'Sortie prévue : ' + alert.check_out + ' (' + overdueLabel(alert.overdue_minutes) + ')',
                 ].forEach(function (line, i) {
                     if (i) {
                         details.appendChild(document.createElement('br'));
@@ -557,33 +588,39 @@
                 });
                 card.appendChild(details);
 
-                var actions = el('div', 'd-flex gap-2');
-                if (alert.open_url) {
-                    var open = el('a', 'btn btn-sm btn-danger', 'Ouvrir (check-out)');
-                    open.href = alert.open_url;
-                    actions.appendChild(open);
+                if (alert.snoozed_until) {
+                    card.appendChild(el('div', 'checkout-alert__snoozed', '🔕 Sonnerie coupée jusqu\'à ' + alert.snoozed_until));
                 }
-                var seen = el('button', 'btn btn-sm btn-outline-secondary', 'Vu');
-                seen.type = 'button';
-                seen.addEventListener('click', function () { acknowledge(alert, card); });
-                actions.appendChild(seen);
+
+                var actions = el('div', 'checkout-alert__actions');
+                if (alert.checkout_url) {
+                    var checkout = el('a', 'btn btn-sm btn-danger', 'Faire le check-out');
+                    checkout.href = alert.checkout_url;
+                    actions.appendChild(checkout);
+                }
+                if (alert.extend_url) {
+                    var extend = el('a', 'btn btn-sm btn-outline-primary', 'Prolonger');
+                    extend.href = alert.extend_url;
+                    actions.appendChild(extend);
+                }
+                if (!alert.snoozed_until) {
+                    var pause = el('button', 'btn btn-sm btn-outline-secondary', 'Couper 5 minutes');
+                    pause.type = 'button';
+                    pause.addEventListener('click', function () { snooze(alert, pause); });
+                    actions.appendChild(pause);
+                }
                 card.appendChild(actions);
 
                 alertsBox.appendChild(card);
             });
 
-            if (alerts.length && !ring()) {
-                var unlock = el('button', 'btn btn-sm btn-warning', "🔔 Cliquez pour activer le son de l'alarme");
-                unlock.type = 'button';
-                unlock.addEventListener('click', function () {
-                    unlockAudio();
-                    unlock.remove();
-                    setTimeout(ring, 50);
-                });
-                alertsBox.appendChild(unlock);
+            ringing = alerts.some(function (alert) { return !alert.snoozed_until; });
+            if (!ringing && unlockButton) {
+                unlockButton.remove();
+                unlockButton = null;
             }
-
-            updateTitle();
+            updateTitle(alerts.length);
+            ringTick();
         };
 
         var poll = function () {
@@ -596,6 +633,8 @@
                 })
                 .catch(function () { /* network hiccup: retry on next tick */ });
         };
+
+        setInterval(ringTick, RING_EVERY_MS);
 
         // Demo: add ?demo-alarme to any admin URL to display a sample alarm (no data is created
         // or changed; real polling is paused on that page so the sample stays on screen).
@@ -617,8 +656,10 @@
                 check_in: stamp(inAt),
                 check_out: stamp(out),
                 overdue_minutes: 15,
-                open_url: null,
-                acknowledge_url: null,
+                snoozed_until: null,
+                checkout_url: null,
+                extend_url: null,
+                snooze_url: null,
             }]);
         } else {
             poll();

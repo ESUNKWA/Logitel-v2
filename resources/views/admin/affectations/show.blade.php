@@ -29,7 +29,7 @@
             @endcan
             @if ($inProgress)
                 @can('affectations.manage')
-                    <form method="POST" action="{{ route('admin.affectations.check-out', $affectation) }}" onsubmit="return confirm('Confirmer le départ du client (check-out) ?');">
+                    <form method="POST" action="{{ route('admin.affectations.check-out', $affectation) }}" id="check-out" onsubmit="return confirm('Confirmer le départ du client (check-out) ?');">
                         @csrf
                         <button type="submit" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Check-out</button>
                     </form>
@@ -112,7 +112,7 @@
         <div class="col-lg-6">
             @if ($inProgress)
                 @can('affectations.manage')
-                    <div class="admin-card">
+                    <div class="admin-card" id="prolonger">
                         <h5>Prolonger ou modifier le séjour</h5>
                         <form method="POST" action="{{ route('admin.affectations.update', $affectation) }}">
                             @csrf

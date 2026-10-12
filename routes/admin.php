@@ -116,7 +116,7 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::delete('/invoices/{invoice}/payments/{payment}', [PaymentController::class, 'destroy'])->middleware('can:payments.delete')->name('invoices.payments.destroy');
 
         Route::get('/alertes/departs', [CheckoutAlertController::class, 'index'])->middleware('can:alerts.checkout')->name('alerts.checkouts');
-        Route::post('/alertes/departs/{reservation}/vu', [CheckoutAlertController::class, 'acknowledge'])->middleware('can:alerts.checkout')->name('alerts.checkouts.acknowledge');
+        Route::post('/alertes/departs/{reservation}/couper', [CheckoutAlertController::class, 'snooze'])->middleware('can:alerts.checkout')->name('alerts.checkouts.snooze');
 
         Route::resource('users', UserController::class)->except(['show', 'destroy'])->middleware('can:users.manage');
         Route::resource('roles', RoleController::class)->except(['show'])->middleware('can:roles.manage');

@@ -59,6 +59,17 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * The end-of-stay alarm rings for staff whose role explicitly grants `alerts.checkout` (the
+     * Réception) — never for the Gérant's system role, which holds every permission implicitly
+     * (client request: the manager must not hear it).
+     */
+    public function receivesCheckoutAlarm(): bool
+    {
+        return $this->is_active && $this->role !== null && ! $this->role->is_system
+            && $this->role->grants(Permission::AlertsCheckout);
+    }
+
     public function hasPermission(Permission|string $permission): bool
     {
         return $this->is_active && $this->role !== null && $this->role->grants($permission);

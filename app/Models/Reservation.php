@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -221,12 +222,30 @@ class Reservation extends Model
     /**
      * Checked-in stays whose departure time has passed and whose alarm nobody acknowledged yet.
      */
+    /**
+     * Stays in progress whose departure time is reached: the end-of-stay alarm rings for them
+     * until they are checked out or extended (« Couper 5 minutes » only pauses it, see
+     * alarmSnoozedUntil()).
+     */
     public function scopeOverdueCheckouts(Builder $query): Builder
     {
         return $query
             ->where('status', ReservationStatus::Enregistree)
-            ->where('check_out', '<=', now())
-            ->whereNull('overdue_acknowledged_at');
+            ->where('check_out', '<=', now());
+    }
+
+    /** « Couper 5 minutes » on the end-of-stay alarm. */
+    public const ALARM_SNOOZE_MINUTES = 5;
+
+    /**
+     * End of the current snooze of this stay's alarm (`overdue_acknowledged_at` = when it was
+     * last cut), or null when it rings.
+     */
+    public function alarmSnoozedUntil(): ?Carbon
+    {
+        $until = $this->overdue_acknowledged_at?->copy()->addMinutes(self::ALARM_SNOOZE_MINUTES);
+
+        return $until && $until->isFuture() ? $until : null;
     }
 
     /**
@@ -362,7 +381,7 @@ class Reservation extends Model
                 }
             }
 
-            // A new departure time (stay extended/shortened) re-arms the checkout alarm.
+            // A new departure time (stay extended/shortened) ends any snooze of the checkout alarm.
             if ($reservation->exists && $reservation->isDirty('check_out')) {
                 $reservation->overdue_acknowledged_at = null;
                 $reservation->overdue_acknowledged_by = null;
