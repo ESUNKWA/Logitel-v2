@@ -11,7 +11,7 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
         <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('app/css/admin.css') }}">
+        <link rel="stylesheet" href="{{ \App\Support\Asset::url('app/css/admin.css') }}">
         @include('admin.pwa._head')
         @stack('styles')
     </head>
@@ -231,8 +231,8 @@
         @if ($useSweetAlert ?? false)
             <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @endif
-        <script src="{{ asset('app/js/admin.js') }}"></script>
-        <script src="{{ asset('app/js/pwa.js') }}"></script>
+        <script src="{{ \App\Support\Asset::url('app/js/admin.js') }}"></script>
+        <script src="{{ \App\Support\Asset::url('app/js/pwa.js') }}"></script>
         @stack('scripts')
     </body>
 </html>

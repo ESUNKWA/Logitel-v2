@@ -11,7 +11,7 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
         <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
-        <link rel="stylesheet" href="{{ asset('app/css/admin.css') }}">
+        <link rel="stylesheet" href="{{ \App\Support\Asset::url('app/css/admin.css') }}">
         @include('admin.pwa._head')
     </head>
     <body class="admin-auth-body has-photo" style="--auth-photo: url('{{ $hotelInfo->loginBackgroundUrl() }}')">
@@ -43,7 +43,11 @@
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Se connecter</button>
             </form>
+            {{-- Installable application: shown by pwa.js until it's installed. --}}
+            <button type="button" class="btn btn-outline-primary w-100 mt-3 pwa-install" data-pwa-install hidden>
+                <i class="far fa-mobile-alt"></i> Installer l'application sur cet appareil
+            </button>
         </div>
-        <script src="{{ asset('app/js/pwa.js') }}"></script>
+        <script src="{{ \App\Support\Asset::url('app/js/pwa.js') }}"></script>
     </body>
 </html>

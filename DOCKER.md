@@ -194,7 +194,7 @@ Seule **l'application de gestion** (`/admin`) s'installe sur les téléphones ; 
 
 ### 4.1 Installer sans APK (Android, iPhone, ordinateur)
 
-- **Android / Chrome / Edge** : ouvrez `https://VOTRE-DOMAINE/admin`, connectez-vous, puis touchez **« Installer l'application »** en haut de l'écran (ou menu ⋮ → *Installer l'application*).
+- **Android / Chrome / Edge** : ouvrez `https://VOTRE-DOMAINE/admin` et touchez **« Installer l'application sur cet appareil »** (sous le bouton de connexion, ou en haut de l'écran une fois connecté). Si le navigateur ne propose pas l'installation directement, le bouton affiche les étapes (menu ⋮ → *Installer l'application* / *Ajouter à l'écran d'accueil*). Le bouton disparaît quand l'application est ouverte depuis son icône.
 - **iPhone / iPad** : dans **Safari**, touchez **Partager** → **Sur l'écran d'accueil** → **Ajouter** (le bouton « Installer l'application » rappelle ces étapes).
 
 L'icône « HE » apparaît sur l'écran d'accueil ; l'application s'ouvre en plein écran. Sans Internet, elle affiche « Pas de connexion » (aucune donnée n'est gardée sur le téléphone).

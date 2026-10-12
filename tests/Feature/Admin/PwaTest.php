@@ -35,7 +35,13 @@ class PwaTest extends TestCase
 
     public function test_the_application_and_its_login_are_installable_but_never_the_website(): void
     {
-        $this->get('/admin/login')->assertOk()->assertSee('rel="manifest"', false)->assertSee('name="app-sw"', false);
+        $this->get('/admin/login')->assertOk()
+            ->assertSee('rel="manifest"', false)
+            ->assertSee('name="app-sw"', false)
+            ->assertSee('Installer l\'application sur cet appareil', false)
+            // Versioned so a deployment reaches phones at once (Caddy lets them cache /app/* a week).
+            ->assertSee('/app/js/pwa.js?v='.filemtime(public_path('app/js/pwa.js')), false)
+            ->assertSee('/app/css/admin.css?v=', false);
         $this->actingAs(User::factory()->create())->get('/admin')->assertOk()
             ->assertSee('rel="manifest"', false)
             ->assertSee('data-pwa-install', false);

@@ -16,7 +16,7 @@ use Illuminate\View\View;
 class PwaController extends Controller
 {
     /** Bumped whenever the service worker or the files it pre-caches change. */
-    public const VERSION = '2026-10-12.2';
+    public const VERSION = '2026-10-12.3';
 
     /**
      * The application's root path with a trailing slash: « /admin/ » or « / ».
