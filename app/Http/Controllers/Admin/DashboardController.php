@@ -131,33 +131,12 @@ class DashboardController extends Controller
         $previousStart = BusinessDay::monthBounds($today->copy()->subMonthNoOverflow())[0];
         $previousEnd = $previousStart->copy()->addSeconds((int) $monthStart->diffInSeconds(now()));
 
-        $cashedThisMonth = (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->sum('amount');
+        $headline = self::headlineMoney($today, $dayStart, $dayEnd);
         $cashedPrevious = (float) Payment::query()->where('paid_at', '>=', $previousStart)->where('paid_at', '<', $previousEnd)->sum('amount');
 
-        $openInvoices = Invoice::query()
-            ->where('status', '!=', InvoiceStatus::Payee)
-            ->withSum('payments', 'amount')
-            ->get(['id', 'amount']);
-
         return [
-            // Cash actually received (payments), per business day / month.
-            'revenueToday' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->sum('amount'),
-            'revenueMonth' => $cashedThisMonth,
-            'revenueMonthDelta' => $cashedPrevious > 0 ? (int) round(($cashedThisMonth - $cashedPrevious) / $cashedPrevious * 100) : null,
-            // Billed: stays starting this business month (not cancelled).
-            'monthlyRevenue' => Reservation::query()
-                ->where('check_in', '>=', $monthStart)
-                ->where('check_in', '<', $monthEnd)
-                ->where('status', '!=', ReservationStatus::Annulee)
-                ->sum('total_amount'),
-            // Discounts granted on those same stays (the figure above is after discounts).
-            'monthlyDiscounts' => (float) Reservation::query()
-                ->where('check_in', '>=', $monthStart)
-                ->where('check_in', '<', $monthEnd)
-                ->where('status', '!=', ReservationStatus::Annulee)
-                ->sum('discount_amount'),
-            'outstandingAmount' => (float) $openInvoices->sum(fn (Invoice $invoice) => max(0, (float) $invoice->amount - (float) $invoice->payments_sum_amount)),
-            'outstandingCount' => $openInvoices->count(),
+            ...$headline,
+            'revenueMonthDelta' => $cashedPrevious > 0 ? (int) round(($headline['revenueMonth'] - $cashedPrevious) / $cashedPrevious * 100) : null,
             'dailyRevenue' => $this->dailyRevenue($today, $dayEnd),
             'revenueByMode' => $this->revenueByMode($monthStart, $monthEnd),
             // Cash received per payment method (espèces / Orange Money / Wave), today and this month.
@@ -171,6 +150,37 @@ class DashboardController extends Controller
      *
      * @return list<array{date: Carbon, amount: float}>
      */
+    /**
+     * The dashboard's headline money (also refreshed live by LiveFiguresController): cash received
+     * today / this business month, billed revenue and discounts of stays starting this month,
+     * open balances.
+     *
+     * @return array{revenueToday: float, revenueMonth: float, monthlyRevenue: float, monthlyDiscounts: float, outstandingAmount: float, outstandingCount: int}
+     */
+    public static function headlineMoney(Carbon $today, Carbon $dayStart, Carbon $dayEnd): array
+    {
+        [$monthStart, $monthEnd] = BusinessDay::monthBounds($today);
+        $openInvoices = Invoice::query()
+            ->where('status', '!=', InvoiceStatus::Payee)
+            ->withSum('payments', 'amount')
+            ->get(['id', 'amount']);
+        $monthStays = fn () => Reservation::query()
+            ->where('check_in', '>=', $monthStart)
+            ->where('check_in', '<', $monthEnd)
+            ->where('status', '!=', ReservationStatus::Annulee);
+
+        return [
+            // Cash actually received (payments), per business day / month.
+            'revenueToday' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->sum('amount'),
+            'revenueMonth' => (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->sum('amount'),
+            // Billed: stays starting this business month (not cancelled), after their discounts.
+            'monthlyRevenue' => (float) $monthStays()->sum('total_amount'),
+            'monthlyDiscounts' => (float) $monthStays()->sum('discount_amount'),
+            'outstandingAmount' => (float) $openInvoices->sum(fn (Invoice $invoice) => max(0, (float) $invoice->amount - (float) $invoice->payments_sum_amount)),
+            'outstandingCount' => $openInvoices->count(),
+        ];
+    }
+
     private function dailyRevenue(Carbon $today, Carbon $dayEnd): array
     {
         $first = $today->copy()->subDays(self::TREND_DAYS - 1);

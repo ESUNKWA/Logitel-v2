@@ -142,7 +142,7 @@ class CashAndAuthorshipTest extends TestCase
         $this->assertSame('2026-10-08 13:05', $stay->checked_out_at->format('Y-m-d H:i'));
 
         $this->actingAs($manager)->get("/admin/affectations/{$stay->id}")->assertOk()
-            ->assertSeeInOrder(['Affectation enregistrée', 'Awa Réception', 'Check-in', 'Awa Réception', 'Check-out', 'Gérant Kouassi'], false);
+            ->assertSeeInOrder(['Affectation enregistrée', 'Awa Réception', 'Check-in', 'Awa Réception', 'Sortie', 'Gérant Kouassi'], false);
         $this->actingAs($manager)->get('/admin/affectations?onglet=terminees')->assertSee('par Awa Réception');
     }
 

@@ -154,6 +154,7 @@ class Invoice extends Model
      * Never derived from counting invoices: deletions (e.g. cascading from a deleted guest)
      * would make that reuse an existing number, and concurrent requests could read the same count.
      * Issued numbers are never reused. Call inside the same transaction as the invoice insert.
+     * Prefix FAC- (invoices issued before were INV-… and keep their number; the yearly counter is shared).
      */
     public static function generateNumber(): string
     {
@@ -168,7 +169,7 @@ class Invoice extends Model
 
             DB::table('invoice_sequences')->where('year', $year)->update(['last_number' => $next]);
 
-            return sprintf('INV-%d-%04d', $year, $next);
+            return sprintf('FAC-%d-%04d', $year, $next);
         });
     }
 }

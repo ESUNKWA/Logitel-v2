@@ -46,6 +46,27 @@ class SweetAlertTest extends TestCase
             ->assertDontSee('return confirm(', false);
     }
 
+    public function test_check_out_is_confirmed_through_sweetalert(): void
+    {
+        $this->travelTo('2026-10-11 10:00:00');
+        $room = Room::factory()->create(['room_type_id' => RoomType::factory()->create()->id, 'number' => '204']);
+        $stay = Reservation::factory()->create(['room_id' => $room->id, 'pricing_mode' => 'heure', 'unit_rate' => 5000,
+            'check_in' => '2026-10-11 08:00', 'duration' => 1, 'status' => 'enregistree', 'origin' => Reservation::ORIGIN_AFFECTATION]);
+        $this->actingAs(User::factory()->create());
+
+        foreach ([route('admin.affectations.show', $stay), route('admin.front-desk.departures')] as $url) {
+            $this->withSession(['status' => 'Enregistré.'])->get($url)->assertOk()
+                ->assertSee('sweetalert2.all.min.js', false)
+                ->assertSee('data-confirm-title="Sortie — chambre N°204"', false)
+                ->assertSee('il reste 5 000 FCFA à encaisser', false)
+                ->assertSee('data-confirm-danger', false)
+                ->assertDontSee("return confirm('Confirmer", false)
+                // Only the confirmation changes: the page keeps its message box.
+                ->assertSee('<div class="alert alert-success">Enregistré.</div>', false)
+                ->assertDontSee('id="swalFlash"', false);
+        }
+    }
+
     public function test_other_pages_keep_their_alert_boxes(): void
     {
         $this->actingAs(User::factory()->create());

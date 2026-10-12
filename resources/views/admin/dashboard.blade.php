@@ -26,7 +26,7 @@
     </div>
 
     @if ($myCash)
-        @include('admin.partials._my-cash')
+        <div data-live-block="my-cash">@include('admin.partials._my-cash')</div>
     @endif
 
     {{-- ============================================================ Money --}}
@@ -34,7 +34,7 @@
         <div class="dash-grid dash-grid--money">
             <div class="dash-hero">
                 <div class="dash-hero__label">Recettes encaissées ce mois</div>
-                <div class="dash-hero__value">{{ $fcfa($revenueMonth) }}<small>FCFA</small></div>
+                <div class="dash-hero__value"><span data-live-value="revenueMonth">{{ $fcfa($revenueMonth) }}</span><small>FCFA</small></div>
                 <div class="dash-hero__meta">
                     @if ($revenueMonthDelta !== null)
                         <span class="dash-delta {{ $revenueMonthDelta >= 0 ? 'is-up' : 'is-down' }}">
@@ -60,13 +60,13 @@
             <div class="dash-tile">
                 <span class="dash-tile__icon dash-tile__icon--gold"><i class="fas fa-coins"></i></span>
                 <div class="dash-tile__label">Recettes du jour</div>
-                <div class="dash-tile__value">{{ $fcfa($revenueToday) }} <small>FCFA</small></div>
+                <div class="dash-tile__value"><span data-live-value="revenueToday">{{ $fcfa($revenueToday) }}</span> <small>FCFA</small></div>
                 <div class="dash-tile__hint">Encaissées depuis {{ $bdStart->format('H\hi') }}</div>
             </div>
             <div class="dash-tile">
                 <span class="dash-tile__icon dash-tile__icon--primary"><i class="fas fa-file-invoice-dollar"></i></span>
                 <div class="dash-tile__label">Chiffre d'affaires du mois</div>
-                <div class="dash-tile__value">{{ $fcfa($monthlyRevenue) }} <small>FCFA</small></div>
+                <div class="dash-tile__value"><span data-live-value="monthlyRevenue">{{ $fcfa($monthlyRevenue) }}</span> <small>FCFA</small></div>
                 <div class="dash-tile__hint">
                     Facturé (séjours commencés ce mois)
                     @if ($monthlyDiscounts > 0)
@@ -77,7 +77,7 @@
             <div class="dash-tile">
                 <span class="dash-tile__icon dash-tile__icon--danger"><i class="fas fa-hand-holding-usd"></i></span>
                 <div class="dash-tile__label">Reste à encaisser</div>
-                <div class="dash-tile__value">{{ $fcfa($outstandingAmount) }} <small>FCFA</small></div>
+                <div class="dash-tile__value"><span data-live-value="outstandingAmount">{{ $fcfa($outstandingAmount) }}</span> <small>FCFA</small></div>
                 <div class="dash-tile__hint">
                     @can('invoices.view')
                         <a href="{{ route('admin.invoices.index') }}">{{ $outstandingCount }} facture(s) non soldée(s)</a>
@@ -164,7 +164,7 @@
     </div>
 
     @isset($staffCash)
-        @include('admin.partials._staff-cash')
+        <div data-live-block="staff-cash">@include('admin.partials._staff-cash')</div>
     @endisset
 
     {{-- ============================================================ Charts --}}
@@ -323,7 +323,7 @@
                                     <span class="badge bg-danger">Dépassé</span>
                                 @endif
                                 @can('affectations.view')
-                                    <a href="{{ route('admin.affectations.show', $stay) }}" class="btn btn-sm btn-outline-primary">Check-out</a>
+                                    <a href="{{ route('admin.affectations.show', $stay) }}" class="btn btn-sm btn-outline-primary">Sortie</a>
                                 @endcan
                             </td>
                         </tr>

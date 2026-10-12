@@ -273,7 +273,7 @@ class AffectationReservationSplitTest extends TestCase
 
         $this->actingAs($user)->get('/admin/affectations?onglet=terminees')->assertOk();
         $this->actingAs($user)->get('/admin/affectations?onglet=annulees')->assertOk();
-        $this->actingAs($user)->get("/admin/affectations/{$stay->id}")->assertOk()->assertSee('Check-out')->assertSee('Prolonger');
+        $this->actingAs($user)->get("/admin/affectations/{$stay->id}")->assertOk()->assertSee('Sortie')->assertSee('Prolonger');
         $this->actingAs($user)->get('/admin/reservations/create')->assertOk()
             ->assertSee('data-booking-form', false)->assertSee('booking-mode-journee', false)->assertSee('Acompte');
     }

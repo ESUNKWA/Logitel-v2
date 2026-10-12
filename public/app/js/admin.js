@@ -594,7 +594,7 @@
 
                 var actions = el('div', 'checkout-alert__actions');
                 if (alert.checkout_url) {
-                    var checkout = el('a', 'btn btn-sm btn-danger', 'Faire le check-out');
+                    var checkout = el('a', 'btn btn-sm btn-danger', 'Valider la sortie');
                     checkout.href = alert.checkout_url;
                     actions.appendChild(checkout);
                 }
@@ -1061,6 +1061,21 @@
             var firstInvalid = assignModal.querySelector('.is-invalid');
             if (firstInvalid) {
                 assignModal.addEventListener('shown.bs.modal', function () { firstInvalid.focus(); }, { once: true });
+            }
+        }
+    }
+
+    // --- Arriving from the home page's « Chambres disponibles » (?affecter=ID): open that room's modal ---
+    if (assignModal && !assignModal.dataset.reopenRoom && window.URLSearchParams) {
+        var params = new URLSearchParams(window.location.search);
+        var wantedRoom = params.get('affecter');
+        if (wantedRoom) {
+            params.delete('affecter');
+            var query = params.toString();
+            history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+            var wantedCard = document.querySelector('[data-assign-room][data-room-id="' + wantedRoom.replace(/\D/g, '') + '"]');
+            if (wantedCard) {
+                openAssignModal(wantedCard, false);
             }
         }
     }
@@ -1562,3 +1577,64 @@
     });
 })();
 
+
+// --- Live money (home page and figures dashboard) ---
+// Blocks marked [data-live-block="my-cash|home-figures|staff-cash"] and numbers marked
+// [data-live-value="…"] are refreshed from LiveFiguresController every 15 s while the tab is
+// visible (and right away when it becomes visible again), so a payment recorded by another
+// staff member shows up without reloading. The server re-renders each block with the same
+// partial as the page and only sends what the user may see; a block is replaced only when its
+// HTML changed (no flicker, focus kept elsewhere).
+(function () {
+    'use strict';
+
+    var main = document.querySelector('main[data-live-url]');
+    var blocks = document.querySelectorAll('[data-live-block]');
+    var values = document.querySelectorAll('[data-live-value]');
+    if (!main || !window.fetch || (!blocks.length && !values.length)) {
+        return;
+    }
+
+    var LIVE_MS = 15000;
+    var names = Array.prototype.map.call(blocks, function (block) { return block.dataset.liveBlock; });
+    var url = main.dataset.liveUrl + '?blocs=' + encodeURIComponent(names.join(',')) + (values.length ? '&valeurs=1' : '');
+    var busy = false;
+
+    var refresh = function () {
+        if (busy || document.hidden) {
+            return;
+        }
+        busy = true;
+        fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(function (response) { return response.ok ? response.json() : null; })
+            .then(function (data) {
+                if (!data) {
+                    return;
+                }
+                blocks.forEach(function (block) {
+                    var html = data.blocks ? data.blocks[block.dataset.liveBlock] : undefined;
+                    if (typeof html === 'string' && block.innerHTML.trim() !== html.trim()) {
+                        block.innerHTML = html; // server-rendered Blade partial (escaped there)
+                        block.classList.remove('is-updated');
+                        void block.offsetWidth; // restart the highlight animation
+                        block.classList.add('is-updated');
+                    }
+                });
+                values.forEach(function (node) {
+                    var value = data.values ? data.values[node.dataset.liveValue] : undefined;
+                    if (typeof value === 'string' && node.textContent !== value) {
+                        node.textContent = value;
+                    }
+                });
+            })
+            .catch(function () { /* network hiccup: next tick */ })
+            .then(function () { busy = false; });
+    };
+
+    setInterval(refresh, LIVE_MS);
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+            refresh();
+        }
+    });
+})();

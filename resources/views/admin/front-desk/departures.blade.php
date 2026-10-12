@@ -1,6 +1,7 @@
 @extends('admin.layouts.admin')
 
 @section('title', 'Sorties')
+@section('sweetalert-confirm', '1')
 
 @section('content')
     @php
@@ -54,9 +55,12 @@
                     @endif
                     @can('affectations.manage')
                         <form method="POST" action="{{ route('admin.affectations.check-out', $stay) }}"
-                            onsubmit="return confirm('{{ $remaining > 0 ? 'Attention : il reste '.$fcfa($remaining).' FCFA à encaisser. ' : '' }}Confirmer la sortie du client (chambre N°{{ $stay->room?->number }}) ?');">
+                            data-confirm-title="Sortie — chambre N°{{ $stay->room?->number }}"
+                            data-confirm="{{ $remaining > 0 ? 'Attention : il reste '.$fcfa($remaining).' FCFA à encaisser. ' : '' }}Confirmer la sortie du client ? La chambre redeviendra libre."
+                            data-confirm-button="Oui, valider la sortie"
+                            @if ($remaining > 0) data-confirm-danger @endif>
                             @csrf
-                            <button type="submit" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Check-out</button>
+                            <button type="submit" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Sortie</button>
                         </form>
                     @endcan
                     <a href="{{ route('admin.affectations.show', $stay) }}" class="btn btn-link">Ouvrir</a>

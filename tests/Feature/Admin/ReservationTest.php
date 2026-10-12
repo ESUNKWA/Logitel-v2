@@ -36,7 +36,7 @@ class ReservationTest extends TestCase
         $this->assertNotNull($reservation->invoice);
         $this->assertSame('225000.00', $reservation->invoice->amount);
         $this->assertSame(InvoiceStatus::Impayee, $reservation->invoice->status);
-        $this->assertStringStartsWith('INV-', $reservation->invoice->number);
+        $this->assertStringStartsWith('FAC-', $reservation->invoice->number);
     }
 
     public function test_room_status_updates_on_check_in_and_check_out(): void

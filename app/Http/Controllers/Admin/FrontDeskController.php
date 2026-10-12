@@ -10,11 +10,13 @@ use App\Models\Guest;
 use App\Models\Invoice;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\User;
 use App\Support\BusinessDay;
 use App\Support\FinanceStats;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -38,12 +40,43 @@ class FrontDeskController extends Controller
                 ] : null,
                 'arrivees' => $user->can('reservations.view') ? $this->arrivalsQuery()->count() : null,
             ],
+            ...self::moneyBlocks($user),
+        ]);
+    }
+
+    /**
+     * The home page's live figures for this user — the same data the page renders and
+     * LiveFiguresController refreshes (each only computed when the user may see it):
+     * room counts, the hotel's money (manager), every staff member's takings (manager) and
+     * the user's own takings (anyone else who cashes), and the free rooms (réception only).
+     *
+     * @return array{roomCounts: array<string, int>|null, finance: array<string, mixed>|null, staffCash: list<array<string, mixed>>|null, myCash: array<string, mixed>|null, freeRooms: Collection<string, Collection<int, Room>>|null}
+     */
+    public static function moneyBlocks(User $user): array
+    {
+        return [
             'roomCounts' => $user->can('rooms.view') ? DashboardController::roomCounts() : null,
-            'finance' => $user->can('dashboard.revenue') ? $this->financeFigures() : null,
+            'finance' => $user->can('dashboard.revenue') ? self::financeFigures() : null,
             // The manager sees every staff member's takings; the others only their own.
             'staffCash' => $user->can('dashboard.revenue') ? FinanceStats::cashByUser(...BusinessDay::current()) : null,
             'myCash' => $user->can('payments.create') && $user->cannot('dashboard.revenue') ? self::myCash($user->id) : null,
-        ]);
+            // Receptionists (not the manager) see the free rooms themselves on their home (client request).
+            'freeRooms' => $user->can('rooms.view') && $user->cannot('dashboard.revenue') ? self::freeRooms() : null,
+        ];
+    }
+
+    /**
+     * Rooms free right now (availableNow), grouped by room type name, types and numbers in natural order.
+     *
+     * @return Collection<string, Collection<int, Room>>
+     */
+    public static function freeRooms(): Collection
+    {
+        return Room::query()->availableNow()->with('roomType')->get()
+            ->sort(fn (Room $a, Room $b) => strnatcasecmp((string) $a->number, (string) $b->number))
+            ->groupBy(fn (Room $room) => $room->roomType?->name ?? 'Sans type')
+            ->sortKeys(SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn ($rooms) => $rooms->values());
     }
 
     /**
@@ -71,7 +104,7 @@ class FrontDeskController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function financeFigures(): array
+    public static function financeFigures(): array
     {
         [$dayStart, $dayEnd] = BusinessDay::current();
         [$monthStart, $monthEnd] = BusinessDay::monthBounds(BusinessDay::today());

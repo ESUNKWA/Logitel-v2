@@ -26,6 +26,7 @@ class PermissionTest extends TestCase
         'admin.logout',
         'admin.dashboard',
         'admin.stats',          // same page as the full-mode home (money figures gated inside)
+        'admin.live-figures',   // live refresh of those same figures, gated the same way
         'admin.ui-mode.update', // each staff member's own layout preference
         'admin.profile.edit',
         'admin.profile.update',

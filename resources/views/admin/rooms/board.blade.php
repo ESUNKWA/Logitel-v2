@@ -172,7 +172,7 @@
                     @endcan
                     @can('affectations.view')
                         <div class="mt-2">
-                            <a href="{{ route('admin.affectations.show', $room->currentStay) }}" class="small">Ouvrir (check-out)</a>
+                            <a href="{{ route('admin.affectations.show', $room->currentStay) }}" class="small">Ouvrir (sortie)</a>
                         </div>
                     @endcan
                 @elseif ($room->status->value !== 'disponible')

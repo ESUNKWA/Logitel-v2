@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\FrontDeskController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\HotelInfoController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\LiveFiguresController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PwaController;
@@ -59,6 +60,8 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         // Home: front-desk tiles in "Mode simple", figures dashboard in "Mode complet" (per account).
         Route::get('/', [DashboardController::class, 'home'])->name('dashboard');
         Route::get('/tableau-de-bord', [DashboardController::class, 'index'])->name('stats');
+        // Live refresh of the home / dashboard money (each block gated inside, like those pages).
+        Route::get('/chiffres-en-direct', [LiveFiguresController::class, 'show'])->name('live-figures');
         Route::post('/mode', [UiModeController::class, 'update'])->name('ui-mode.update');
 
         // Mode simple task lists (read only; actions post to the existing routes).

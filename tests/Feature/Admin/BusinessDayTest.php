@@ -74,7 +74,7 @@ class BusinessDayTest extends TestCase
         $invoice = $this->stay('2027-01-01 03:00')->invoice;
 
         $this->assertSame('2026-12-31', $invoice->issued_at->toDateString());
-        $this->assertSame('INV-2026-0001', $invoice->number);
+        $this->assertSame('FAC-2026-0001', $invoice->number);
     }
 
     public function test_room_booked_before_06h_counts_as_reserved_for_the_current_business_day(): void

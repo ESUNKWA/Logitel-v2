@@ -398,7 +398,7 @@ class Room extends Model
 
         if ($conflict->status === ReservationStatus::Enregistree && $conflict->check_out->lessThanOrEqualTo(now())) {
             return "La chambre N°{$room} est encore occupée : le départ du séjour en cours était prévu le "
-                .$at($conflict->check_out).' et le check-out n\'a pas été fait. Faites le check-out ou prolongez ce séjour d\'abord.';
+                .$at($conflict->check_out).' et la sortie n\'a pas été faite. Validez la sortie du client ou prolongez ce séjour d\'abord.';
         }
 
         // No real overlap: only the cleaning time between the two stays is missing.

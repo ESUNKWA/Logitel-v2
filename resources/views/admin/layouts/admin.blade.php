@@ -158,7 +158,7 @@
                     </div>
                 </header>
 
-                <main class="admin-content">
+                <main class="admin-content" data-live-url="{{ route('admin.live-figures') }}">
                     {{-- A page defining section "sweetalert" gets its messages and errors as SweetAlert pop-ups
                          (admin.js, #swalFlash) instead of the alert boxes below. --}}
                     @php($useSweetAlert = \Illuminate\Support\Facades\View::hasSection('sweetalert'))
@@ -228,7 +228,8 @@
 
         <script src="{{ asset('vendor/bootstrap/popper.min.js') }}"></script>
         <script src="{{ asset('vendor/bootstrap/bootstrap.min.js') }}"></script>
-        @if ($useSweetAlert ?? false)
+        {{-- Section "sweetalert-confirm" loads SweetAlert for the data-confirm forms only (messages keep their boxes). --}}
+        @if (($useSweetAlert ?? false) || \Illuminate\Support\Facades\View::hasSection('sweetalert-confirm'))
             <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @endif
         <script src="{{ \App\Support\Asset::url('app/js/admin.js') }}"></script>

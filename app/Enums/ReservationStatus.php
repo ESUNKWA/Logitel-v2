@@ -16,7 +16,7 @@ enum ReservationStatus: string
             self::EnAttente => 'En attente',
             self::Confirmee => 'Confirmée',
             self::Enregistree => 'Enregistrée (check-in)',
-            self::Terminee => 'Terminée (check-out)',
+            self::Terminee => 'Terminée (sortie)',
             self::Annulee => 'Annulée',
         };
     }
@@ -59,7 +59,7 @@ enum ReservationStatus: string
     {
         return match ($this) {
             self::Enregistree => 'En cours',
-            self::Terminee => 'Terminée (check-out)',
+            self::Terminee => 'Terminée (sortie)',
             self::Annulee => 'Annulée',
             default => $this->getLabel(),
         };

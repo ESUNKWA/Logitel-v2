@@ -2372,6 +2372,62 @@ a.home-tile:focus-visible { outline: 3px solid rgba(var(--tile-rgb), .4); outlin
 .home-rooms__item { display: inline-flex; align-items: center; gap: 6px; color: var(--ek-text); }
 .home-rooms__item:hover { color: var(--ek-primary); }
 
+/* Receptionists' home: the screen split in two equal halves — other blocks left, free rooms
+   right (sticky, own scroll); stacked under 1100 px. */
+.home-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+}
+.home-layout__main { container-type: inline-size; min-width: 0; }
+.home-layout__side { position: sticky; top: 16px; min-width: 0; }
+.home-layout__side .home-free { margin-bottom: 0; min-height: 320px; max-height: calc(100vh - 120px); overflow-y: auto; }
+.home-layout__side .home-free__type-name { min-width: 0; width: 100%; }
+.home-layout__side .home-free__room { min-width: 72px; padding: 10px 12px; font-size: 1.05rem; }
+@media (max-width: 1099.98px) {
+    .home-layout { grid-template-columns: minmax(0, 1fr); }
+    .home-layout__side { position: static; }
+    .home-layout__side .home-free { min-height: 0; max-height: none; }
+}
+
+/* « Chambres disponibles » on the receptionists' home */
+.home-free {
+    margin-bottom: 22px;
+    padding: 16px 18px;
+    border-radius: var(--ek-radius);
+    background: var(--ek-surface);
+    border: 1px solid var(--ek-border);
+    border-left: 4px solid var(--bs-success);
+}
+.home-free__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 10px; }
+.home-free__title { font-size: 1.05rem; font-weight: 800; color: var(--ek-ink); margin: 0; }
+.home-free__title i { color: var(--bs-success); margin-right: 4px; }
+.home-free__count { font-weight: 700; color: var(--bs-success); }
+.home-free__all { margin-left: auto; font-size: .875rem; font-weight: 600; }
+.home-free__type { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 0; border-top: 1px solid var(--ek-border); }
+.home-free__type-name { min-width: 180px; font-weight: 700; color: var(--ek-ink); }
+.home-free__rate { display: block; font-size: .8rem; font-weight: 500; color: var(--ek-muted); }
+.home-free__rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+.home-free__room {
+    display: inline-block;
+    min-width: 58px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700;
+    color: var(--bs-success);
+    background: rgba(var(--bs-success-rgb), .1);
+    border: 1px solid rgba(var(--bs-success-rgb), .3);
+    text-decoration: none;
+}
+.home-free__room:hover, .home-free__room:focus-visible { background: var(--bs-success); color: #fff; }
+.home-free__empty { margin: 0; color: var(--ek-muted); }
+@media (max-width: 575.98px) {
+    .home-free__type-name { min-width: 0; width: 100%; }
+    .home-free__room { min-width: 0; flex: 1 0 64px; }
+}
+
 /* Front-desk task lists (departures, arrivals, to collect, search) */
 .fd-list { display: flex; flex-direction: column; gap: 12px; }
 
@@ -2973,3 +3029,20 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 .pwa-offline__card img { border-radius: 18px; margin-bottom: 16px; }
 .pwa-offline__card h1 { font-size: 1.4rem; margin-bottom: 10px; }
 .pwa-offline__card p { color: var(--ek-muted); margin-bottom: 20px; }
+
+/* Live money blocks: a short highlight when a figure changes */
+[data-live-block].is-updated > * { animation: live-updated 1.6s ease-out; }
+@keyframes live-updated { 0% { box-shadow: 0 0 0 3px rgba(201, 162, 75, .55); } 100% { box-shadow: 0 0 0 0 rgba(201, 162, 75, 0); } }
+@media (prefers-reduced-motion: reduce) { [data-live-block].is-updated > * { animation: none; } }
+
+/* Receptionists' home, left column narrower than the page (free rooms on the right):
+   the bands adapt to the column's width, not the screen's. */
+@container (max-width: 860px) {
+    .home-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .my-cash { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+    .my-cash__side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+}
+@container (max-width: 640px) {
+    .my-cash { grid-template-columns: 1fr; }
+    .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

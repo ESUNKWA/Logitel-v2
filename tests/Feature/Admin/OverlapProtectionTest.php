@@ -102,7 +102,7 @@ class OverlapProtectionTest extends TestCase
 
         // Even a booking for tomorrow is refused while the guest hasn't been checked out.
         $this->book('heure', '2026-10-09T10:00', 2)->assertSessionHasErrors([
-            'room_id' => "La chambre N°OV-1 est encore occupée : le départ du séjour en cours était prévu le 08/10/2026 à 09h00 et le check-out n'a pas été fait. Faites le check-out ou prolongez ce séjour d'abord.",
+            'room_id' => "La chambre N°OV-1 est encore occupée : le départ du séjour en cours était prévu le 08/10/2026 à 09h00 et la sortie n'a pas été faite. Validez la sortie du client ou prolongez ce séjour d'abord.",
         ]);
 
         $this->actingAs(User::factory()->create())->post("/admin/affectations/{$stay->id}/check-out");

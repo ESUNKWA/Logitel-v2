@@ -134,6 +134,6 @@ class AffectationFiltersTest extends TestCase
     public function test_each_row_shows_the_stay_details(): void
     {
         $this->actingAs($this->user)->get(route('admin.affectations.index', ['onglet' => 'toutes', 'q' => 'Ama']))->assertOk()
-            ->assertSeeInOrder(['N°D-2', 'Deluxe', 'Ama Bamba', '0303', 'Journée (6 h)', '1 journée × 25 000 FCFA', '05/10/2026', '08h00', '05/10/2026', '14h00', '25 000 FCFA', 'encaissé 10 000', 'reste 15 000', 'Partiellement payée', 'Terminée (check-out)', 'affectation directe'], false);
+            ->assertSeeInOrder(['N°D-2', 'Deluxe', 'Ama Bamba', '0303', 'Journée (6 h)', '1 journée × 25 000 FCFA', '05/10/2026', '08h00', '05/10/2026', '14h00', '25 000 FCFA', 'encaissé 10 000', 'reste 15 000', 'Partiellement payée', 'Terminée (sortie)', 'affectation directe'], false);
     }
 }

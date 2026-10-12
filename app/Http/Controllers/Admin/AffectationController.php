@@ -204,7 +204,7 @@ class AffectationController extends Controller
         // The model event frees the room ("disponible").
         $affectation->update(['status' => ReservationStatus::Terminee]);
 
-        return back()->with('status', "Séjour terminé (check-out effectué) : la chambre N°{$affectation->room?->number} est de nouveau libre.");
+        return back()->with('status', "Séjour terminé (sortie validée) : la chambre N°{$affectation->room?->number} est de nouveau libre.");
     }
 
     public function cancel(Reservation $affectation): RedirectResponse
