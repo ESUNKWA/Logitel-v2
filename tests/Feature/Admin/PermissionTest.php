@@ -30,6 +30,10 @@ class PermissionTest extends TestCase
         'admin.profile.edit',
         'admin.profile.update',
         'admin.profile.password.update',
+        'admin.pwa.manifest',       // installable application: public, the login page needs them
+        'admin.pwa.service-worker',
+        'admin.pwa.offline',
+        'admin.pwa.asset-links',    // Android APK verification (no data)
     ];
 
     public function test_every_admin_route_requires_a_permission(): void

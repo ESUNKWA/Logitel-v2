@@ -12,6 +12,7 @@
         <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
         <link rel="stylesheet" href="{{ asset('app/css/admin.css') }}">
+        @include('admin.pwa._head')
         @stack('styles')
     </head>
     @php($simpleUi = (bool) auth()->user()?->usesSimpleUi())
@@ -135,6 +136,10 @@
                         </button>
                     @endif
                     <div class="admin-topbar__spacer"></div>
+                    {{-- Shown by admin.js when the device can install the application (or on iPhone: how to). --}}
+                    <button type="button" class="btn btn-sm btn-outline-primary pwa-install" data-pwa-install hidden>
+                        <i class="far fa-mobile-alt"></i><span class="pwa-install__label"> Installer l'application</span>
+                    </button>
                     <form method="POST" action="{{ route('admin.ui-mode.update') }}" class="ui-mode-switch">
                         @csrf
                         <input type="hidden" name="mode" value="{{ $simpleUi ? 'complet' : 'simple' }}">
@@ -227,6 +232,7 @@
             <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @endif
         <script src="{{ asset('app/js/admin.js') }}"></script>
+        <script src="{{ asset('app/js/pwa.js') }}"></script>
         @stack('scripts')
     </body>
 </html>

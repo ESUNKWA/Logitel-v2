@@ -188,7 +188,44 @@ Caddy obtient et renouvelle **automatiquement** un certificat Let's Encrypt grat
 
 ---
 
-## 4. Développement avec Docker
+## 4. Application mobile (Android / iPhone) pour le personnel
+
+Seule **l'application de gestion** (`/admin`) s'installe sur les téléphones ; le site public et la page `/demande` des clients restent dans le navigateur. Prérequis : **HTTPS** (un domaine, même provisoire comme `….sslip.io` fourni par Coolify).
+
+### 4.1 Installer sans APK (Android, iPhone, ordinateur)
+
+- **Android / Chrome / Edge** : ouvrez `https://VOTRE-DOMAINE/admin`, connectez-vous, puis touchez **« Installer l'application »** en haut de l'écran (ou menu ⋮ → *Installer l'application*).
+- **iPhone / iPad** : dans **Safari**, touchez **Partager** → **Sur l'écran d'accueil** → **Ajouter** (le bouton « Installer l'application » rappelle ces étapes).
+
+L'icône « HE » apparaît sur l'écran d'accueil ; l'application s'ouvre en plein écran. Sans Internet, elle affiche « Pas de connexion » (aucune donnée n'est gardée sur le téléphone).
+
+### 4.2 Générer un vrai fichier APK (Android)
+
+1. Allez sur **https://www.pwabuilder.com**, saisissez `https://VOTRE-DOMAINE/admin/login` et lancez l'analyse.
+2. Choisissez **Package for stores → Android**, puis **Generate**. Gardez les options proposées ; notez le **Package ID** (ex. `ci.hotelevasion.gestion`).
+3. Téléchargez le ZIP. Il contient l'**APK** (pour installer directement), l'**AAB** (pour le Play Store), la **clé de signature** (`signing.keystore` + mots de passe) et un fichier `assetlinks.json`.
+   > 🔐 **Gardez précieusement la clé de signature et ses mots de passe** (hors du serveur) : sans elle, impossible de publier une mise à jour du même APK.
+4. Ouvrez `assetlinks.json` et copiez le **package_name** et l'**empreinte SHA-256** dans Coolify (variables d'environnement de l'application) :
+   ```
+   PWA_ANDROID_PACKAGE=ci.hotelevasion.gestion
+   PWA_ANDROID_SHA256=AB:CD:…:EF
+   ```
+   Redéployez, puis vérifiez que `https://VOTRE-DOMAINE/.well-known/assetlinks.json` affiche ces valeurs. Sans cela, l'APK s'ouvre avec une barre d'adresse.
+5. **Installation directe** : envoyez le fichier `.apk` sur le téléphone (WhatsApp, câble…), ouvrez-le et autorisez l'installation depuis cette source.
+   **Ou Play Store** : compte développeur Google (25 $ une fois), publiez l'AAB, éventuellement en test interne réservé à votre équipe.
+
+L'APK affiche toujours la version à jour de l'application : pas besoin de le régénérer après une mise à jour du serveur.
+
+### 4.3 Au changement de domaine (domaine provisoire → définitif)
+
+1. Dans Coolify : `APP_URL`, `SERVER_NAME` (et `SITE_DOMAIN` / `ADMIN_DOMAIN` si vous séparez site et application) ; redéployez. Tout le personnel se reconnecte une fois.
+2. **Regénérez l'APK** avec PWABuilder sur le nouveau domaine **en réutilisant la même clé de signature** (option *Use existing signing key*), mettez à jour `PWA_ANDROID_SHA256` si besoin, réinstallez ou publiez la mise à jour.
+3. Les installations « sans APK » (§ 4.1) sont à refaire depuis la nouvelle adresse.
+4. **Réimprimez l'affiche QR code** de la page `/demande` (elle contient l'adresse).
+
+---
+
+## 5. Développement avec Docker
 
 Le code de votre ordinateur est monté dans le conteneur : toute modification est visible immédiatement, sans reconstruire.
 

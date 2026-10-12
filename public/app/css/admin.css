@@ -2964,3 +2964,12 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 .checkout-alert.is-snoozed .checkout-alert__title { color: var(--ek-ink); }
 .checkout-alert.is-snoozed .checkout-alert__title::before { animation: none; content: '\f1f6'; /* fa-bell-slash */ }
 .checkout-alerts__unlock { box-shadow: var(--ek-shadow-lg); font-weight: 700; }
+
+/* Installable application: install button (topbar) and offline page */
+.pwa-install { white-space: nowrap; }
+@media (max-width: 560px) { .pwa-install__label { display: none; } }
+.pwa-offline { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, var(--ek-sidebar-from), var(--ek-sidebar-to)); }
+.pwa-offline__card { max-width: 420px; padding: 32px 28px; border-radius: var(--ek-radius); background: var(--ek-surface); text-align: center; box-shadow: var(--ek-shadow-lg); }
+.pwa-offline__card img { border-radius: 18px; margin-bottom: 16px; }
+.pwa-offline__card h1 { font-size: 1.4rem; margin-bottom: 10px; }
+.pwa-offline__card p { color: var(--ek-muted); margin-bottom: 20px; }

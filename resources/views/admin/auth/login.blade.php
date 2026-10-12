@@ -12,6 +12,7 @@
         <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
         <link rel="stylesheet" href="{{ asset('app/css/admin.css') }}">
+        @include('admin.pwa._head')
     </head>
     <body class="admin-auth-body has-photo" style="--auth-photo: url('{{ $hotelInfo->loginBackgroundUrl() }}')">
         <div class="admin-auth-card">
@@ -43,5 +44,6 @@
                 <button type="submit" class="btn btn-primary w-100">Se connecter</button>
             </form>
         </div>
+        <script src="{{ asset('app/js/pwa.js') }}"></script>
     </body>
 </html>

@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\HotelInfoController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\PwaController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\RequestQrCodeController;
 use App\Http\Controllers\Admin\ReservationController;
@@ -44,6 +45,11 @@ use Illuminate\Support\Facades\Route;
  * That test fails if a new route is added without one.
  */
 Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_prefix'))->name('admin.')->group(function () {
+    // Installable application (PWA), public because the login page needs it; scoped to this path.
+    Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
+    Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.service-worker');
+    Route::get('/hors-ligne', [PwaController::class, 'offline'])->name('pwa.offline');
+
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('login.attempt');
 
@@ -145,3 +151,6 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::put('/parametres', [SettingsController::class, 'update'])->middleware('can:settings.manage')->name('settings.update');
     });
 });
+
+// Android APK (Trusted Web Activity) verification, at the root of the application's host.
+Route::domain(config('routing.admin_domain'))->get('/.well-known/assetlinks.json', [PwaController::class, 'assetLinks'])->name('admin.pwa.asset-links');
