@@ -72,6 +72,18 @@ class PwaTest extends TestCase
             ->assertDontSee('FCFA');
     }
 
+    public function test_an_environment_suffix_tells_the_installed_apps_apart(): void
+    {
+        $this->get('/admin/manifest.webmanifest')->assertOk()
+            ->assertJsonPath('name', config('hotel.info.name') ? config('hotel.info.name').' — Gestion' : 'Hôtel Evasion — Gestion');
+
+        config(['pwa.name_suffix' => 'UAT', 'hotel.info.name' => 'Hôtel Evasion']);
+        $this->get('/admin/manifest.webmanifest')->assertOk()
+            ->assertJsonPath('name', 'Hôtel Evasion — Gestion UAT')
+            ->assertJsonPath('short_name', 'Hôtel Evasion UAT')
+            ->assertJsonPath('id', '/admin/'); // scope / id unchanged
+    }
+
     public function test_android_asset_links_appear_only_once_configured(): void
     {
         $this->get('/.well-known/assetlinks.json')->assertNotFound();

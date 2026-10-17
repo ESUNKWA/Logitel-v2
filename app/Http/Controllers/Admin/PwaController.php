@@ -29,14 +29,15 @@ class PwaController extends Controller
     public function manifest(HotelInfo $hotel): JsonResponse
     {
         $scope = self::scope();
+        $suffix = config('pwa.name_suffix') !== '' ? ' '.config('pwa.name_suffix') : ''; // « UAT » on the test server
         $icon = fn (string $file, string $size, string $purpose = 'any') => [
             'src' => asset('app/images/pwa/'.$file), 'sizes' => $size, 'type' => 'image/png', 'purpose' => $purpose,
         ];
 
         return response()->json([
             'id' => $scope,
-            'name' => $hotel->name().' — Gestion',
-            'short_name' => $hotel->name(),
+            'name' => $hotel->name().' — Gestion'.$suffix,
+            'short_name' => $hotel->name().$suffix,
             'description' => 'Gestion hôtelière : chambres, affectations, réservations et encaissements.',
             'lang' => 'fr',
             'dir' => 'ltr',

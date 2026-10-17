@@ -216,7 +216,26 @@ L'icône « HE » apparaît sur l'écran d'accueil ; l'application s'ouvre en pl
 
 L'APK affiche toujours la version à jour de l'application : pas besoin de le régénérer après une mise à jour du serveur.
 
-### 4.3 Au changement de domaine (domaine provisoire → définitif)
+### 4.3 Deux APK : un pour l'UAT (test), un pour la production
+
+Deux APK peuvent être installés **côte à côte** sur le même téléphone s'ils ont **un Package ID différent** (avec le même, l'un remplace l'autre). On garde **la même clé de signature** pour les deux.
+
+| | Production | UAT (test) |
+|---|---|---|
+| Adresse à donner à PWABuilder | `https://DOMAINE-PROD/admin/login` | `https://ADRESSE-UAT/admin/login` |
+| Package ID | `ci.hotelevasion.gestion` | `ci.hotelevasion.gestion.uat` |
+| Nom affiché | Hôtel Evasion | Hôtel Evasion **UAT** |
+| Variables Coolify de cet environnement | `PWA_ANDROID_PACKAGE=ci.hotelevasion.gestion`<br>`PWA_ANDROID_SHA256=…` | `PWA_ANDROID_PACKAGE=ci.hotelevasion.gestion.uat`<br>`PWA_ANDROID_SHA256=…`<br>`PWA_NAME_SUFFIX=UAT` |
+
+1. **UAT d'abord** : dans Coolify (application UAT), mettez `PWA_NAME_SUFFIX=UAT` et `PWA_ANDROID_PACKAGE=ci.hotelevasion.gestion.uat`, redéployez, vérifiez que `https://ADRESSE-UAT/admin/manifest.webmanifest` affiche « Hôtel Evasion — Gestion UAT ».
+2. Sur **pwabuilder.com** : adresse UAT → *Package for stores* → **Android** → *Package ID* `ci.hotelevasion.gestion.uat`, *App name* « Hôtel Evasion UAT », **Signing key : Use mine** (le `signing.keystore` et ses mots de passe gardés la première fois), augmentez *Version code* → *Generate*.
+3. Ouvrez l'`assetlinks.json` du ZIP : l'empreinte doit être celle de `PWA_ANDROID_SHA256` (même clé ⇒ même empreinte). Vérifiez `https://ADRESSE-UAT/.well-known/assetlinks.json`.
+4. **Production** : mêmes étapes avec l'adresse de production, *Package ID* `ci.hotelevasion.gestion`, *App name* « Hôtel Evasion », **sans** `PWA_NAME_SUFFIX`. Les téléphones qui ont déjà l'APK `ci.hotelevasion.gestion` le mettent à jour par-dessus (sans désinstaller) et passent sur la production.
+5. Installez l'APK voulu (WhatsApp, câble…) ; les deux icônes cohabitent, « Hôtel Evasion » et « Hôtel Evasion UAT ».
+
+> Sans `assetlinks.json` correct sur le bon serveur, l'APK s'ouvre avec une barre d'adresse : vérifiez toujours l'étape 3 pour chaque environnement.
+
+### 4.4 Au changement de domaine (domaine provisoire → définitif)
 
 1. Dans Coolify : `APP_URL`, `SERVER_NAME` (et `SITE_DOMAIN` / `ADMIN_DOMAIN` si vous séparez site et application) ; redéployez. Tout le personnel se reconnecte une fois.
 2. **Regénérez l'APK** avec PWABuilder sur le nouveau domaine **en réutilisant la même clé de signature** (option *Use existing signing key*), mettez à jour `PWA_ANDROID_SHA256` si besoin, réinstallez ou publiez la mise à jour.
