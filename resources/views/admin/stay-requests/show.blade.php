@@ -40,7 +40,7 @@
                     <dt class="col-5">Chambre</dt>
                     <dd class="col-7">N°{{ $room?->number }} — {{ $type?->name }}</dd>
                     <dt class="col-5">Formule choisie</dt>
-                    <dd class="col-7">{{ $stayRequest->pricing_mode->getLabel() }} : {{ $stayRequest->billingLabel() }}</dd>
+                    <dd class="col-7"><x-admin::mode-badge :mode="$stayRequest->pricing_mode" /> : {{ $stayRequest->billingLabel() }}</dd>
                     <dt class="col-5">Total annoncé</dt>
                     <dd class="col-7"><strong>{{ $fcfa($stayRequest->total_amount) }} FCFA</strong></dd>
                 </dl>
@@ -126,7 +126,7 @@
                                     <input type="radio" class="btn-check" name="pricing_mode" id="mode-{{ $mode->value }}" value="{{ $mode->value }}" data-mode-option
                                         @checked($selectedMode === $mode->value)
                                         @disabled($mode->rateFor($type) === null || ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen))>
-                                    <label class="btn btn-outline-primary" for="mode-{{ $mode->value }}">{{ $mode->getLabel() }}</label>
+                                    <label class="btn mode-btn mode--{{ $mode->value }}" for="mode-{{ $mode->value }}"><i class="fas {{ $mode->icon() }}" aria-hidden="true"></i> {{ $mode->getLabel() }}</label>
                                 @endforeach
                             </div>
                         </div>

@@ -53,7 +53,7 @@
                             <td>{{ $item->created_at->format('d/m H\hi') }}</td>
                             <td>{{ $item->fullName() }}<div class="small text-muted">{{ $item->phone }}</div></td>
                             <td>N°{{ $item->room?->number }}<div class="small text-muted">{{ $item->room?->roomType?->name }}</div></td>
-                            <td>{{ $item->pricing_mode->getLabel() }}<div class="small text-muted">{{ $item->billingLabel() }}</div></td>
+                            <td><x-admin::mode-badge :mode="$item->pricing_mode" /><div class="small text-muted">{{ $item->billingLabel() }}</div></td>
                             <td class="text-end">{{ $fcfa($item->total_amount) }} FCFA</td>
                             <td>
                                 <span class="badge bg-{{ $statusColor }}">{{ $statusLabel }}</span>

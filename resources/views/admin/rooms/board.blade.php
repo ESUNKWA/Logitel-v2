@@ -38,7 +38,7 @@
                         <tr>
                             <th>Type de chambre</th>
                             @foreach (\App\Enums\PricingMode::cases() as $mode)
-                                <th class="text-end">{{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee)<div class="small text-muted fw-normal">{{ str_replace(':', 'h', config('hotel.night.from')) }} → {{ str_replace(':', 'h', config('hotel.night.until')) }}</div>@endif</th>
+                                <th class="text-end"><i class="fas {{ $mode->icon() }} mode-icon mode--{{ $mode->value }}" aria-hidden="true"></i> {{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee)<div class="small text-muted fw-normal">{{ str_replace(':', 'h', config('hotel.night.from')) }} → {{ str_replace(':', 'h', config('hotel.night.until')) }}</div>@endif</th>
                             @endforeach
                             <th class="text-end">Libres</th>
                         </tr>
@@ -147,7 +147,7 @@
                     @can('affectations.view')
                         <div class="mt-2 small">
                             {{ $room->pendingRequest->fullName() }}<br>
-                            <span class="text-muted">{{ $room->pendingRequest->pricing_mode->getLabel() }} · retenue jusqu'à {{ $room->pendingRequest->expires_at->format('H\hi') }}</span>
+                            <span class="text-muted"><x-admin::mode-badge :mode="$room->pendingRequest->pricing_mode" /> · retenue jusqu'à {{ $room->pendingRequest->expires_at->format('H\hi') }}</span>
                         </div>
                         <div class="mt-1">
                             <a href="{{ route('admin.stay-requests.show', $room->pendingRequest) }}" class="small">Traiter la demande</a>
@@ -199,7 +199,7 @@
                         @foreach (\App\Enums\PricingMode::cases() as $mode)
                             @if ($mode->rateFor($room->roomType) !== null)
                                 <li>
-                                    <span>{{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen) <small class="text-muted">dès {{ str_replace(':', 'h', config('hotel.night.from')) }}</small>@endif</span>
+                                    <span><i class="fas {{ $mode->icon() }} mode-icon mode--{{ $mode->value }}" aria-hidden="true"></i> {{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen) <small class="text-muted">dès {{ str_replace(':', 'h', config('hotel.night.from')) }}</small>@endif</span>
                                     <strong>{{ number_format((float) $mode->rateFor($room->roomType), 0, ',', ' ') }}</strong>
                                 </li>
                             @endif
@@ -297,7 +297,7 @@
                                 <div class="btn-group w-100" role="group">
                                     @foreach (\App\Enums\PricingMode::cases() as $mode)
                                         <input type="radio" class="btn-check" name="pricing_mode" id="mode-{{ $mode->value }}" value="{{ $mode->value }}" data-mode-option @checked(old('pricing_mode') === $mode->value)>
-                                        <label class="btn btn-outline-primary" for="mode-{{ $mode->value }}">{{ $mode->getLabel() }}</label>
+                                        <label class="btn mode-btn mode--{{ $mode->value }}" for="mode-{{ $mode->value }}"><i class="fas {{ $mode->icon() }}" aria-hidden="true"></i> {{ $mode->getLabel() }}</label>
                                     @endforeach
                                 </div>
                                 <div class="form-text" data-mode-hint>

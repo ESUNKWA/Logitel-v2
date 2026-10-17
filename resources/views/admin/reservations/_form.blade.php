@@ -79,7 +79,7 @@
         <div class="btn-group w-100 booking-modes" role="group">
             @foreach (\App\Enums\PricingMode::cases() as $case)
                 <input type="radio" class="btn-check" name="pricing_mode" id="booking-mode-{{ $case->value }}" value="{{ $case->value }}" data-booking-mode data-availability-trigger @checked($mode === $case)>
-                <label class="btn btn-outline-primary" for="booking-mode-{{ $case->value }}">{{ $case->getLabel() }}</label>
+                <label class="btn mode-btn mode--{{ $case->value }}" for="booking-mode-{{ $case->value }}"><i class="fas {{ $case->icon() }}" aria-hidden="true"></i> {{ $case->getLabel() }}</label>
             @endforeach
         </div>
     </div>

@@ -60,7 +60,7 @@
                     <dt class="col-5">Client</dt>
                     <dd class="col-7">{{ $affectation->guest?->fullName() }}@if ($affectation->guest?->phone) — {{ $affectation->guest->phone }}@endif</dd>
                     <dt class="col-5">Formule</dt>
-                    <dd class="col-7">{{ $affectation->pricing_mode->getLabel() }} : {{ $affectation->billingLabel() }}</dd>
+                    <dd class="col-7"><x-admin::mode-badge :mode="$affectation->pricing_mode" /> : {{ $affectation->billingLabel() }}</dd>
                     @if ($affectation->hasDiscount())
                         <dt class="col-5">Remise</dt>
                         <dd class="col-7"><span class="text-success fw-semibold">− {{ number_format((float) $affectation->discount_amount, 0, ',', ' ') }} FCFA</span> <span class="small text-muted">({{ $affectation->discountLabel() }}@if ($affectation->discountedBy) · par {{ $affectation->discountedBy->name }}@endif)</span></dd>

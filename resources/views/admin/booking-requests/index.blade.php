@@ -54,7 +54,7 @@
                 </div>
                 <div>
                     <div class="booking-request-card__label">Séjour demandé</div>
-                    <strong>{{ $item->roomType?->name ?? 'Type supprimé' }}</strong> · {{ $item->pricing_mode->getLabel() }}
+                    <strong>{{ $item->roomType?->name ?? 'Type supprimé' }}</strong> · <x-admin::mode-badge :mode="$item->pricing_mode" />
                     <div>{{ $item->check_in->format('d/m/Y H\hi') }} → {{ $item->check_out->format('d/m/Y H\hi') }}</div>
                     <div class="small text-muted">{{ $item->adults }} adulte(s), {{ $item->children }} enfant(s)</div>
                 </div>

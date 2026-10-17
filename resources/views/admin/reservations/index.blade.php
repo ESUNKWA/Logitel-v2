@@ -74,7 +74,7 @@
                             </div>
                         </td>
                         <td>N°{{ $reservation->room?->number }}</td>
-                        <td>{{ $reservation->pricing_mode->getLabel() }}<div class="small text-muted">{{ $reservation->pricing_mode->durationLabel($reservation->duration) }}</div></td>
+                        <td><x-admin::mode-badge :mode="$reservation->pricing_mode" /><div class="small text-muted">{{ $reservation->pricing_mode->durationLabel($reservation->duration) }}</div></td>
                         <td>
                             {{ $reservation->check_in->format('d/m/Y H\hi') }}
                             @if (in_array($reservation->status->value, ['en_attente', 'confirmee']) && $reservation->check_in->isPast())

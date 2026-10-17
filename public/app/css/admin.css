@@ -3083,3 +3083,67 @@ table.dataTable th.text-end, table.dataTable td.text-end { text-align: right; }
 @media print {
     .dt-container .dt-layout-row:not(.dt-layout-table) { display: none !important; }
 }
+
+/* ================================================================== Pricing mode colours
+   One colour + icon per mode (PricingMode::icon()), class "mode--{value}": mode selectors
+   (assignment modal, réservation form, guest-request validation), the « Règlement » total,
+   badges (<x-admin::mode-badge>) and the board's price lists. Kept away from the room-state
+   colours (green / red / orange / light blue) and the AFFECTATION amber / RÉSERVATION blue. */
+:root {
+    --ek-mode-heure: #6d44c2;   --ek-mode-heure-rgb: 109, 68, 194;
+    --ek-mode-journee: #a87b00; --ek-mode-journee-rgb: 196, 150, 0;
+    --ek-mode-nuitee: #343a96;  --ek-mode-nuitee-rgb: 52, 58, 150;
+    --ek-mode-sejour: #0f7c76;  --ek-mode-sejour-rgb: 15, 124, 118;
+}
+.mode--heure   { --mode: var(--ek-mode-heure);   --mode-rgb: var(--ek-mode-heure-rgb);   --mode-fill: var(--ek-mode-heure);  --mode-on: #fff;    --mode-text: var(--ek-mode-heure); }
+.mode--journee { --mode: var(--ek-mode-journee); --mode-rgb: var(--ek-mode-journee-rgb); --mode-fill: #f5c518;               --mode-on: #2e2300; --mode-text: #6f5200; }
+.mode--nuitee  { --mode: var(--ek-mode-nuitee);  --mode-rgb: var(--ek-mode-nuitee-rgb);  --mode-fill: var(--ek-mode-nuitee); --mode-on: #fff;    --mode-text: var(--ek-mode-nuitee); }
+.mode--sejour  { --mode: var(--ek-mode-sejour);  --mode-rgb: var(--ek-mode-sejour-rgb);  --mode-fill: var(--ek-mode-sejour); --mode-on: #fff;    --mode-text: var(--ek-mode-sejour); }
+
+/* Mode selector buttons: tinted outline, filled with the mode's colour once chosen. */
+.btn.mode-btn {
+    --bs-btn-color: var(--ek-ink);
+    --bs-btn-bg: rgba(var(--mode-rgb), .06);
+    --bs-btn-border-color: rgba(var(--mode-rgb), .5);
+    --bs-btn-border-width: 1.5px;
+    --bs-btn-hover-color: var(--ek-ink);
+    --bs-btn-hover-bg: rgba(var(--mode-rgb), .14);
+    --bs-btn-hover-border-color: var(--mode);
+    --bs-btn-active-color: var(--mode-on);
+    --bs-btn-active-bg: var(--mode-fill);
+    --bs-btn-active-border-color: var(--mode-fill);
+    --bs-btn-disabled-color: var(--ek-muted);
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: var(--ek-border);
+    --bs-btn-focus-shadow-rgb: var(--mode-rgb);
+    font-weight: 600;
+}
+.btn.mode-btn i { color: var(--mode); margin-right: 2px; }
+.btn-check:checked + .btn.mode-btn { box-shadow: 0 8px 18px -8px rgba(var(--mode-rgb), .9); }
+.btn-check:checked + .btn.mode-btn i { color: inherit; }
+.btn-check:focus-visible + .btn.mode-btn { box-shadow: 0 0 0 .25rem rgba(var(--mode-rgb), .3); }
+.btn-check:disabled + .btn.mode-btn i { color: inherit; }
+
+/* « Règlement » total: edged with the chosen mode's colour. */
+form:has(input[name="pricing_mode"][value="heure"]:checked) .assign-pay__total { border-left-color: var(--ek-mode-heure); }
+form:has(input[name="pricing_mode"][value="journee"]:checked) .assign-pay__total { border-left-color: #f5c518; }
+form:has(input[name="pricing_mode"][value="nuitee"]:checked) .assign-pay__total { border-left-color: var(--ek-mode-nuitee); }
+form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total { border-left-color: var(--ek-mode-sejour); }
+
+/* Badge (lists, file pages) and lone icon (board prices). */
+.mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(var(--mode-rgb), .12);
+    color: var(--mode-text);
+    font-size: .8rem;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+.mode-badge i { font-size: .75rem; }
+.mode-icon { color: var(--mode); width: 1.1em; text-align: center; }
+

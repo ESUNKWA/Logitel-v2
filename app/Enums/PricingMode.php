@@ -56,6 +56,20 @@ enum PricingMode: string
     }
 
     /**
+     * Font Awesome 5 icon shown with the mode (each mode also has its own colour in admin.css,
+     * class "mode--{value}"), so staff tell them apart at a glance.
+     */
+    public function icon(): string
+    {
+        return match ($this) {
+            self::Heure => 'fa-clock',
+            self::Journee => 'fa-sun',
+            self::Nuitee => 'fa-moon',
+            self::Sejour => 'fa-calendar-alt',
+        };
+    }
+
+    /**
      * Unit shown next to a rate: "/ heure", "/ journée", "/ nuit", "/ 24 h".
      */
     public function rateUnit(): string

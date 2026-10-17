@@ -32,7 +32,7 @@
                     </dd>
                     @if ($invoice->reservation)
                         <dt class="col-5">Formule</dt>
-                        <dd class="col-7">{{ $invoice->reservation->pricing_mode->getLabel() }} : {{ $invoice->reservation->billingLabel() }}</dd>
+                        <dd class="col-7"><x-admin::mode-badge :mode="$invoice->reservation->pricing_mode" /> : {{ $invoice->reservation->billingLabel() }}</dd>
                         @if ($invoice->reservation->hasDiscount())
                             <dt class="col-5">Sous-total</dt>
                             <dd class="col-7">{{ number_format((float) $invoice->reservation->subtotal(), 0, ',', ' ') }} FCFA</dd>
