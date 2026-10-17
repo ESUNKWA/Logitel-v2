@@ -11,6 +11,8 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gilda+Display&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
         <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/datatables/dataTables.bootstrap5.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/datatables/rowGroup.bootstrap5.min.css') }}">
         <link rel="stylesheet" href="{{ \App\Support\Asset::url('app/css/admin.css') }}">
         @include('admin.pwa._head')
         @stack('styles')
@@ -228,6 +230,11 @@
 
         <script src="{{ asset('vendor/bootstrap/popper.min.js') }}"></script>
         <script src="{{ asset('vendor/bootstrap/bootstrap.min.js') }}"></script>
+        {{-- DataTables on the list tables (admin.js), vendored like the rest — no CDN at runtime. --}}
+        <script src="{{ asset('vendor/jquery/jquery-3.7.1.min.js') }}"></script>
+        <script src="{{ asset('vendor/datatables/dataTables.min.js') }}"></script>
+        <script src="{{ asset('vendor/datatables/dataTables.bootstrap5.min.js') }}"></script>
+        <script src="{{ asset('vendor/datatables/dataTables.rowGroup.min.js') }}"></script>
         {{-- Section "sweetalert-confirm" loads SweetAlert for the data-confirm forms only (messages keep their boxes). --}}
         @if (($useSweetAlert ?? false) || \Illuminate\Support\Facades\View::hasSection('sweetalert-confirm'))
             <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>

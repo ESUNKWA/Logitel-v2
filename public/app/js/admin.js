@@ -1485,6 +1485,196 @@
     });
 })();
 
+// --- DataTables on every list table (client request, 2026-10-12) ---
+// Same tables as the phone cards above (a <thead>, inside .admin-content), minus: .table-keep,
+// the « Voir les données » twins (details / .dash-data), tables inside a form (DataTables' paging
+// would drop hidden rows' fields) and inside a live-refreshed block (replaced every 15 s).
+// - The server order is kept at first (order: []); clicking a header sorts. Amounts (« 25 000 F »),
+//   French dates (« 05/10/2026 08h00 ») and « — » sort correctly; « Actions » / unlabelled columns don't sort.
+// - Search box once there are more than 5 rows. Paging (25 per page) only when the page has no
+//   server pagination: paginated lists keep their Laravel links (filters and totals cover every
+//   page), DataTables then sorts and searches the rows shown.
+// - A single « nothing yet » row becomes DataTables' empty message; group heading rows
+//   (.table-group-row, e.g. rooms by state) are kept through RowGroup, sorting inside each group.
+// Without jQuery/DataTables loaded the tables stay as they are.
+(function () {
+    'use strict';
+
+    var $ = window.jQuery;
+    if (!$ || !$.fn || !$.fn.dataTable) {
+        return;
+    }
+    var DataTable = $.fn.dataTable;
+
+    var textOf = function (data) {
+        var html = typeof data === 'object' && data !== null ? (data.display || '') : String(data == null ? '' : data);
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return (tmp.textContent || '').replace(/[\s  ]+/g, ' ').trim();
+    };
+    var isBlank = function (text) { return text === '' || text === '—' || text === '-'; };
+
+    var numberRe = /^-?\d{1,3}(?: \d{3})*(?:,\d+)?(?: ?(?:F|FCFA|%|F CFA))?$|^-?\d+(?:,\d+)?(?: ?(?:F|FCFA|%))?$/;
+    var dateRe = /^(\d{2})\/(\d{2})(?:\/(\d{4}))?(?:\s*(?:à\s*)?(\d{1,2})h(\d{2}))?/;
+
+    DataTable.type('fr-num', {
+        className: 'dt-type-numeric',
+        detect: {
+            allOf: function (d) { var t = textOf(d); return isBlank(t) || numberRe.test(t); },
+            oneOf: function (d) { return numberRe.test(textOf(d)); },
+        },
+        order: {
+            pre: function (d) {
+                var t = textOf(d);
+                if (isBlank(t)) { return -Infinity; }
+                var n = parseFloat(t.replace(/[^\d,-]/g, '').replace(',', '.'));
+                return isNaN(n) ? -Infinity : n;
+            },
+        },
+    });
+
+    DataTable.type('fr-date', {
+        detect: {
+            allOf: function (d) { var t = textOf(d); return isBlank(t) || dateRe.test(t); },
+            oneOf: function (d) { return dateRe.test(textOf(d)); },
+        },
+        order: {
+            pre: function (d) {
+                var m = dateRe.exec(textOf(d));
+                if (!m) { return -Infinity; }
+                return Date.UTC(m[3] ? +m[3] : new Date().getFullYear(), +m[2] - 1, +m[1], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0);
+            },
+        },
+    });
+
+    var language = {
+        decimal: ',',
+        thousands: ' ',
+        emptyTable: 'Aucune donnée.',
+        zeroRecords: 'Aucun résultat pour cette recherche.',
+        info: '_START_ à _END_ sur _TOTAL_',
+        infoEmpty: '0 résultat',
+        infoFiltered: '(filtré sur _MAX_)',
+        lengthMenu: '_MENU_ par page',
+        search: '',
+        searchPlaceholder: 'Rechercher…',
+        loadingRecords: 'Chargement…',
+        paginate: { first: '«', last: '»', next: '›', previous: '‹' },
+        aria: { orderable: ' : trier par cette colonne', orderableReverse: ' : inverser le tri', orderableRemove: ' : retirer le tri' },
+        entries: { _: 'lignes', 1: 'ligne' },
+    };
+
+    var serverPaged = !!document.querySelector('.admin-content .pagination');
+
+    document.querySelectorAll('.admin-content table').forEach(function (table) {
+        if (!table.tHead || !table.tBodies.length || table.classList.contains('table-keep')
+            || table.closest('.dash-data, details, form, [data-live-block], .modal')
+            || table.querySelector('[rowspan]')) {
+            return;
+        }
+        var body = table.tBodies[0];
+        var headerRow = table.tHead.rows[table.tHead.rows.length - 1];
+        var columnCount = 0;
+        Array.prototype.forEach.call(headerRow.cells, function (th) { columnCount += th.colSpan || 1; });
+        if (table.tHead.rows.length > 1 || columnCount !== headerRow.cells.length) {
+            return; // complex headers: left alone
+        }
+
+        var rows = Array.prototype.slice.call(body.rows);
+        var isWide = function (row) { return row.cells.length === 1 && (row.cells[0].colSpan || 1) > 1; };
+
+        var isGroup = function (row) { return row.classList.contains('table-group-row') || isWide(row); };
+
+        // Checked before touching anything: every data row must have one cell per column.
+        var lonelyEmpty = rows.length === 1 && isWide(rows[0]);
+        if (!lonelyEmpty && rows.some(function (row) { return !isGroup(row) && row.cells.length !== columnCount; })) {
+            return; // rows with colspans: DataTables can't handle them
+        }
+
+        // « Nothing yet » row → empty message.
+        var emptyText = null;
+        if (lonelyEmpty) {
+            emptyText = (rows[0].textContent || '').replace(/\s+/g, ' ').trim();
+            body.removeChild(rows[0]);
+            rows = [];
+        }
+
+        // Group heading rows → a hidden group column + RowGroup.
+        var groups = [];
+        var hasGroups = rows.some(isGroup);
+        if (hasGroups) {
+            var current = 0;
+            var dataRows = [];
+            rows.forEach(function (row) {
+                if (isGroup(row)) {
+                    groups.push(row.cells[0].innerHTML);
+                    current = groups.length - 1;
+                    body.removeChild(row);
+                    return;
+                }
+                var cell = document.createElement('td');
+                cell.textContent = String(current);
+                row.appendChild(cell);
+                dataRows.push(row);
+            });
+            headerRow.appendChild(document.createElement('th'));
+            rows = dataRows;
+        }
+
+        var columnDefs = [];
+        Array.prototype.forEach.call(headerRow.cells, function (cell, index) {
+            var label = (cell.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            if (hasGroups && index === columnCount) {
+                return;
+            }
+            if (label === '' || label === 'actions' || label === 'action') {
+                columnDefs.push({ targets: index, orderable: false, searchable: false });
+            }
+        });
+        if (hasGroups) {
+            columnDefs.push({ targets: columnCount, visible: false, searchable: false, type: 'num' });
+        }
+
+        var paging = !serverPaged && rows.length > 25;
+        var searching = rows.length > 5;
+        var options = {
+            order: [],
+            paging: paging,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Tout']],
+            searching: searching,
+            info: paging,
+            autoWidth: false,
+            columnDefs: columnDefs,
+            language: $.extend({}, language, emptyText ? { emptyTable: emptyText } : {},
+                serverPaged ? { searchPlaceholder: 'Filtrer cette page…' } : {}),
+            layout: {
+                topStart: paging ? 'pageLength' : null,
+                topEnd: searching ? 'search' : null,
+                bottomStart: paging ? 'info' : null,
+                bottomEnd: paging ? 'paging' : null,
+            },
+        };
+        if (hasGroups) {
+            options.orderFixed = { pre: [[columnCount, 'asc']] };
+            options.rowGroup = {
+                dataSrc: columnCount,
+                className: 'table-group-row row-full',
+                startRender: function (groupRows, group) {
+                    return groups[parseInt(group, 10)] || '';
+                },
+            };
+        }
+
+        try {
+            $(table).DataTable(options);
+            table.classList.add('is-datatable');
+        } catch (e) {
+            if (window.console) { console.warn('DataTables', e); }
+        }
+    });
+})();
+
 // --- SweetAlert pop-ups (pages defining the Blade section "sweetalert", e.g. the réservations) ---
 // #swalFlash carries the flashed status message and the validation errors (rendered as text,
 // never as HTML). Forms with data-confirm ask through SweetAlert instead of window.confirm()

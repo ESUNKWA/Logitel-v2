@@ -209,3 +209,17 @@
 /* Home banner title: the template's 120px wrapped « Bienvenue à Hôtel Evasion » on two lines —
    sized to the screen width so it fits on one line (a much longer title still wraps, never overflows). */
 .luxivo-hero_one .hero-content h1 { font-size: clamp(28px, 5.6vw, 84px); line-height: 1.15em; }
+
+/* Page loader: the hotel's logo, else its name (site/partials/preloader), with a thin bar. */
+.site-preloader { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 0 24px; text-align: center; }
+.site-preloader__logo { display: block; max-width: min(200px, 60vw); max-height: 96px; width: auto; height: auto; object-fit: contain; }
+.site-preloader .brand-logo-text { font-size: clamp(28px, 7vw, 40px); white-space: normal; flex-wrap: wrap; justify-content: center; }
+.site-preloader__logo, .site-preloader .brand-logo-text { animation: site-preloader-breathe 1.6s ease-in-out infinite; }
+.site-preloader__bar { position: relative; display: block; width: 120px; height: 2px; overflow: hidden; border-radius: 2px; background: rgba(109, 124, 106, .2); }
+.site-preloader__bar::after { content: ""; position: absolute; top: 0; left: 0; width: 40%; height: 100%; border-radius: 2px; background: var(--primary-color, #6D7C6A); animation: site-preloader-slide 1.2s ease-in-out infinite; }
+@keyframes site-preloader-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .7; transform: scale(.97); } }
+@keyframes site-preloader-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) {
+    .site-preloader__logo, .site-preloader .brand-logo-text, .site-preloader__bar::after { animation: none; }
+}
+

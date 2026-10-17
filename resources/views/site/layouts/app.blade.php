@@ -20,12 +20,7 @@
         <link rel="stylesheet" href="{{ asset('site/css/site.css') }}">
     </head>
     <body>
-        <div class="preloader">
-            <div class="loading-wrapper">
-                <div class="loading"></div>
-                <div id="loading-icon"><img src="{{ asset('site/images/loader.png') }}" alt="loader"></div>
-            </div>
-        </div>
+        @include('site.partials.preloader')
         <div class="offcanvas__overlay"></div>
 
         @include('site.partials.header')
