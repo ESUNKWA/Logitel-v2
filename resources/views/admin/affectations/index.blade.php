@@ -7,6 +7,8 @@
         $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
         $tabs = ['en-cours' => 'En cours', 'terminees' => 'Terminées', 'annulees' => 'Annulées', 'toutes' => 'Toutes'];
         $keep = fn (array $extra = []) => array_filter([...request()->except(['page', 'onglet']), ...$extra], fn ($v) => filled($v));
+        // Filters shown on wider screens only (phones keep Entrée, Mode, Paiement), unless in use.
+        $wideOnly = fn (bool $inUse) => $inUse ? '' : 'filter-bar__wide-only';
     @endphp
 
     <div class="admin-page-header">
@@ -29,11 +31,13 @@
         @endforeach
     </ul>
 
-    {{-- Filters: one row above everything they scope (list, totals, tab counts). --}}
+    {{-- Filters: one row above everything they scope (list, totals, tab counts). On phones only
+         Entrée, Mode and Paiement show (client request, 2026-10-17); another filter stays visible
+         there while it's in use, so a filtered list never hides why. --}}
     <form method="GET" class="admin-card filter-bar" data-filter-form>
         <input type="hidden" name="onglet" value="{{ $tab }}">
         <div class="filter-bar__grid">
-            <div class="filter-bar__search">
+            <div class="filter-bar__search {{ $wideOnly($filters['q'] !== '') }}">
                 <label class="form-label" for="f-q">Client</label>
                 <input type="search" class="form-control" id="f-q" name="q" value="{{ $filters['q'] }}" placeholder="Nom, prénom ou téléphone…">
             </div>
@@ -53,7 +57,7 @@
                     <input type="date" class="form-control" name="au" value="{{ $filters['au'] }}" aria-label="Au">
                 </div>
             </div>
-            <div>
+            <div class="{{ $wideOnly($filters['chambre'] !== null) }}">
                 <label class="form-label" for="f-chambre">Chambre</label>
                 <select class="form-select" id="f-chambre" name="chambre">
                     <option value="">Toutes</option>
@@ -62,7 +66,7 @@
                     @endforeach
                 </select>
             </div>
-            <div>
+            <div class="{{ $wideOnly($filters['type'] !== null) }}">
                 <label class="form-label" for="f-type">Type</label>
                 <select class="form-select" id="f-type" name="type">
                     <option value="">Tous</option>
@@ -89,7 +93,7 @@
                     @endforeach
                 </select>
             </div>
-            <div>
+            <div class="{{ $wideOnly($filters['origine'] !== null) }}">
                 <label class="form-label" for="f-origine">Origine</label>
                 <select class="form-select" id="f-origine" name="origine">
                     <option value="">Toutes</option>
@@ -97,7 +101,7 @@
                     <option value="reservation" @selected($filters['origine'] === 'reservation')>Sur réservation</option>
                 </select>
             </div>
-            <div>
+            <div class="{{ $wideOnly($filters['tri'] !== null) }}">
                 <label class="form-label" for="f-tri">Trier par</label>
                 <select class="form-select" id="f-tri" name="tri">
                     <option value="">Par défaut</option>
@@ -108,7 +112,7 @@
             </div>
         </div>
         <div class="filter-bar__actions">
-            <div class="form-check mb-0">
+            <div class="form-check mb-0 {{ $wideOnly($filters['depasse']) }}">
                 <input type="checkbox" class="form-check-input" id="f-depasse" name="depasse" value="1" @checked($filters['depasse'])>
                 <label class="form-check-label" for="f-depasse">Départs dépassés uniquement</label>
             </div>

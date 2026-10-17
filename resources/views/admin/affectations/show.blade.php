@@ -27,7 +27,7 @@
         </div>
         <div class="d-flex gap-2">
             @can('invoices.view')
-                <a href="{{ route('admin.receipts.show', $affectation) }}" class="btn btn-outline-primary" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
+                <a href="{{ route('admin.receipts.show', $affectation) }}" class="btn btn-outline-primary phone-hidden" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
             @endcan
             @if ($inProgress)
                 @can('affectations.manage')
@@ -127,6 +127,13 @@
                                 <div class="col-sm-6">
                                     <label class="form-label" for="duration">Durée (nombre de {{ $affectation->pricing_mode->unitPlural() }})</label>
                                     <input type="number" min="1" max="365" class="form-control" id="duration" name="duration" value="{{ old('duration', $affectation->duration) }}" required>
+                                    @if ($forfaits !== [])
+                                        <div class="form-text">
+                                            <i class="far fa-tags"></i> Forfaits (jour d'entrée) :
+                                            {{ collect($forfaits)->map(fn ($price, $units) => $affectation->pricing_mode->durationLabel((int) $units).' = '.number_format((float) $price, 0, ',', ' ').' FCFA')->implode(' · ') }}
+                                            — appliqué automatiquement à la durée correspondante.
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="col-sm-6">
                                     <label class="form-label" for="unit_rate">Tarif {{ $affectation->pricing_mode->rateUnit() }} (FCFA)</label>

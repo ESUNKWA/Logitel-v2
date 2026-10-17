@@ -8,6 +8,9 @@
     $pendingRequests = auth()->user()->can('affectations.view') ? \App\Models\StayRequest::query()->holding()->count() : null;
     $pendingBookings = auth()->user()->can('reservations.view') ? \App\Models\BookingRequest::query()->pending()->count() : 0;
     $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage']);
+    // The manager's « Plus » menu is long: on phones it drops the desk screens (client request,
+    // 2026-10-17) — they stay on wider screens and by their address; the Réception keeps them.
+    $deskOnWideScreens = auth()->user()->can('dashboard.revenue') ? 'simple-nav__wide-only' : '';
 @endphp
 
 <a href="{{ route('admin.dashboard') }}" class="simple-nav__brand" data-initials="{{ $hotelInfo->initials() }}">
@@ -35,7 +38,9 @@
 </nav>
 
 @if ($pendingRequests !== null)
-    <a href="{{ route('admin.stay-requests.index') }}" class="simple-nav__icon {{ $isActive('admin.stay-requests.*') }}" title="Demandes clients" aria-label="Demandes clients">
+    {{-- Hidden on phones (client request, 2026-10-17): there, new requests pop up as alerts and the
+         Réception opens them from the « Plus » menu. --}}
+    <a href="{{ route('admin.stay-requests.index') }}" class="simple-nav__icon simple-nav__requests {{ $isActive('admin.stay-requests.*') }}" title="Demandes clients" aria-label="Demandes clients">
         <i class="far fa-mobile-alt"></i>
         <span class="badge rounded-pill bg-warning text-dark" data-request-count @if (! $pendingRequests) hidden @endif>{{ $pendingRequests }}</span>
     </a>
@@ -46,16 +51,22 @@
         <i class="far fa-ellipsis-h"></i><span class="simple-nav__more-label"> Plus</span>
     </button>
     <ul class="dropdown-menu dropdown-menu-end simple-nav__menu">
+        @if ($deskOnWideScreens === '')
+            @can('guests.view')
+                {{-- Phones only (the top links are hidden there and the tab bar has no « Clients »). --}}
+                <li class="simple-nav__phone-only"><a class="dropdown-item" href="{{ route('admin.guests.index') }}"><i class="far fa-users"></i> Clients</a></li>
+            @endcan
+        @endif
         @can('affectations.view')
-            <li><a class="dropdown-item" href="{{ route('admin.stay-requests.index') }}"><i class="far fa-mobile-alt"></i> Demandes clients</a></li>
+            <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.stay-requests.index') }}"><i class="far fa-mobile-alt"></i> Demandes clients</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.stay-requests.qr') }}"><i class="far fa-qrcode"></i> QR code client</a></li>
         @endcan
         @can('reservations.view')
             <li><a class="dropdown-item" href="{{ route('admin.booking-requests.index') }}"><i class="far fa-globe"></i> Demandes en ligne @if ($pendingBookings)<span class="badge bg-warning text-dark">{{ $pendingBookings }}</span>@endif</a></li>
         @endcan
         @can('invoices.view')
-            <li><a class="dropdown-item" href="{{ route('admin.invoices.index') }}"><i class="far fa-file-invoice-dollar"></i> Factures</a></li>
-            <li><a class="dropdown-item" href="{{ route('admin.front-desk.collect') }}"><i class="far fa-coins"></i> À encaisser</a></li>
+            <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.invoices.index') }}"><i class="far fa-file-invoice-dollar"></i> Factures</a></li>
+            <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.front-desk.collect') }}"><i class="far fa-coins"></i> À encaisser</a></li>
         @endcan
         @can('payments.create')
             <li><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
@@ -82,6 +93,7 @@
             @endcan
             @can('rooms.manage')
                 <li><a class="dropdown-item" href="{{ route('admin.room-types.index') }}"><i class="far fa-layer-group"></i> Types de chambre</a></li>
+                <li><a class="dropdown-item" href="{{ route('admin.special-rates.index') }}"><i class="far fa-tags"></i> Tarifs spéciaux</a></li>
             @endcan
             @can('settings.manage')
                 <li><a class="dropdown-item" href="{{ route('admin.settings.edit') }}"><i class="far fa-sliders-h"></i> Paramètres</a></li>

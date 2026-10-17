@@ -119,7 +119,9 @@ class HotelInfoTest extends TestCase
             ->assertSee('Hôtel Evasion Bouaké')
             ->assertSee("Quartier Commerce, Bouaké, Côte d'Ivoire")
             ->assertSee('+225 07 11 22 33 44 / +225 27 31 00 00 00')
-            ->assertSee('reception@katioka.ci')
+            ->assertSee('www.katioka.ci') // the website, not the e-mail (client request)
+            ->assertDontSee('https://www.katioka.ci', false)
+            ->assertDontSee('reception@katioka.ci')
             ->assertSee('RCCM CI-BKE-2026-B-123 · NCC 2612345X · Taxe synthétique')
             ->assertDontSee('storage/'.config('hotel.info.logo'), false); // no logo on the ticket (client request)
     }

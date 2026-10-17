@@ -21,7 +21,7 @@
         </div>
         <div class="d-flex gap-2 flex-wrap">
             @can('invoices.view')
-                <a href="{{ route('admin.receipts.show', $reservation) }}" class="btn btn-outline-primary" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
+                <a href="{{ route('admin.receipts.show', $reservation) }}" class="btn btn-outline-primary phone-hidden" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
             @endcan
             @if (in_array($reservation->status->value, ['en_attente', 'confirmee']))
                 <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" data-confirm="La réservation deviendra une affectation et la chambre passera en « occupée »." data-confirm-title="Le client est arrivé ?" data-confirm-button="Oui, enregistrer l'arrivée">

@@ -5,7 +5,8 @@
 @section('content')
     @php
         $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
-        $keep = array_filter(['par' => $manager ? $filters['staff'] : '', 'mode' => $filters['method']?->value]);
+        $keep = array_filter(['par' => $manager ? $filters['staff'] : '', 'mode' => $filters['method']?->value, 'dossier' => $filters['kind']]);
+        $kindLabels = [\App\Models\Payment::KIND_STAY => 'Affectations', \App\Models\Payment::KIND_BOOKING => 'Réservations'];
         $periodLabel = $filters['single']
             ? ucfirst($filters['from']->translatedFormat('l j F Y'))
             : 'Du '.$filters['from']->translatedFormat('j F Y').' au '.$filters['to']->translatedFormat('j F Y');
@@ -20,8 +21,8 @@
             </div>
         </div>
         <div class="d-flex gap-2 flex-wrap revenue-actions">
-            <a href="{{ route('admin.revenue.export', request()->query()) }}" class="btn btn-outline-primary"><i class="far fa-file-excel"></i> Exporter (Excel)</a>
-            <button type="button" class="btn btn-primary" onclick="window.print()"><i class="far fa-print"></i> Imprimer</button>
+            <a href="{{ route('admin.revenue.export', request()->query()) }}" class="btn btn-outline-primary phone-hidden"><i class="far fa-file-excel"></i> Exporter (Excel)</a>
+            <button type="button" class="btn btn-primary phone-hidden" onclick="window.print()"><i class="far fa-print"></i> Imprimer</button>
         </div>
     </div>
 
@@ -71,15 +72,47 @@
                 </select>
             </div>
             <div class="col-12 col-md-auto">
+                <label class="form-label small mb-1" for="dossier">Dossier</label>
+                <select class="form-select form-select-sm" id="dossier" name="dossier">
+                    <option value="">Affectations et réservations</option>
+                    @foreach ($kindLabels as $kind => $label)
+                        <option value="{{ $kind }}" @selected($filters['kind'] === $kind)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
                 <button type="submit" class="btn btn-sm btn-primary"><i class="far fa-filter"></i> Afficher</button>
             </div>
         </form>
     </div>
 
+    {{-- Affectations vs réservations (option B: a réservation's payment recorded before the guest
+         arrived counts as a réservation's; its balance paid once the guest is in, as an affectation's). --}}
+    <div class="revenue-kinds mb-3">
+        @foreach ($byKind as $kind => $part)
+            <a href="{{ route('admin.revenue.index', array_filter(['du' => $filters['from']->toDateString(), 'au' => $filters['to']->toDateString(), 'par' => $manager ? $filters['staff'] : '', 'mode' => $filters['method']?->value, 'dossier' => $filters['kind'] === $kind ? null : $kind])) }}"
+                class="admin-card revenue-kind revenue-kind--{{ $kind }} {{ $filters['kind'] === $kind ? 'is-active' : '' }}"
+                title="{{ $filters['kind'] === $kind ? 'Afficher tout' : 'N\'afficher que les '.mb_strtolower($kindLabels[$kind]) }}">
+                <div class="revenue-kind__label">
+                    <x-admin::kind-icon :kind="$kind === \App\Models\Payment::KIND_BOOKING ? 'reservation' : 'affectation'" />{{ $kindLabels[$kind] }}
+                </div>
+                <div class="fs-4 fw-bold">{{ $fcfa($part['total']) }} <small class="fs-6 text-muted">FCFA</small></div>
+                <div class="small text-muted">{{ $part['count'] }} encaissement(s)</div>
+                <div class="revenue-kind__methods">
+                    @foreach ($part['byMethod'] as $row)
+                        @if ($row['amount'] > 0)
+                            <span><i class="fas {{ $row['method']->icon() }}"></i> {{ $row['method']->getLabel() }} {{ $fcfa($row['amount']) }}</span>
+                        @endif
+                    @endforeach
+                </div>
+            </a>
+        @endforeach
+    </div>
+
     {{-- Totals of the period (with the filters) --}}
     <div class="my-cash-summary mb-3">
         <div class="admin-card">
-            <div class="text-muted small">Total encaissé</div>
+            <div class="text-muted small">Total encaissé{{ $filters['kind'] ? ' — '.mb_strtolower($kindLabels[$filters['kind']]) : '' }}</div>
             <div class="fs-3 fw-bold">{{ $fcfa($summary['total']) }} <small class="fs-6 text-muted">FCFA</small></div>
             <div class="small text-muted">{{ $summary['count'] }} encaissement(s)</div>
         </div>
@@ -114,7 +147,7 @@
                                 $key = $row['user_id'] === null ? 'aucun' : (string) $row['user_id'];
                             @endphp
                             <tr class="{{ $filters['staff'] === $key ? 'table-active' : '' }}">
-                                <td><a href="{{ route('admin.revenue.index', ['du' => $filters['from']->toDateString(), 'au' => $filters['to']->toDateString(), 'par' => $key]) }}">{{ $row['name'] }}</a></td>
+                                <td><a href="{{ route('admin.revenue.index', array_filter(['du' => $filters['from']->toDateString(), 'au' => $filters['to']->toDateString(), 'par' => $key, 'dossier' => $filters['kind']])) }}">{{ $row['name'] }}</a></td>
                                 <td class="text-end">{{ $row['count'] }}</td>
                                 @foreach (\App\Enums\PaymentMethod::cases() as $method)
                                     <td class="text-end">{{ $fcfa($row['byMethod'][$method->value]) }}</td>
@@ -155,6 +188,11 @@
                             <td>
                                 @if ($file)
                                     <x-admin::file-badge :file="$file" :reference="true" :link="true" />
+                                    @if ($payment->isBookingPayment())
+                                        <div class="small revenue-line-kind">Encaissé sur réservation (avant l'arrivée)</div>
+                                    @elseif ($file->origin === \App\Models\Reservation::ORIGIN_RESERVATION)
+                                        <div class="small revenue-line-kind">Encaissé après l'arrivée (réservation {{ $file->bookingReference() }})</div>
+                                    @endif
                                     <div class="small text-muted">
                                         Chambre N°{{ $file->room?->number }}
                                         @if ($payment->invoice)

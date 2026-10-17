@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Models\SpecialRate;
 use App\Support\BusinessDay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -175,7 +176,13 @@ class AffectationController extends Controller
 
         $affectation->load(['guest', 'room.roomType', 'invoice.payments', 'creator', 'checkedInBy', 'checkedOutBy', 'cancelledBy', 'stayRequest', 'discountedBy']);
 
-        return view('admin.affectations.show', ['affectation' => $affectation]);
+        // Forfaits of the stay's entry day for its mode (shown next to the duration; an extension
+        // or shortening gets the matching one again). Réservations never get one.
+        $forfaits = $affectation->origin === Reservation::ORIGIN_AFFECTATION && $affectation->room?->roomType
+            ? (SpecialRate::menuFor($affectation->room->roomType, BusinessDay::dateOf($affectation->check_in))[$affectation->pricing_mode->value] ?? [])
+            : [];
+
+        return view('admin.affectations.show', ['affectation' => $affectation, 'forfaits' => $forfaits]);
     }
 
     public function update(AffectationRequest $request, Reservation $affectation): RedirectResponse

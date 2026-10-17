@@ -19,15 +19,20 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class FinanceStats
 {
-    private static function payments(CarbonInterface $from, CarbonInterface $to, ?int $byUser): Builder
+    private static function payments(CarbonInterface $from, CarbonInterface $to, ?int $byUser, ?string $kind = null): Builder
     {
         return Payment::query()->where('paid_at', '>=', $from)->where('paid_at', '<', $to)
-            ->when($byUser !== null, fn (Builder $q) => $q->where('created_by', $byUser));
+            ->when($byUser !== null, fn (Builder $q) => $q->where('created_by', $byUser))
+            ->ofKind($kind);
     }
 
-    public static function cashBetween(CarbonInterface $from, CarbonInterface $to, ?int $byUser = null): float
+    /**
+     * `$kind` (Payment::KIND_BOOKING / KIND_STAY) keeps one side of the option-B split
+     * (« dont réservations » on the home page and dashboard).
+     */
+    public static function cashBetween(CarbonInterface $from, CarbonInterface $to, ?int $byUser = null, ?string $kind = null): float
     {
-        return (float) self::payments($from, $to, $byUser)->sum('amount');
+        return (float) self::payments($from, $to, $byUser, $kind)->sum('amount');
     }
 
     public static function paymentsCountBetween(CarbonInterface $from, CarbonInterface $to, ?int $byUser = null): int
@@ -60,21 +65,27 @@ class FinanceStats
     /**
      * Cash received per staff member who recorded it (« Recettes par réceptionniste »), largest
      * first; payments without an author (recorded before authorship existed) are grouped apart.
+     * `$kind` (Payment::KIND_*) keeps only réservation or affectation payments (Recettes filter).
      *
-     * @return list<array{user_id: int|null, name: string, total: float, count: int, byMethod: array<string, float>}>
+     * @return list<array{user_id: int|null, name: string, total: float, count: int, booking: float, byMethod: array<string, float>}>
      */
-    public static function cashByUser(CarbonInterface $from, CarbonInterface $to): array
+    public static function cashByUser(CarbonInterface $from, CarbonInterface $to, ?string $kind = null): array
     {
-        $amounts = self::payments($from, $to, null)
+        $amounts = self::payments($from, $to, null, $kind)
             ->selectRaw('created_by, method, sum(amount) as amount')
             ->groupBy('created_by', 'method')
             ->toBase()->get();
         // One "encaissement" may be several lines (mixed payment): count settlements, not rows.
-        $counts = self::payments($from, $to, null)
+        $counts = self::payments($from, $to, null, $kind)
             ->selectRaw('created_by, count(distinct coalesce(cast(settlement as varchar(40)), cast(id as varchar(40)))) as n')
             ->groupBy('created_by')
             ->toBase()->pluck('n', 'created_by');
         $names = User::query()->whereIn('id', $amounts->pluck('created_by')->filter()->unique())->pluck('name', 'id');
+        // Each one's réservation payments (option B), for the « dont réservations » column.
+        $bookings = self::payments($from, $to, null, $kind)->bookingPayments()
+            ->selectRaw('created_by, sum(amount) as amount')
+            ->groupBy('created_by')
+            ->toBase()->pluck('amount', 'created_by');
 
         return $amounts->groupBy(fn ($r) => (string) $r->created_by)
             ->map(fn ($lines, $userId) => [
@@ -82,6 +93,7 @@ class FinanceStats
                 'name' => $userId === '' ? 'Non attribué (anciens paiements)' : ($names[$userId] ?? 'Compte supprimé'),
                 'total' => (float) $lines->sum('amount'),
                 'count' => (int) ($counts[$userId] ?? 0),
+                'booking' => (float) ($bookings[$userId] ?? 0),
                 'byMethod' => collect(PaymentMethod::cases())->mapWithKeys(fn (PaymentMethod $m) => [$m->value => (float) $lines->where('method', $m->value)->sum('amount')])->all(),
             ])
             ->sortByDesc('total')

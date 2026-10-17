@@ -42,7 +42,7 @@ class LiveFiguresController extends Controller
         if ($request->boolean('valeurs') && $user->can('dashboard.revenue')) {
             [$dayStart, $dayEnd] = BusinessDay::current();
             $money = DashboardController::headlineMoney(BusinessDay::today(), $dayStart, $dayEnd);
-            foreach (['revenueToday', 'revenueMonth', 'monthlyRevenue', 'outstandingAmount'] as $key) {
+            foreach (['revenueToday', 'revenueMonth', 'revenueTodayBooking', 'revenueMonthBooking', 'monthlyRevenue', 'outstandingAmount'] as $key) {
                 $values[$key] = number_format($money[$key], 0, ',', ' ');
             }
         }

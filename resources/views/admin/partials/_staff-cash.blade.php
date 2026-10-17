@@ -17,6 +17,7 @@
                         @foreach (\App\Enums\PaymentMethod::cases() as $method)
                             <th class="text-end">{{ $method->getLabel() }}</th>
                         @endforeach
+                        <th class="text-end">dont réservations</th>
                         <th class="text-end">Total</th>
                     </tr>
                 </thead>
@@ -30,6 +31,7 @@
                             @foreach (\App\Enums\PaymentMethod::cases() as $method)
                                 <td class="text-end">{{ $fcfa($row['byMethod'][$method->value]) }}</td>
                             @endforeach
+                            <td class="text-end staff-cash__booking">{{ $fcfa($row['booking']) }}</td>
                             <td class="text-end fw-bold">{{ $fcfa($row['total']) }} F</td>
                         </tr>
                     @endforeach

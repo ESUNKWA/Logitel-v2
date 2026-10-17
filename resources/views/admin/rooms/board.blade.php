@@ -118,6 +118,7 @@
                     data-day-rate="{{ $room->roomType?->day_rate }}"
                     data-night-rate="{{ $room->roomType?->night_rate }}"
                     data-stay-rate="{{ $room->roomType?->stay_rate }}"
+                    data-forfaits="{{ json_encode((object) ($forfaits[$room->room_type_id] ?? [])) }}"
                 @endif
             >
                 <div class="room-card__number">N°{{ $room->number }}</div>
@@ -310,12 +311,13 @@
                             </div>
                             <div class="col-4">
                                 <label class="form-label">Adultes</label>
-                                <input type="number" min="1" value="{{ old('adults', 1) }}" class="form-control" name="adults" required>
+                                <input type="number" min="1" value="{{ old('adults', 2) }}" class="form-control" name="adults" required>
                             </div>
                             <div class="col-4">
                                 <label class="form-label">Enfants</label>
                                 <input type="number" min="0" value="{{ old('children', 0) }}" class="form-control" name="children" required>
                             </div>
+                            <div class="col-12 mt-1" data-forfait-hint hidden></div>
                             <div class="col-12">
                                 <label class="form-label" for="assign-rate">Tarif <span data-rate-unit></span> (FCFA)</label>
                                 <input type="text" class="form-control rate-locked" id="assign-rate" value="" data-money data-unit-rate-input readonly tabindex="-1">

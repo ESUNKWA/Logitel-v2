@@ -13,9 +13,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <title>Reçu {{ $invoice->number }} — {{ $hotelInfo->name() }}</title>
+    {{-- No page size here on purpose: the printer's own paper (set in its driver / the print
+         dialog) is the page, the ticket starts at its top. A CSS size different from that paper
+         makes Chrome scale or centre the ticket on it (blank space above it). --}}
     <style>
-        /* Thermal ticket: one column, black on white, the roll's exact width, height = content. */
-        @page { size: {{ $width }}mm auto; margin: 0; }
+        /* Thermal ticket: one column, black on white, the roll's width. */
+        @page { margin: 0; }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
@@ -23,7 +26,7 @@
             color: #000;
             font-family: 'Helvetica Neue', Arial, 'Liberation Sans', sans-serif;
             font-size: {{ $width === 58 ? '10.5px' : '12px' }};
-            line-height: 1.35;
+            line-height: 1.3;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -44,14 +47,14 @@
         .ticket {
             width: {{ $width }}mm;
             margin: 0 auto;
-            padding: 4mm {{ $width === 58 ? '2.5mm' : '4mm' }} 6mm;
+            padding: 2mm {{ $width === 58 ? '2.5mm' : '4mm' }} 4mm;
             background: #fff;
             box-shadow: 0 4px 18px rgba(15, 27, 45, .18);
         }
         .center { text-align: center; }
         .name { font-size: 1.35em; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
         .muted { font-size: .92em; }
-        .sep { border: 0; border-top: 1px dashed #000; margin: 2.2mm 0; }
+        .sep { border: 0; border-top: 1px dashed #000; margin: 1.6mm 0; }
         .row { display: flex; justify-content: space-between; gap: 2mm; }
         .row > span:first-child { flex-shrink: 0; }
         .row > span:last-child { text-align: right; overflow-wrap: anywhere; }
@@ -63,7 +66,7 @@
             body, body.is-embedded { background: #fff; }
             .toolbar { display: none; }
             .sheet { padding: 0; }
-            .ticket { box-shadow: none; margin: 0; width: 100%; }
+            .ticket { box-shadow: none; margin: 0; width: 100%; max-width: {{ $width }}mm; }
         }
     </style>
 </head>
@@ -82,7 +85,7 @@
                 <div class="name">{{ $hotelInfo->name() }}</div>
                 @if ($hotelInfo->fullAddress())<div class="muted">{{ $hotelInfo->fullAddress() }}</div>@endif
                 @if ($hotelInfo->phones())<div class="muted">Tél. {{ implode(' / ', $hotelInfo->phones()) }}</div>@endif
-                @if ($hotelInfo->get('email'))<div class="muted">{{ $hotelInfo->get('email') }}</div>@endif
+                @if ($hotelInfo->websiteLabel())<div class="muted">{{ $hotelInfo->websiteLabel() }}</div>@endif
                 @if ($hotelInfo->legalLine())<div class="muted">{{ $hotelInfo->legalLine() }}</div>@endif
             </div>
 
@@ -114,7 +117,12 @@
             <div class="row"><span>Personnes</span><span>{{ $reservation->adults }} ad.{{ $reservation->children ? ' + '.$reservation->children.' enf.' : '' }}</span></div>
 
             <hr class="sep">
-            <div class="row"><span>{{ $reservation->pricing_mode->durationLabel($reservation->duration) }} × {{ $fcfa($reservation->unit_rate) }}</span><span></span></div>
+            @if ($reservation->hasSpecialRate())
+                <div class="row"><span>Forfait {{ $reservation->pricing_mode->durationLabel($reservation->duration) }}</span><span>{{ $fcfa($reservation->special_price) }}</span></div>
+                <div class="row sub"><span>au lieu de {{ $fcfa($reservation->normalSubtotal()) }} ({{ $reservation->special_rate_name }})</span><span></span></div>
+            @else
+                <div class="row"><span>{{ $reservation->pricing_mode->durationLabel($reservation->duration) }} × {{ $fcfa($reservation->unit_rate) }}</span><span></span></div>
+            @endif
             @if ($reservation->hasDiscount())
                 <div class="row"><span>Sous-total</span><span>{{ $fcfa($reservation->subtotal()) }}</span></div>
                 <div class="row"><span>Remise {{ $reservation->discount_type === \App\Models\Reservation::DISCOUNT_PERCENT ? '('.$reservation->discountLabel(false).')' : '' }}</span><span>− {{ $fcfa($reservation->discount_amount) }}</span></div>

@@ -68,6 +68,7 @@ class Reservation extends Model
             'pricing_mode' => PricingMode::class,
             'duration' => 'integer',
             'unit_rate' => 'decimal:2',
+            'special_price' => 'decimal:2',
             'overdue_acknowledged_at' => 'datetime',
             'checked_in_at' => 'datetime',
             'checked_out_at' => 'datetime',
@@ -268,11 +269,50 @@ class Reservation extends Model
     }
 
     /**
-     * unit_rate × duration, before the discount.
+     * What the stay costs before the discount: its forfait's price when it got one, else
+     * unit_rate × duration.
      */
     public function subtotal(): string
     {
+        return $this->hasSpecialRate() ? bcadd((string) $this->special_price, '0', 2) : $this->normalSubtotal();
+    }
+
+    /**
+     * unit_rate × duration — the price without forfait.
+     */
+    public function normalSubtotal(): string
+    {
         return bcmul((string) $this->unit_rate, (string) $this->duration, 2);
+    }
+
+    /**
+     * A forfait (special rate) was applied to this stay (affectations only).
+     */
+    public function hasSpecialRate(): bool
+    {
+        return $this->special_price !== null;
+    }
+
+    public function specialRate(): BelongsTo
+    {
+        return $this->belongsTo(SpecialRate::class);
+    }
+
+    /**
+     * Picks the forfait of an affectation (SpecialRate::best()) and stamps its snapshot
+     * (id, name, price), or clears it. Réservations never get one — not even once arrived.
+     */
+    private function applySpecialRate(): void
+    {
+        $best = null;
+        if ($this->origin === self::ORIGIN_AFFECTATION && $this->unit_rate !== null && $this->check_in) {
+            $roomTypeId = Room::query()->whereKey($this->room_id)->value('room_type_id');
+            $best = SpecialRate::best($roomTypeId, $this->pricing_mode, (int) $this->duration, $this->check_in, (string) $this->unit_rate);
+        }
+
+        $this->special_rate_id = $best?->id;
+        $this->special_rate_name = $best?->name;
+        $this->special_price = $best?->price;
     }
 
     public function hasDiscount(): bool
@@ -344,6 +384,12 @@ class Reservation extends Model
      */
     public function billingLabel(): string
     {
+        if ($this->hasSpecialRate()) {
+            return 'Forfait '.$this->pricing_mode->durationLabel($this->duration)
+                .' : '.number_format((float) $this->special_price, 0, ',', ' ').' FCFA'
+                .' au lieu de '.number_format((float) $this->normalSubtotal(), 0, ',', ' ').' FCFA';
+        }
+
         return $this->pricing_mode->durationLabel($this->duration)
             .' × '.number_format((float) $this->unit_rate, 0, ',', ' ').' FCFA';
     }
@@ -387,9 +433,16 @@ class Reservation extends Model
                 $reservation->overdue_acknowledged_by = null;
             }
 
-            // Total = subtotal − discount, always derived (never trusted from input).
+            // Forfait (affectations only): chosen again whenever what it depends on changes — a
+            // new stay, an extension/shortening (on the stay's entry day) — else the snapshot is
+            // kept, so editing or deleting a forfait later never changes an existing invoice.
+            if (! $reservation->exists || $reservation->isDirty(['duration', 'pricing_mode', 'unit_rate', 'room_id', 'check_in', 'origin'])) {
+                $reservation->applySpecialRate();
+            }
+
+            // Total = subtotal (forfait or rate × duration) − discount, always derived (never trusted from input).
             if ($reservation->unit_rate !== null) {
-                $subtotal = bcmul((string) $reservation->unit_rate, (string) $reservation->duration, 2);
+                $subtotal = $reservation->subtotal();
                 $discount = self::discountFor($subtotal, $reservation->discount_type, (string) ($reservation->discount_value ?? '0'));
 
                 if (bccomp($discount, '0', 2) <= 0) {

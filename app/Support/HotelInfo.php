@@ -102,6 +102,17 @@ class HotelInfo
     }
 
     /**
+     * The website as printed for people (receipt header): "www.hotel.ci" — no scheme, no
+     * trailing slash; null when not set.
+     */
+    public function websiteLabel(): ?string
+    {
+        $url = $this->get('website');
+
+        return $url === '' ? null : rtrim((string) preg_replace('#^https?://#i', '', $url), '/');
+    }
+
+    /**
      * "Quartier Commerce, Bouaké, Côte d'Ivoire".
      */
     public function fullAddress(): string

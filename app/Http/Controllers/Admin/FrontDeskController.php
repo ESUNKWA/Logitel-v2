@@ -8,6 +8,7 @@ use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Guest;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\User;
@@ -92,6 +93,7 @@ class FrontDeskController extends Controller
 
         return [
             'total' => FinanceStats::cashBetween($from, $to, $userId),
+            'booking' => FinanceStats::cashBetween($from, $to, $userId, Payment::KIND_BOOKING),
             'count' => FinanceStats::paymentsCountBetween($from, $to, $userId),
             'byMethod' => $byMethod,
             'cash' => (float) collect($byMethod)->firstWhere('method', PaymentMethod::Especes)['amount'],
@@ -112,9 +114,11 @@ class FrontDeskController extends Controller
 
         return [
             'today' => FinanceStats::cashBetween($dayStart, $dayEnd),
+            'todayBooking' => FinanceStats::cashBetween($dayStart, $dayEnd, null, Payment::KIND_BOOKING),
             'todayCount' => FinanceStats::paymentsCountBetween($dayStart, $dayEnd),
             'byMethod' => FinanceStats::cashByMethod($dayStart, $dayEnd),
             'month' => FinanceStats::cashBetween($monthStart, $monthEnd),
+            'monthBooking' => FinanceStats::cashBetween($monthStart, $monthEnd, null, Payment::KIND_BOOKING),
             'outstanding' => $outstanding,
             'outstandingCount' => $outstandingCount,
             'discountsToday' => (float) Reservation::query()

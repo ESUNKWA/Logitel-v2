@@ -67,7 +67,7 @@ class ReceiptTest extends TestCase
             ->assertSee('SOLDÉ')
             ->assertDontSee('Établi par')->assertDontSee('Aminata Réception') // no staff name on the ticket (client request)
             ->assertSee('Imprimer')
-            ->assertSee('size: 80mm auto', false);
+            ->assertSee('@page { margin: 0; }', false)->assertDontSee('size: 80mm', false)->assertSee('max-width: 80mm', false);
     }
 
     public function test_a_reservation_receipt_shows_the_deposit_and_what_is_left_to_pay(): void
@@ -133,7 +133,7 @@ class ReceiptTest extends TestCase
 
         $this->assign($manager);
         $this->actingAs($manager)->get('/admin/recus/'.Reservation::sole()->id)->assertOk()
-            ->assertSee('size: 58mm auto', false)
+            ->assertSee('max-width: 58mm', false)
             ->assertSee('Au plaisir de vous revoir');
     }
 

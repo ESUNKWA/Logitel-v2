@@ -155,7 +155,7 @@ class DashboardController extends Controller
      * today / this business month, billed revenue and discounts of stays starting this month,
      * open balances.
      *
-     * @return array{revenueToday: float, revenueMonth: float, monthlyRevenue: float, monthlyDiscounts: float, outstandingAmount: float, outstandingCount: int}
+     * @return array{revenueToday: float, revenueMonth: float, revenueTodayBooking: float, revenueMonthBooking: float, monthlyRevenue: float, monthlyDiscounts: float, outstandingAmount: float, outstandingCount: int}
      */
     public static function headlineMoney(Carbon $today, Carbon $dayStart, Carbon $dayEnd): array
     {
@@ -173,6 +173,9 @@ class DashboardController extends Controller
             // Cash actually received (payments), per business day / month.
             'revenueToday' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->sum('amount'),
             'revenueMonth' => (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->sum('amount'),
+            // … of which réservation payments (recorded before the guest arrived — option B).
+            'revenueTodayBooking' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->bookingPayments()->sum('amount'),
+            'revenueMonthBooking' => (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->bookingPayments()->sum('amount'),
             // Billed: stays starting this business month (not cancelled), after their discounts.
             'monthlyRevenue' => (float) $monthStays()->sum('total_amount'),
             'monthlyDiscounts' => (float) $monthStays()->sum('discount_amount'),

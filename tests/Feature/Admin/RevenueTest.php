@@ -148,8 +148,8 @@ class RevenueTest extends TestCase
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
         $this->assertStringContainsString('recettes-2026-10-14.csv', $response->headers->get('Content-Disposition'));
         $csv = $response->streamedContent();
-        $this->assertStringStartsWith("\xEF\xBB\xBFDate;Heure;Dossier", $csv);
-        $this->assertStringContainsString('14/10/2026;08:00;'.$stay->reference(), $csv);
+        $this->assertStringStartsWith("\xEF\xBB\xBFDate;Heure;Type;Dossier", $csv);
+        $this->assertStringContainsString('14/10/2026;08:00;Affectation;'.$stay->reference(), $csv);
         $this->assertStringContainsString(';Espèces;20000;20000;0;"Koffi Réception";"Awa Réception"', $csv);
     }
 

@@ -8,7 +8,7 @@
         <div class="d-flex gap-2 align-items-center">
             <span class="badge bg-{{ $invoice->status->getColor() }} fs-6">{{ $invoice->status->getLabel() }}</span>
             @if ($invoice->reservation)
-                <a href="{{ route('admin.receipts.show', $invoice->reservation) }}" class="btn btn-outline-primary" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
+                <a href="{{ route('admin.receipts.show', $invoice->reservation) }}" class="btn btn-outline-primary phone-hidden" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
             @endif
         </div>
     </div>

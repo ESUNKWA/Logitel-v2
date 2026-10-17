@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\Site\GalleryController;
 use App\Http\Controllers\Admin\Site\HomeContentController;
 use App\Http\Controllers\Admin\Site\ServiceController;
 use App\Http\Controllers\Admin\Site\SiteStatsController;
+use App\Http\Controllers\Admin\SpecialRateController;
 use App\Http\Controllers\Admin\StayRequestController;
 use App\Http\Controllers\Admin\UiModeController;
 use App\Http\Controllers\Admin\UserController;
@@ -78,6 +79,9 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::put('/profil/mot-de-passe', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('profile.password.update');
 
         Route::resource('room-types', RoomTypeController::class)->except(['show'])->middleware('can:rooms.manage');
+        // Forfaits for affectations (« 2 heures = 5 000 FCFA »), applied automatically.
+        Route::resource('tarifs-speciaux', SpecialRateController::class)->except(['show'])
+            ->parameters(['tarifs-speciaux' => 'specialRate'])->names('special-rates')->middleware('can:rooms.manage');
 
         Route::get('/rooms/board', [RoomController::class, 'board'])->middleware('can:rooms.view')->name('rooms.board');
         Route::post('/rooms/{room}/ready', [RoomController::class, 'markReady'])->middleware('can:rooms.edit')->name('rooms.ready');

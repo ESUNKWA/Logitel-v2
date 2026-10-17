@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\Middleware\TransformsRequest;
  */
 class NormalizeMoneyInputs extends TransformsRequest
 {
-    private const KEYS = '/^(unit_rate|hourly_rate|day_rate|night_rate|stay_rate|discount_value|amount|received|payments\.\d+\.(amount|received))$/';
+    private const KEYS = '/^(unit_rate|hourly_rate|day_rate|night_rate|stay_rate|forfait_price|discount_value|amount|received|payments\.\d+\.(amount|received))$/';
 
     protected function transform($key, $value)
     {

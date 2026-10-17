@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\RoomRequest;
 use App\Models\Room;
 use App\Models\RoomImage;
 use App\Models\RoomType;
+use App\Models\SpecialRate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,7 +88,11 @@ class RoomController extends Controller
             ->map(fn (RoomType $type) => ['type' => $type, 'free' => $freeByType->get($type->id, 0)])
             ->values();
 
-        return view('admin.rooms.board', compact('rooms', 'groups', 'rateGrid'));
+        // Today's forfaits per room type, for the assignment modal's live total (the server
+        // applies them again on save).
+        $forfaits = SpecialRate::menusForNow($rooms->pluck('roomType')->filter()->unique('id')->values());
+
+        return view('admin.rooms.board', compact('rooms', 'groups', 'rateGrid', 'forfaits'));
     }
 
     /**

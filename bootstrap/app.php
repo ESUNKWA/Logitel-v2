@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
+
+        // Phone flag written by the admin layout's script (App\Models\User::PHONE_COOKIE).
+        $middleware->encryptCookies(except: ['ek_phone']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // PostgreSQL's reservations_no_overlap constraint (exclusion_violation): a double booking

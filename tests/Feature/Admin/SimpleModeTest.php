@@ -88,6 +88,83 @@ class SimpleModeTest extends TestCase
         $this->actingAs($user)->get('/admin/tableau-de-bord')->assertOk()->assertViewIs('admin.dashboard');
     }
 
+    public function test_the_phone_tab_bar_has_no_clients_entry_but_the_plus_menu_does(): void
+    {
+        $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
+
+        $tabbar = substr($html, strpos($html, '<nav class="simple-tabbar"'));
+        $tabbar = substr($tabbar, 0, strpos($tabbar, '</nav>'));
+        $this->assertStringContainsString('Accueil', $tabbar);
+        $this->assertStringContainsString('Chambres', $tabbar);
+        $this->assertStringNotContainsString('Clients', $tabbar);
+        $this->assertStringNotContainsString(route('admin.guests.index'), $tabbar);
+
+        // Still reachable on phones, from the « Plus » menu (Réception; the manager's phone menu drops it).
+        $this->assertStringContainsString('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.guests.index').'"><i class="far fa-users"></i> Clients</a></li>', $html);
+
+        // Without guests.view, no entry at all.
+        $role = Role::create(['name' => 'Ménage', 'slug' => 'menage']);
+        $role->syncPermissions(['rooms.view']);
+        $noGuests = User::factory()->simpleUi()->create();
+        $noGuests->forceFill(['role_id' => $role->id])->save();
+        $this->actingAs($noGuests)->get('/admin')->assertOk()->assertDontSee(route('admin.guests.index'), false);
+    }
+
+    public function test_on_phones_the_manager_s_plus_menu_drops_the_desk_screens(): void
+    {
+        $item = fn (string $class, string $route, string $icon, string $label) => '<li class="'.$class.'"><a class="dropdown-item" href="'.route($route).'"><i class="far '.$icon.'"></i> '.$label.'</a></li>';
+
+        // Manager: desk screens only on wider screens; figures, QR code, site and configuration kept.
+        $html = $this->actingAs(User::factory()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
+        $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.stay-requests.index', 'fa-mobile-alt', 'Demandes clients'), $html);
+        $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.invoices.index', 'fa-file-invoice-dollar', 'Factures'), $html);
+        $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.front-desk.collect', 'fa-coins', 'À encaisser'), $html);
+        $this->assertStringNotContainsString('simple-nav__phone-only', $html); // no phone « Clients » entry
+        $this->assertStringContainsString('<li><a class="dropdown-item" href="'.route('admin.stay-requests.qr').'"><i class="far fa-qrcode"></i> QR code client</a></li>', $html);
+        $this->assertStringContainsString('<li><a class="dropdown-item" href="'.route('admin.revenue.index').'"><i class="far fa-cash-register"></i> Recettes</a></li>', $html);
+        $this->assertStringContainsString('<li><a class="dropdown-item" href="'.route('admin.stats').'"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>', $html);
+        $this->assertStringContainsString(route('admin.booking-requests.index'), $html);
+        $this->assertStringContainsString(route('admin.special-rates.index'), $html);
+        $this->assertStringContainsString(route('admin.site.gallery.index'), $html);
+
+        // The top « Demandes clients » icon is marked to be hidden on phones (CSS), still there on wider screens.
+        $this->assertStringContainsString('class="simple-nav__icon simple-nav__requests "', $html);
+
+        // Réception: unchanged.
+        $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
+        $this->assertStringNotContainsString('simple-nav__wide-only', $html);
+        $this->assertStringContainsString('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.guests.index').'">', $html);
+    }
+
+    public function test_phones_always_get_the_simple_layout_without_touching_the_account_choice(): void
+    {
+        $user = User::factory()->create(); // chose « Mode complet »
+
+        // On a phone (cookie written by the layout's script): simple layout and home.
+        $this->actingAs($user)->withUnencryptedCookie(User::PHONE_COOKIE, '1')->get('/admin')->assertOk()
+            ->assertViewIs('admin.home')
+            ->assertSee('class="ui-simple"', false)
+            ->assertDontSee('class="admin-sidebar"', false)
+            ->assertSee('data-ui="simple" data-ui-forced="1"', false)
+            ->assertSee('<script data-phone-ui>', false);
+        $this->assertSame(User::UI_FULL, $user->fresh()->ui_mode); // the choice is kept for the computer
+
+        // On a computer: the account's choice, and the script will drop a stale phone cookie.
+        $this->unencryptedCookies = []; // test cookies persist between requests otherwise
+        $this->actingAs($user)->get('/admin')->assertOk()
+            ->assertViewIs('admin.dashboard')
+            ->assertSee('class="admin-sidebar"', false)
+            ->assertSee('data-ui="complet" data-ui-forced="0"', false);
+
+        // A simple-mode account on a phone isn't « forced ».
+        $this->actingAs(User::factory()->simpleUi()->create())->withUnencryptedCookie(User::PHONE_COOKIE, '1')->get('/admin')->assertOk()
+            ->assertSee('data-ui="simple" data-ui-forced="0"', false);
+
+        // Any other cookie value is ignored.
+        $this->unencryptedCookies = [];
+        $this->actingAs($user)->withUnencryptedCookie(User::PHONE_COOKIE, 'oui')->get('/admin')->assertOk()->assertViewIs('admin.dashboard');
+    }
+
     public function test_full_mode_keeps_the_sidebar_and_figures_dashboard(): void
     {
         $user = User::factory()->create(); // factory = complet

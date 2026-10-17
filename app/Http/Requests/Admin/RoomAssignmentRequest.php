@@ -6,6 +6,7 @@ use App\Enums\PricingMode;
 use App\Http\Requests\Admin\Concerns\ValidatesDiscount;
 use App\Http\Requests\Admin\Concerns\ValidatesPaymentLines;
 use App\Models\Room;
+use App\Models\SpecialRate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rules\Enum;
@@ -79,11 +80,11 @@ class RoomAssignmentRequest extends FormRequest
                     return;
                 }
 
-                // Nothing is billed yet: the due amount is the stay's total (room type rate ×
-                // duration − discount), and it must be cashed in full — no more, no less (a free
-                // stay needs no payment).
+                // Nothing is billed yet: the due amount is the stay's total (its forfait, else room
+                // type rate × duration, − discount), and it must be cashed in full — no more, no
+                // less (a free stay needs no payment).
                 if (is_numeric($this->input('duration'))) {
-                    $subtotal = bcmul($this->unitRate(), (string) (int) $this->input('duration'), 2);
+                    $subtotal = $this->subtotal();
                     $this->checkDiscount($validator, $subtotal);
                     $total = $this->totalAfterDiscount($subtotal);
                     $this->checkNotAboveDue($validator, $total);
@@ -119,6 +120,32 @@ class RoomAssignmentRequest extends FormRequest
     public function unitRate(): string
     {
         return (string) ($this->pricingMode()?->rateFor($this->targetRoom()?->roomType) ?? '0');
+    }
+
+    /**
+     * The forfait this stay gets (same rule as the model: SpecialRate::best() on the business
+     * day of its start), or null.
+     */
+    public function specialRate(): ?SpecialRate
+    {
+        $mode = $this->pricingMode();
+        $duration = (int) $this->input('duration');
+        if (! $mode || $duration < 1) {
+            return null;
+        }
+        [$start] = $mode->resolve($this->arrival(), $duration);
+
+        return SpecialRate::best($this->targetRoom()?->room_type_id, $mode, $duration, $start, $this->unitRate());
+    }
+
+    /**
+     * The stay's price before discount: its forfait's, else rate × duration.
+     */
+    public function subtotal(): string
+    {
+        $special = $this->specialRate();
+
+        return $special ? bcadd((string) $special->price, '0', 2) : bcmul($this->unitRate(), (string) (int) $this->input('duration'), 2);
     }
 
     public function pricingMode(): ?PricingMode

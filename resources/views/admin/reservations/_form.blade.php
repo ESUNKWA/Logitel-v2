@@ -119,7 +119,7 @@
     </div>
     <div class="col-md-4">
         <label class="form-label" for="adults">Adultes</label>
-        <input type="number" min="1" class="form-control" id="adults" name="adults" value="{{ old('adults', $reservation->adults ?? 1) }}" required>
+        <input type="number" min="1" class="form-control" id="adults" name="adults" value="{{ old('adults', $reservation->adults ?? 2) }}" required>
     </div>
     <div class="col-md-4">
         <label class="form-label" for="children">Enfants</label>

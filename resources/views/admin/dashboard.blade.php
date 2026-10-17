@@ -35,6 +35,7 @@
             <div class="dash-hero">
                 <div class="dash-hero__label">Recettes encaissées ce mois</div>
                 <div class="dash-hero__value"><span data-live-value="revenueMonth">{{ $fcfa($revenueMonth) }}</span><small>FCFA</small></div>
+                <div class="dash-hero__booking"><i class="fas fa-calendar-alt"></i> dont réservations : <strong><span data-live-value="revenueMonthBooking">{{ $fcfa($revenueMonthBooking) }}</span> FCFA</strong></div>
                 <div class="dash-hero__meta">
                     @if ($revenueMonthDelta !== null)
                         <span class="dash-delta {{ $revenueMonthDelta >= 0 ? 'is-up' : 'is-down' }}">
@@ -62,6 +63,7 @@
                 <div class="dash-tile__label">Recettes du jour</div>
                 <div class="dash-tile__value"><span data-live-value="revenueToday">{{ $fcfa($revenueToday) }}</span> <small>FCFA</small></div>
                 <div class="dash-tile__hint">Encaissées depuis {{ $bdStart->format('H\hi') }}</div>
+                <div class="dash-tile__booking"><i class="fas fa-calendar-alt"></i> dont réservations : <strong><span data-live-value="revenueTodayBooking">{{ $fcfa($revenueTodayBooking) }}</span> F</strong></div>
             </div>
             <div class="dash-tile">
                 <span class="dash-tile__icon dash-tile__icon--primary"><i class="fas fa-file-invoice-dollar"></i></span>

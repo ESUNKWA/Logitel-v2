@@ -23,8 +23,8 @@
                 <div class="dash-subtitle">À imprimer et afficher à l'accueil : le client le scanne avec son téléphone et arrive sur la page pour choisir sa chambre et envoyer sa demande.</div>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Imprimer l'affiche</button>
-                <a href="{{ route('admin.stay-requests.qr.download') }}" class="btn btn-outline-primary"><i class="fas fa-download"></i> Télécharger le QR code (SVG)</a>
+                <button type="button" class="btn btn-primary phone-hidden" onclick="window.print()"><i class="fas fa-print"></i> Imprimer l'affiche</button>
+                <a href="{{ route('admin.stay-requests.qr.download') }}" class="btn btn-outline-primary phone-hidden"><i class="fas fa-download"></i> Télécharger le QR code (SVG)</a>
             </div>
         </div>
 

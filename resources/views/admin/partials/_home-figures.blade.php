@@ -18,6 +18,7 @@
                         · {{ $fcfa($finance['discountsToday']) }} F de remises
                     @endif
                 </span>
+                <span class="home-stat__booking"><i class="fas fa-calendar-alt"></i> dont réservations : <strong>{{ $fcfa($finance['todayBooking']) }} F</strong></span>
             </div>
         @endif
         @if ($roomCounts)
@@ -32,6 +33,7 @@
                 <span class="home-stat__label"><i class="fas fa-calendar-check"></i> Recette du mois</span>
                 <span class="home-stat__value">{{ $fcfa($finance['month']) }} <small>FCFA</small></span>
                 <span class="home-stat__hint">Encaissé depuis le début du mois</span>
+                <span class="home-stat__booking"><i class="fas fa-calendar-alt"></i> dont réservations : <strong>{{ $fcfa($finance['monthBooking']) }} F</strong></span>
             </div>
             <a href="{{ route('admin.front-desk.collect') }}" class="home-stat {{ $finance['outstanding'] > 0 ? 'home-stat--danger' : '' }}">
                 <span class="home-stat__label"><i class="fas fa-hand-holding-usd"></i> Reste à encaisser</span>

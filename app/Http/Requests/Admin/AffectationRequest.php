@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Http\Requests\Admin\Concerns\ValidatesDiscount;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\SpecialRate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -53,7 +54,13 @@ class AffectationRequest extends FormRequest
                     $validator->errors()->add('duration', 'Impossible de prolonger jusqu\'au '.$end->format('d/m/Y à H\hi').' : '.lcfirst($error));
                 }
 
-                $subtotal = bcmul((string) $stay->unit_rate, (string) (int) $this->input('duration'), 2);
+                // Same price as the model will compute: the forfait for the new duration (on the
+                // stay's entry day; affectations only), else rate × duration.
+                $duration = (int) $this->input('duration');
+                $special = $stay->origin === Reservation::ORIGIN_AFFECTATION
+                    ? SpecialRate::best($stay->room?->room_type_id, $stay->pricing_mode, $duration, $stay->check_in, (string) $stay->unit_rate)
+                    : null;
+                $subtotal = $special ? bcadd((string) $special->price, '0', 2) : bcmul((string) $stay->unit_rate, (string) $duration, 2);
                 $this->checkDiscount($validator, $subtotal);
                 $total = $this->totalAfterDiscount($subtotal);
                 $paid = $stay->invoice?->amountPaid() ?? '0';

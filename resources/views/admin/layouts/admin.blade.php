@@ -1,8 +1,27 @@
 <!DOCTYPE html>
-<html lang="fr">
+@php($simpleUi = (bool) auth()->user()?->usesSimpleUi())
+@php($uiForced = $simpleUi && auth()->user() && ! auth()->user()->prefersSimpleUi())
+<html lang="fr" data-ui="{{ $simpleUi ? 'simple' : 'complet' }}" data-ui-forced="{{ $uiForced ? '1' : '0' }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {{-- Phones always get the simple layout (client request): tell the server the device is a
+             phone with a cookie, and reload once if this page was rendered for the other size.
+             No reload when cookies are blocked (no loop). Must stay after the viewport meta: before
+             it, mobile browsers measure a 980 px layout and the phone wouldn't be recognised. --}}
+        <script data-phone-ui>
+            (function () {
+                var root = document.documentElement, name = '{{ \App\Models\User::PHONE_COOKIE }}';
+                var has = function () { return document.cookie.split('; ').indexOf(name + '=1') !== -1; };
+                var phone = !!(window.matchMedia && window.matchMedia('(max-width: 860px)').matches);
+                if (phone === has()) { return; }
+                document.cookie = name + (phone ? '=1; max-age=31536000' : '=; max-age=0') + '; path=/; SameSite=Lax';
+                if (has() !== phone) { return; }
+                if ((phone && root.dataset.ui !== 'simple') || (!phone && root.dataset.uiForced === '1')) {
+                    window.location.reload();
+                }
+            })();
+        </script>
         <meta name="robots" content="noindex, nofollow">
         <title>@yield('title', 'Tableau de bord') — {{ $hotelInfo->name() }}</title>
         <link rel="shortcut icon" href="{{ asset('app/images/favicon.png') }}" type="image/png">
@@ -17,7 +36,6 @@
         @include('admin.pwa._head')
         @stack('styles')
     </head>
-    @php($simpleUi = (bool) auth()->user()?->usesSimpleUi())
     <body class="{{ $simpleUi ? 'ui-simple' : '' }}">
         <div class="admin-wrapper">
             {{-- "Mode complet": sidebar. "Mode simple": short top navigation + phone tab bar (_simple-nav). --}}
@@ -101,6 +119,9 @@
                         <div class="admin-sidebar__section">Configuration</div>
                         <a href="{{ route('admin.room-types.index') }}" class="{{ request()->routeIs('admin.room-types.*') ? 'active' : '' }}">
                             <i class="far fa-layer-group"></i> Types de chambre
+                        </a>
+                        <a href="{{ route('admin.special-rates.index') }}" class="{{ request()->routeIs('admin.special-rates.*') ? 'active' : '' }}">
+                            <i class="far fa-tags"></i> Tarifs spéciaux
                         </a>
                     @endcan
                     @can('settings.manage')
@@ -216,7 +237,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
-                            <button type="button" class="btn btn-primary" data-receipt-print><i class="fas fa-print"></i> Imprimer le reçu</button>
+                            <button type="button" class="btn btn-primary phone-hidden" data-receipt-print><i class="fas fa-print"></i> Imprimer le reçu</button>
                         </div>
                     </div>
                 </div>

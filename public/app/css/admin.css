@@ -1619,6 +1619,12 @@ dl.row dd {
     color: #b53441;
 }
 
+/* Change to hand back to the guest: red so it isn't forgotten (client request). */
+.payment-line__change.is-change,
+.payment-lines__change-note {
+    color: #b53441;
+}
+
 /* Narrow column (assignment modal): method + amount on one row, "Reçu" below */
 .modal .payment-line {
     grid-template-columns: 1fr 1.2fr auto;
@@ -2300,9 +2306,21 @@ dl.row dd {
 .simple-nav__menu .dropdown-item { border-radius: 8px; padding: 9px 12px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
 .simple-nav__menu .dropdown-item i { width: 18px; text-align: center; color: var(--ek-primary); }
 .simple-nav__menu .dropdown-header { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+/* The « Plus » menu is long (up to ~19 entries) and hangs from the sticky top bar, so scrolling
+   the page never brought its last entries into view: it scrolls by itself within the screen,
+   and while open the top bar goes above the alarm cards / request alerts / phone tab bar. */
+.simple-nav__menu {
+    max-height: calc(100vh - 82px);
+    max-height: calc(100dvh - 82px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+.admin-topbar:has(.simple-nav__menu.show) { z-index: 1095; }
 
 /* Bottom tab bar (phones only) */
 .simple-tabbar { display: none; }
+.simple-nav__phone-only { display: none; }
 
 /* Home: front-desk tiles */
 .home-hello { margin-bottom: 20px; }
@@ -2479,6 +2497,19 @@ a.home-tile:focus-visible { outline: 3px solid rgba(var(--tile-rgb), .4); outlin
 /* Phones: tab bar at the bottom, bigger touch targets */
 @media (max-width: 860px) {
     .ui-simple .simple-nav { display: none; }
+    .simple-nav__phone-only { display: list-item; }
+    .simple-nav__wide-only { display: none; }
+    .ui-mode-switch { display: none; } /* phones: simple layout only (User::usesSimpleUi()) */
+    .simple-nav__requests { display: none; }
+    /* No export / print buttons on phones (client request, 2026-10-17): receipt reprints, Recettes
+       export + print, QR poster print + download, the receipt preview's print button. */
+    .phone-hidden { display: none !important; }
+    /* Affectations list: only Entrée, Mode and Paiement on phones (unless another filter is in use). */
+    .filter-bar__wide-only { display: none !important; }
+    .simple-nav__menu {
+        max-height: calc(100vh - 66px - 96px - env(safe-area-inset-bottom));
+        max-height: calc(100dvh - 66px - 96px - env(safe-area-inset-bottom));
+    }
     .ui-simple .admin-content { padding-bottom: 96px; }
     .simple-nav__more-label, .admin-topbar__logout-label { display: none; }
 
@@ -3146,4 +3177,42 @@ form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total 
 }
 .mode-badge i { font-size: .75rem; }
 .mode-icon { color: var(--mode); width: 1.1em; text-align: center; }
+
+/* Forfaits of the day under the assignment duration (admin.js renderForfaitHint) */
+[data-forfait-hint]:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.forfait-hint__title { font-size: .8rem; font-weight: 700; color: var(--ek-muted); }
+.forfait-hint__item {
+    padding: 3px 10px;
+    border: 1px dashed rgba(var(--ek-gold-rgb), .9);
+    border-radius: 999px;
+    background: var(--ek-gold-50);
+    color: #6b4f12;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.forfait-hint__item:hover, .forfait-hint__item.is-active { background: var(--ek-gold); border-style: solid; color: #fff; }
+
+/* Recettes: affectations vs réservations (option B) — two clickable totals that filter the page. */
+.revenue-kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.revenue-kind { display: block; color: inherit; text-decoration: none; border-left: 4px solid var(--kind-color); transition: box-shadow .15s ease, background .15s ease; }
+.revenue-kind:hover { color: inherit; box-shadow: var(--ek-shadow-lg); }
+.revenue-kind.is-active { background: rgba(var(--kind-rgb), .07); box-shadow: 0 0 0 2px rgba(var(--kind-rgb), .55); }
+.revenue-kind--affectation { --kind-color: var(--ek-stay); --kind-rgb: var(--ek-stay-rgb); }
+.revenue-kind--reservation { --kind-color: var(--ek-booking); --kind-rgb: var(--ek-booking-rgb); }
+.revenue-kind__label { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--kind-color); }
+.revenue-kind__methods { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .8rem; color: var(--ek-text); }
+.revenue-line-kind { color: var(--ek-booking); font-weight: 600; }
+@media (max-width: 575.98px) { .revenue-kinds { grid-template-columns: 1fr; } }
+@media print { .revenue-kind { border: 1px solid #000; box-shadow: none !important; } }
+
+/* « dont réservations » (option B) on the home figures, dashboard tiles and tills. */
+.home-stat__booking, .dash-tile__booking { display: block; margin-top: 4px; font-size: .8rem; color: var(--ek-booking); }
+.home-stat__booking i, .dash-tile__booking i, .dash-hero__booking i, .my-cash__booking i { margin-right: 3px; }
+.dash-hero__booking { margin-top: 2px; font-size: .85rem; color: rgba(255, 255, 255, .85); }
+.my-cash__booking { display: block; margin-top: 2px; font-size: .85rem; color: rgba(255, 255, 255, .85); }
+.my-cash__booking strong { color: #fff; }
+.staff-cash__booking { color: var(--ek-booking); }
+.home-stat--primary .home-stat__booking { color: rgba(255, 255, 255, .85); }
+.home-stat--primary .home-stat__booking strong { color: #fff; }
 

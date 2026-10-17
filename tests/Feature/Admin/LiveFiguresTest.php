@@ -60,7 +60,7 @@ class LiveFiguresTest extends TestCase
         $this->assertStringContainsString('Awa Réception', $data['blocks']['staff-cash']);
         $this->assertStringContainsString('15 000 F', $data['blocks']['staff-cash']);
         $this->assertArrayNotHasKey('my-cash', $data['blocks']);                            // the manager has no till of their own
-        $this->assertSame(['revenueToday' => '15 000', 'revenueMonth' => '15 000', 'monthlyRevenue' => '15 000', 'outstandingAmount' => '0'], $data['values']);
+        $this->assertSame(['revenueToday' => '15 000', 'revenueMonth' => '15 000', 'revenueTodayBooking' => '0', 'revenueMonthBooking' => '0', 'monthlyRevenue' => '15 000', 'outstandingAmount' => '0'], $data['values']);
     }
 
     public function test_a_receptionist_gets_their_own_till_and_never_the_hotel_figures(): void

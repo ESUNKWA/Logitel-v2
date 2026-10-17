@@ -11,6 +11,7 @@
             {{ $myCash['count'] }} encaissement{{ $myCash['count'] > 1 ? 's' : '' }} enregistré{{ $myCash['count'] > 1 ? 's' : '' }} par vous
             depuis {{ \App\Support\BusinessDay::current()[0]->format('H\hi') }}
         </span>
+        <span class="my-cash__booking"><i class="fas fa-calendar-alt"></i> dont réservations : <strong>{{ $fcfa($myCash['booking']) }} F</strong></span>
     </div>
     <ul class="my-cash__methods">
         @foreach ($myCash['byMethod'] as $row)

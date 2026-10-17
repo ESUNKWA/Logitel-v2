@@ -131,10 +131,30 @@ class User extends Authenticatable
     public const UI_FULL = 'complet';
 
     /**
-     * Back-office layout chosen by this staff member ("Mode simple" by default).
+     * Cookie set by the admin layout's head script on phone-sized screens (≤ 860 px), so the
+     * server knows the device is a phone. Per device, not encrypted (EncryptCookies except).
+     */
+    public const PHONE_COOKIE = 'ek_phone';
+
+    /**
+     * Back-office layout: "Mode simple" by default, always on phones (client request,
+     * 2026-10-17 — no switch there); elsewhere the staff member's choice (`ui_mode`).
      */
     public function usesSimpleUi(): bool
     {
+        return $this->prefersSimpleUi() || self::onPhone();
+    }
+
+    /**
+     * The layout this staff member chose with the topbar switch (kept for wider screens).
+     */
+    public function prefersSimpleUi(): bool
+    {
         return $this->ui_mode !== self::UI_FULL;
+    }
+
+    public static function onPhone(): bool
+    {
+        return request()->cookie(self::PHONE_COOKIE) === '1';
     }
 }

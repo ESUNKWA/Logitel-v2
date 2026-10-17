@@ -173,16 +173,72 @@
         var duration = Math.max(1, parseInt(durationInput.value, 10) || 1);
         var rate = moneyValue(rateInput);
         var departure = departureFor(checked.value, new Date(), duration, config);
-        var subtotal = rate * duration;
+        var normal = rate * duration;
+        // Forfait of the day for this exact duration, when cheaper (same rule as SpecialRate::best()).
+        var forfait = forfaitFor(currentCard, checked.value, duration);
+        var subtotal = forfait !== null && forfait < normal ? forfait : normal;
         var tooHigh = discountTooHigh(stayScope, subtotal);
         var discount = tooHigh ? 0 : discountAmount(stayScope, subtotal);
 
-        preview.textContent = 'Départ prévu : ' + formatDateTime(departure) + ' — ' + totalText(subtotal, discount, tooHigh);
+        preview.textContent = 'Départ prévu : ' + formatDateTime(departure) + ' — '
+            + (subtotal < normal ? 'Forfait : ' + formatAmount(subtotal) + ' au lieu de ' + formatAmount(normal) + ' — ' : '')
+            + totalText(subtotal, discount, tooHigh);
+        renderForfaitHint(checked.value, duration);
 
         var paymentBox = stayScope.querySelector('[data-payment-lines]');
         if (paymentBox && paymentBox.paymentLines) {
             paymentBox.paymentLines.setDue(subtotal - discount);
         }
+    };
+
+    // Forfaits ("2 heures = 5 000 FCFA") of the day for the card's room type: data-forfaits =
+    // {"heure": {"2": 5000}} (only those cheaper than the normal price, built by the server).
+    var forfaitsOf = function (card) {
+        if (!card || !card.dataset.forfaits) {
+            return {};
+        }
+        try {
+            return JSON.parse(card.dataset.forfaits) || {};
+        } catch (e) {
+            return {};
+        }
+    };
+
+    var forfaitFor = function (card, mode, duration) {
+        var menu = forfaitsOf(card)[mode] || {};
+        return Object.prototype.hasOwnProperty.call(menu, String(duration)) ? parseFloat(menu[String(duration)]) : null;
+    };
+
+    var FORFAIT_UNITS = { heure: ['heure', 'heures'], journee: ['journée', 'journées'], nuitee: ['nuit', 'nuits'], sejour: ['période', 'périodes'] };
+
+    // Under the duration: the mode's forfaits as buttons that set the duration.
+    var renderForfaitHint = function (mode, duration) {
+        var hint = stayForm ? stayForm.querySelector('[data-forfait-hint]') : null;
+        if (!hint) {
+            return;
+        }
+        var menu = forfaitsOf(currentCard)[mode] || {};
+        var durations = Object.keys(menu).map(Number).sort(function (a, b) { return a - b; });
+        hint.textContent = '';
+        hint.hidden = durations.length === 0;
+        if (!durations.length) {
+            return;
+        }
+        var title = document.createElement('span');
+        title.className = 'forfait-hint__title';
+        title.textContent = 'Forfaits du jour :';
+        hint.appendChild(title);
+        durations.forEach(function (d) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'forfait-hint__item' + (d === duration ? ' is-active' : '');
+            button.textContent = d + ' ' + FORFAIT_UNITS[mode][d > 1 ? 1 : 0] + ' = ' + formatAmount(menu[String(d)]);
+            button.addEventListener('click', function () {
+                stayForm.querySelector('[data-duration-input]').value = d;
+                refreshStayPreview();
+            });
+            hint.appendChild(button);
+        });
     };
 
     var selectMode = function (radio) {
@@ -773,7 +829,9 @@
     // --- Receipt preview, opened right after an affectation / a réservation (#receiptModal) ---
     // The ticket is printed from its own frame, so only the ticket goes to the printer.
     var receiptModal = document.getElementById('receiptModal');
-    if (receiptModal && window.bootstrap) {
+    // Phones print nothing (client request): the preview, useless without its print button, isn't opened there.
+    var onPhone = !!(window.matchMedia && window.matchMedia('(max-width: 860px)').matches);
+    if (receiptModal && window.bootstrap && !onPhone) {
         var receiptFrame = receiptModal.querySelector('[data-receipt-frame]');
         receiptModal.querySelector('[data-receipt-print]').addEventListener('click', function () {
             if (receiptFrame && receiptFrame.contentWindow) {
@@ -903,7 +961,8 @@
                 }
                 var received = receivedInput.value === '' ? amount : moneyValue(receivedInput);
                 var change = received - amount;
-                changeBox.className = 'payment-line__change' + (change < 0 ? ' is-error' : '');
+                // Red: not enough received (is-error) or change to hand back (is-change, client request).
+                changeBox.className = 'payment-line__change' + (change < 0 ? ' is-error' : (change > 0 ? ' is-change' : ''));
                 changeBox.textContent = receivedInput.value === '' || amount === 0
                     ? ''
                     : (change < 0 ? 'Montant reçu insuffisant (manque ' + formatAmount(-change) + ')' : 'Monnaie à rendre : ' + formatAmount(change));
@@ -950,7 +1009,10 @@
                 summary.textContent = 'Encaissé : ' + formatAmount(paid) + ' · Reste dû : ' + formatAmount(Math.max(0, owed - paid));
             }
             if (change > 0 && summary.textContent) {
-                summary.textContent += ' — monnaie à rendre : ' + formatAmount(change);
+                var changeNote = document.createElement('span');
+                changeNote.className = 'payment-lines__change-note';
+                changeNote.textContent = ' — monnaie à rendre : ' + formatAmount(change);
+                summary.appendChild(changeNote);
             }
             fillButton.hidden = owed === null || owed <= 0;
         };

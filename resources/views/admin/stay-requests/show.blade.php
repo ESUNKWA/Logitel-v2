@@ -86,6 +86,7 @@
                     data-day-rate="{{ $type->day_rate }}"
                     data-night-rate="{{ $type->night_rate }}"
                     data-stay-rate="{{ $type->stay_rate }}"
+                    data-forfaits="{{ json_encode((object) $forfaits) }}"
                 >
                     @csrf
                     <h5>Valider et encaisser</h5>
@@ -142,6 +143,7 @@
                             <label class="form-label" for="children">Enfants</label>
                             <input type="number" min="0" class="form-control" id="children" name="children" value="{{ old('children', $stayRequest->children) }}" required>
                         </div>
+                        <div class="col-12 mt-1" data-forfait-hint hidden></div>
                         <div class="col-12">
                             <label class="form-label" for="assign-rate">Tarif <span data-rate-unit></span> (FCFA)</label>
                             <input type="text" class="form-control rate-locked" id="assign-rate" value="{{ number_format((float) $stayRequest->pricing_mode->rateFor($type), 0, ',', ' ') }}" data-money data-unit-rate-input readonly tabindex="-1">
