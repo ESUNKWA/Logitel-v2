@@ -42,6 +42,8 @@ class PreloaderTest extends TestCase
         $this->assertStringNotContainsString('loader.png', $html);
         $this->assertStringContainsString('<div class="preloader" role="status" aria-label="Chargement…">', $html);
         $this->assertStringContainsString('<noscript><style>.preloader { display: none !important; }</style></noscript>', $html);
+        // Version-stamped, so returning visitors get the loader's styles right after a deployment.
+        $this->assertStringContainsString('site/css/site.css?v='.filemtime(public_path('site/css/site.css')), $html);
         // theme.js still fades it out once the page has loaded.
         $this->assertStringContainsString("$('.preloader').delay(500).fadeOut(500);", file_get_contents(public_path('site/js/theme.js')));
     }

@@ -17,7 +17,8 @@
         <link rel="stylesheet" href="{{ asset('site/css/spacings.css') }}">
         <link rel="stylesheet" href="{{ asset('site/css/style.css') }}">
         <link rel="stylesheet" href="{{ asset('site/css/brand.css') }}">
-        <link rel="stylesheet" href="{{ asset('site/css/site.css') }}">
+        {{-- Our own styles change with the application: version-stamped, since Caddy lets browsers cache /site/* for a week. --}}
+        <link rel="stylesheet" href="{{ \App\Support\Asset::url('site/css/site.css') }}">
     </head>
     <body>
         @include('site.partials.preloader')
