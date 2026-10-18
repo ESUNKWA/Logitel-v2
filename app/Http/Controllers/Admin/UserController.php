@@ -37,7 +37,7 @@ class UserController extends Controller
 
     public function store(UserRequest $request): RedirectResponse
     {
-        $user = new User($request->safe()->only(['name', 'email', 'password']));
+        $user = new User($request->safe()->only(['name', 'email', 'phone', 'password']));
         $user->role_id = $request->validated('role_id');
         $user->is_active = true;
         $user->must_change_password = true;
@@ -60,7 +60,8 @@ class UserController extends Controller
 
     public function update(UserRequest $request, User $user): RedirectResponse
     {
-        $user->fill($request->safe()->only(['name', 'email']));
+        // A field the form didn't send (e.g. no « phone ») is left untouched.
+        $user->fill($request->safe()->only(['name', 'email', 'phone']));
         $user->role_id = $request->validated('role_id');
         $user->is_active = $request->boolean('is_active');
 
@@ -69,7 +70,7 @@ class UserController extends Controller
             $user->must_change_password = true;
         }
 
-        $mustReauthenticate = $user->isDirty(['role_id', 'is_active', 'password', 'email']);
+        $mustReauthenticate = $user->isDirty(['role_id', 'is_active', 'password', 'email', 'phone']);
         $user->save();
 
         if ($mustReauthenticate) {

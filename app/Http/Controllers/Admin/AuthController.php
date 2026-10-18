@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,12 +29,21 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        // One field, « E-mail ou téléphone » (still named `email`): with an « @ » it's the
+        // e-mail, otherwise the 10-digit phone (spaces, dots, dashes ignored).
+        $request->validate([
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
-        ]);
+        ], ['email.required' => 'Saisissez votre e-mail ou votre numéro de téléphone.']);
 
-        $throttleKey = Str::transliterate(Str::lower($credentials['email']).'|'.$request->ip());
+        $identifier = trim($request->string('email')->toString());
+        $byEmail = str_contains($identifier, '@');
+        $phone = $byEmail ? null : User::normalizePhone($identifier);
+        $credentials = $byEmail
+            ? ['email' => $identifier, 'password' => $request->string('password')->toString()]
+            : ['phone' => $phone, 'password' => $request->string('password')->toString()];
+
+        $throttleKey = Str::transliterate(Str::lower($byEmail ? $identifier : (string) $phone).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
             return back()
@@ -41,8 +51,10 @@ class AuthController extends Controller
                 ->onlyInput('email');
         }
 
-        // Deactivated accounts get the same generic message as a wrong password (no account enumeration).
-        if (! Auth::attempt([...$credentials, 'is_active' => true], $request->boolean('remember'))) {
+        // Deactivated accounts — and anything that is neither an e-mail nor a 10-digit number —
+        // get the same generic message as a wrong password (no account enumeration).
+        $wellFormed = $byEmail || preg_match('/^[0-9]{10}$/', (string) $phone) === 1;
+        if (! $wellFormed || ! Auth::attempt([...$credentials, 'is_active' => true], $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey);
 
             return back()

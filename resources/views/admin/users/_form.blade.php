@@ -5,9 +5,17 @@
         <label class="form-label" for="name">Nom complet</label>
         <input type="text" class="form-control" id="name" name="name" value="{{ old('name', $user->name) }}" required>
     </div>
+    {{-- Login identifiers: an e-mail and/or a 10-digit phone, at least one (either signs in). --}}
     <div class="col-md-6">
-        <label class="form-label" for="email">E-mail (identifiant de connexion)</label>
-        <input type="email" class="form-control" id="email" name="email" value="{{ old('email', $user->email) }}" required>
+        <label class="form-label" for="email">E-mail <span class="text-muted fw-normal">(connexion)</span></label>
+        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="off">
+        @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" for="phone">Téléphone <span class="text-muted fw-normal">(connexion, 10 chiffres)</span></label>
+        <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" inputmode="numeric" maxlength="20" placeholder="07 12 34 56 78" autocomplete="off">
+        @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <div class="form-text">Renseignez au moins l'e-mail ou le téléphone : l'un ou l'autre permet de se connecter.</div>
     </div>
     <div class="col-md-6">
         <label class="form-label" for="role_id">Rôle</label>

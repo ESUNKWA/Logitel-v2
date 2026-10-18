@@ -21,11 +21,17 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="profile-email">E-mail de connexion</label>
-                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="profile-email" name="email" value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="email" required>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="profile-email" name="email" value="{{ old('email', $user->email) }}" maxlength="255" autocomplete="email">
                         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="confirm_password">Mot de passe actuel <span class="text-muted fw-normal">(seulement pour changer l'e-mail)</span></label>
+                        <label class="form-label" for="profile-phone">Téléphone de connexion <span class="text-muted fw-normal">(10 chiffres)</span></label>
+                        <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="profile-phone" name="phone" value="{{ old('phone', $user->phone) }}" inputmode="numeric" maxlength="20" placeholder="07 12 34 56 78" autocomplete="tel">
+                        @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div class="form-text">L'e-mail ou le téléphone (au moins l'un des deux) permet de vous connecter.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="confirm_password">Mot de passe actuel <span class="text-muted fw-normal">(seulement pour changer l'e-mail ou le téléphone)</span></label>
                         <input type="password" class="form-control @error('confirm_password') is-invalid @enderror" id="confirm_password" name="confirm_password" autocomplete="current-password">
                         @error('confirm_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>

@@ -30,8 +30,8 @@
             <form method="POST" action="{{ route('admin.login.attempt') }}">
                 @csrf
                 <div class="mb-3">
-                    <label class="form-label" for="email">E-mail</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required autofocus>
+                    <label class="form-label" for="email">E-mail ou téléphone</label>
+                    <input type="text" class="form-control" id="email" name="email" value="{{ old('email') }}" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nom@exemple.com ou 07 12 34 56 78" required autofocus>
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="password">Mot de passe</label>

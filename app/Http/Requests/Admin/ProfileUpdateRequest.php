@@ -2,16 +2,25 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Admin\Concerns\ValidatesLoginIdentifiers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
- * A staff member editing their own name and login e-mail ("Mon profil"). Changing the e-mail
- * — the login identifier — needs the current password. Role and status stay with whoever
+ * A staff member editing their own name and login identifiers ("Mon profil": e-mail and/or
+ * phone, at least one). Changing either — they're used to sign in — needs the current password. Role and status stay with whoever
  * manages staff accounts (Personnel).
  */
 class ProfileUpdateRequest extends FormRequest
 {
+    use ValidatesLoginIdentifiers;
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareLoginIdentifiers();
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -26,14 +35,32 @@ class ProfileUpdateRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'confirm_password' => [Rule::requiredIf(fn () => $this->emailChanged()), 'nullable', 'string', 'current_password'],
+            ...$this->loginIdentifierRules($user),
+            'confirm_password' => [Rule::requiredIf(fn () => $this->identifiersChanged()), 'nullable', 'string', 'current_password'],
         ];
+    }
+
+    public function after(): array
+    {
+        return [fn (Validator $validator) => $this->checkOneLoginIdentifier($validator, $this->user())];
     }
 
     public function emailChanged(): bool
     {
-        return mb_strtolower(trim((string) $this->input('email'))) !== mb_strtolower((string) $this->user()->email);
+        return $this->has('email') && mb_strtolower((string) $this->input('email')) !== mb_strtolower((string) $this->user()->email);
+    }
+
+    public function phoneChanged(): bool
+    {
+        return $this->has('phone') && $this->input('phone') !== $this->user()->phone;
+    }
+
+    /**
+     * The e-mail or the phone changes: both sign in, so the current password is required.
+     */
+    public function identifiersChanged(): bool
+    {
+        return $this->emailChanged() || $this->phoneChanged();
     }
 
     /**
@@ -41,11 +68,14 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return ['name' => 'nom', 'email' => 'e-mail', 'confirm_password' => 'mot de passe actuel'];
+        return ['name' => 'nom', 'email' => 'e-mail', 'phone' => 'téléphone', 'confirm_password' => 'mot de passe actuel'];
     }
 
     public function messages(): array
     {
-        return ['confirm_password.required' => 'Pour changer votre e-mail de connexion, saisissez votre mot de passe actuel.'];
+        return [
+            ...$this->loginIdentifierMessages(),
+            'confirm_password.required' => 'Pour changer votre e-mail ou votre téléphone de connexion, saisissez votre mot de passe actuel.',
+        ];
     }
 }

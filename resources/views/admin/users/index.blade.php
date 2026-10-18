@@ -16,6 +16,7 @@
                 <tr>
                     <th>Nom</th>
                     <th>E-mail</th>
+                    <th>Téléphone</th>
                     <th>Rôle</th>
                     <th>Statut</th>
                     <th class="text-end">Actions</th>
@@ -30,7 +31,8 @@
                                 <span class="text-muted small">(vous)</span>
                             @endif
                         </td>
-                        <td>{{ $user->email }}</td>
+                        <td>{{ $user->email ?: '—' }}</td>
+                        <td>{{ $user->phone ?: '—' }}</td>
                         <td>{{ $user->role?->name ?? '—' }}</td>
                         <td>
                             @if ($user->is_active)
@@ -50,7 +52,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Aucun compte pour l'instant.</td>
+                        <td colspan="6" class="text-center text-muted py-4">Aucun compte pour l'instant.</td>
                     </tr>
                 @endforelse
             </tbody>

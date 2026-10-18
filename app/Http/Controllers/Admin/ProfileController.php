@@ -19,25 +19,28 @@ class ProfileController extends Controller
     }
 
     /**
-     * Own name and login e-mail. A new e-mail closes the account's other sessions (like a new
-     * password), since it's the login identifier.
+     * Own name and login identifiers (e-mail and/or phone). A new identifier closes the
+     * account's other sessions (like a new password), since it's used to sign in.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $emailChanged = $request->emailChanged();
+        $changed = $request->identifiersChanged();
 
-        $user->fill(['name' => $request->validated('name'), 'email' => trim($request->validated('email'))])->save();
+        // Only what was sent: a form without « phone » never erases the number.
+        $user->fill($request->safe()->only(['name', 'email', 'phone']))->save();
 
-        if ($emailChanged) {
+        if ($changed) {
             $request->session()->regenerate();
             $user->logoutEverywhere(exceptSessionId: $request->session()->getId());
         }
 
+        $identifiers = array_filter([$user->email, $user->phone]);
+
         return redirect()
             ->route('admin.profile.edit')
-            ->with('status', $emailChanged
-                ? 'Informations enregistrées. Votre nouvel e-mail de connexion est '.$user->email.' ; vos autres sessions ont été fermées.'
+            ->with('status', $changed
+                ? 'Informations enregistrées. Vous vous connectez désormais avec '.implode(' ou ', $identifiers).' ; vos autres sessions ont été fermées.'
                 : 'Informations enregistrées.');
     }
 

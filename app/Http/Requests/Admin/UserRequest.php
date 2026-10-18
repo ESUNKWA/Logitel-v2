@@ -2,16 +2,18 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Admin\Concerns\ValidatesLoginIdentifiers;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 
 class UserRequest extends FormRequest
 {
+    use ValidatesLoginIdentifiers;
+
     public function authorize(): bool
     {
         $target = $this->route('user');
@@ -21,9 +23,7 @@ class UserRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->has('email')) {
-            $this->merge(['email' => Str::lower(trim((string) $this->input('email')))]);
-        }
+        $this->prepareLoginIdentifiers();
     }
 
     /**
@@ -35,7 +35,7 @@ class UserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($target)],
+            ...$this->loginIdentifierRules($target instanceof User ? $target : null),
             'role_id' => ['required', 'integer', Rule::exists('roles', 'id')],
             'is_active' => ['sometimes', 'boolean'],
             'password' => [$target ? 'nullable' : 'required', 'string', 'confirmed', Password::defaults()],
@@ -46,6 +46,9 @@ class UserRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
+                $target = $this->route('user');
+                $this->checkOneLoginIdentifier($validator, $target instanceof User ? $target : null);
+
                 $roleId = $this->input('role_id');
                 $role = is_scalar($roleId) ? Role::find($roleId) : null;
 
@@ -63,8 +66,17 @@ class UserRequest extends FormRequest
     {
         return [
             'name' => 'nom',
+            'phone' => 'téléphone',
             'role_id' => 'rôle',
             'password' => 'mot de passe',
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return $this->loginIdentifierMessages();
     }
 }

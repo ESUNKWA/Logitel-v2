@@ -26,8 +26,29 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
     ];
+
+    /**
+     * A staff phone number as stored: the 10 digits, typing separators (spaces, dots, dashes)
+     * removed. Anything else (a « + », an international prefix, letters) is left in place so
+     * the « exactly 10 digits » rule refuses it.
+     */
+    public static function normalizePhone(?string $phone): ?string
+    {
+        $phone = preg_replace('/[\s.\-]+/u', '', (string) $phone);
+
+        return $phone === '' ? null : $phone;
+    }
+
+    /**
+     * What identifies the account on screen: its e-mail, else its phone number.
+     */
+    public function loginLabel(): string
+    {
+        return $this->email ?: (string) $this->phone;
+    }
 
     /**
      * The attributes that should be hidden for serialization.
