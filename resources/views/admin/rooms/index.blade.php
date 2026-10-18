@@ -10,6 +10,9 @@
                 <i class="far fa-th-large"></i> Vue grille
             </a>
             @can('rooms.manage')
+                <a href="{{ route('admin.rooms.import') }}" class="btn btn-outline-primary phone-hidden">
+                    <i class="far fa-file-import"></i> Importer (CSV)
+                </a>
                 <a href="{{ route('admin.rooms.create') }}" class="btn btn-primary">
                     <i class="far fa-plus"></i> Nouvelle chambre
                 </a>

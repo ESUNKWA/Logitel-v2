@@ -113,8 +113,51 @@ class Room extends Model
         return $this->hasMany(RoomImage::class)->orderBy('position')->orderBy('id');
     }
 
+    /**
+     * Comparison key for room numbers and names: unique ignoring case (accented letters too),
+     * surrounding and repeated spaces — « 101 » = « 101 », « Suite Été » = « SUITE  ÉTÉ ».
+     * Computed here (not with SQL lower(), which a « C » collation leaves « É » untouched) and
+     * stored in number_key / name_key, both unique in the database (migration 2026_10_18_100000_*).
+     */
+    public static function uniqueKey(?string $value): string
+    {
+        $value = trim(preg_replace('/\s+/u', ' ', (string) $value) ?? '');
+        if (class_exists(\Normalizer::class)) {
+            $value = \Normalizer::normalize($value, \Normalizer::FORM_C) ?: $value;
+        }
+
+        return mb_strtolower($value);
+    }
+
+    /**
+     * Another room already has this number (same key).
+     */
+    public static function numberTaken(?string $number, ?int $exceptId = null): bool
+    {
+        return static::query()->where('number_key', static::uniqueKey($number))
+            ->when($exceptId, fn (Builder $q) => $q->whereKeyNot($exceptId))->exists();
+    }
+
+    /**
+     * Another room already has this public name (same key); a blank name never clashes.
+     */
+    public static function nameTaken(?string $name, ?int $exceptId = null): bool
+    {
+        return static::uniqueKey($name) !== '' && static::query()->where('name_key', static::uniqueKey($name))
+            ->when($exceptId, fn (Builder $q) => $q->whereKeyNot($exceptId))->exists();
+    }
+
     protected static function booted(): void
     {
+        // Stored trimmed, with their comparison keys (unique in the database); a blank public
+        // name means « no name » (the type's name is shown).
+        static::saving(function (Room $room) {
+            $room->number = trim((string) $room->number);
+            $room->public_name = trim((string) $room->public_name) === '' ? null : trim((string) $room->public_name);
+            $room->number_key = static::uniqueKey($room->number);
+            $room->name_key = $room->public_name === null ? null : static::uniqueKey($room->public_name);
+        });
+
         static::deleting(function (Room $room) {
             // A room with stays keeps its history: take it out of service instead.
             $count = $room->reservations()->count();

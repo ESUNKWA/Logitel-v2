@@ -27,11 +27,16 @@ class PublicRoomsTest extends TestCase
         $this->confort = RoomType::factory()->create(['name' => 'Confort', 'hourly_rate' => 5000, 'day_rate' => 15000, 'night_rate' => 25000, 'stay_rate' => null, 'capacity_adults' => 2, 'capacity_children' => 1]);
     }
 
+    private int $rooms = 0;
+
     private function room(array $attributes = []): Room
     {
+        // Room names are unique: « Suite Lagune », then « Suite Lagune 2 »…
+        $this->rooms++;
+
         return Room::factory()->create([
             'room_type_id' => $this->confort->id, 'status' => RoomStatus::Disponible, 'is_published' => true,
-            'public_name' => 'Suite Lagune', 'tagline' => 'Vue sur le jardin', 'surface' => 32, 'beds' => 2, 'bathrooms' => 1,
+            'public_name' => 'Suite Lagune'.($this->rooms > 1 ? ' '.$this->rooms : ''), 'tagline' => 'Vue sur le jardin', 'surface' => 32, 'beds' => 2, 'bathrooms' => 1,
             'description' => "Une chambre lumineuse.\n\nAvec un balcon.", 'amenities' => [RoomAmenity::Wifi, RoomAmenity::Climatisation],
             'features' => ['Bouilloire', 'Coffre-fort'], 'rules' => ['Non-fumeur'], 'cancellation_policy' => 'Annulation gratuite 24 h avant.',
             ...$attributes,

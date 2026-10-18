@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RoomAssignmentController;
 use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\Admin\RoomImportController;
 use App\Http\Controllers\Admin\RoomTypeController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\Site\EventController;
@@ -83,6 +84,11 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::resource('tarifs-speciaux', SpecialRateController::class)->except(['show'])
             ->parameters(['tarifs-speciaux' => 'specialRate'])->names('special-rates')->middleware('can:rooms.manage');
 
+        // Rooms CSV import: analyse (nothing saved) then confirm; existing rooms are never modified.
+        Route::get('/rooms/import', [RoomImportController::class, 'create'])->middleware('can:rooms.manage')->name('rooms.import');
+        Route::get('/rooms/import/modele', [RoomImportController::class, 'template'])->middleware('can:rooms.manage')->name('rooms.import.template');
+        Route::post('/rooms/import', [RoomImportController::class, 'preview'])->middleware(['can:rooms.manage', 'throttle:20,1'])->name('rooms.import.preview');
+        Route::post('/rooms/import/confirmer', [RoomImportController::class, 'store'])->middleware('can:rooms.manage')->name('rooms.import.store');
         Route::get('/rooms/board', [RoomController::class, 'board'])->middleware('can:rooms.view')->name('rooms.board');
         Route::post('/rooms/{room}/ready', [RoomController::class, 'markReady'])->middleware('can:rooms.edit')->name('rooms.ready');
         Route::get('/rooms/available', [RoomController::class, 'available'])->middleware('can:reservations.manage')->name('rooms.available');

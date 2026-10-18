@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,6 +28,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['ek_phone']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Room number / name taken at the same moment by someone else (unique indexes on rooms):
+        // the forms check it first, this only catches the race — a message, not a 500.
+        $exceptions->render(function (UniqueConstraintViolationException $e, Request $request) {
+            if (! $request->expectsJson() && preg_match('/rooms[._](number|name)/', $e->getMessage())) {
+                return back()->withInput()->withErrors([
+                    'number' => 'Une chambre avec ce numéro ou ce nom vient d\'être enregistrée : choisissez-en un autre.',
+                ]);
+            }
+        });
+
         // PostgreSQL's reservations_no_overlap constraint (exclusion_violation): a double booking
         // got past the application checks — answer like a validation error, not a 500.
         $exceptions->render(function (QueryException $e, Request $request) {

@@ -27,7 +27,12 @@ class RoomRequest extends FormRequest
 
         return [
             'room_type_id' => ['required', 'exists:room_types,id'],
-            'number' => ['required', 'string', 'max:50', Rule::unique('rooms', 'number')->ignore($room)],
+            // Unique ignoring case and spaces (Room::uniqueKey()); the database enforces it too.
+            'number' => ['required', 'string', 'max:50', function (string $attribute, mixed $value, \Closure $fail) use ($room) {
+                if (is_string($value) && Room::numberTaken($value, $room?->id)) {
+                    $fail('Une chambre porte déjà le numéro « '.trim($value).' ».');
+                }
+            }],
             'floor' => ['nullable', 'string', 'max:50'],
             'status' => ['required', new Enum(RoomStatus::class)],
             'notes' => ['nullable', 'string'],
@@ -41,7 +46,11 @@ class RoomRequest extends FormRequest
             'remove_images.*' => ['integer'],
             // Public presentation (room page on the website)
             'is_published' => ['sometimes', 'boolean'],
-            'public_name' => ['nullable', 'string', 'max:100'],
+            'public_name' => ['nullable', 'string', 'max:100', function (string $attribute, mixed $value, \Closure $fail) use ($room) {
+                if (is_string($value) && Room::nameTaken($value, $room?->id)) {
+                    $fail("Une autre chambre s'appelle déjà « ".trim($value).' » : le nom affiché doit être unique.');
+                }
+            }],
             'tagline' => ['nullable', 'string', 'max:160'],
             'surface' => ['nullable', 'integer', 'min:1', 'max:2000'],
             'beds' => ['nullable', 'integer', 'min:0', 'max:20'],
