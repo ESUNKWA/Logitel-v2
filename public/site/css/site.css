@@ -285,3 +285,64 @@
 @media (prefers-reduced-motion: reduce) {
     .hero-video__start, .hero-video__dot::after { transition: none; }
 }
+
+/* ===== Home « Ce que nous vous offrons » (site/partials/home-offer, App\Support\HotelOffer) =====
+   Formula colours = the application's (violet hour, sun-yellow day, night indigo, teal stay). */
+.home-offer .section-title h2 { margin-bottom: 0; }
+.home-offer__group { margin-bottom: 26px; }
+.home-offer__title { margin-bottom: 12px; font-size: 20px; }
+.home-offer__formulas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.home-offer__formula {
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; column-gap: 12px; row-gap: 2px; align-items: center;
+    padding: 14px 16px; border-radius: 14px; background: #fff; border: 1px solid rgba(22, 25, 33, .08); border-left: 4px solid var(--offer-color);
+    box-shadow: 0 8px 22px rgba(22, 25, 33, .06);
+}
+.home-offer__formula i { grid-row: 1 / span 3; font-size: 22px; color: var(--offer-color); width: 26px; text-align: center; }
+.home-offer__formula-name { font-weight: 600; color: var(--heading-color, #161921); }
+.home-offer__formula-price { color: var(--heading-color, #161921); }
+.home-offer__formula-price strong { font-size: 18px; }
+.home-offer__formula-window { font-size: 13px; color: #5b6170; }
+.home-offer__formula--heure { --offer-color: #6d44c2; }
+.home-offer__formula--journee { --offer-color: #a87b00; }
+.home-offer__formula--nuitee { --offer-color: #343a96; }
+.home-offer__formula--sejour { --offer-color: #0f7c76; }
+.home-offer__tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.home-offer__tags li { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid rgba(22, 25, 33, .1); color: var(--heading-color, #161921); font-size: 15px; }
+.home-offer__tags li i { color: var(--primary-color, #6d7c6a); }
+.home-offer__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.home-offer__secondary.theme-btn { background: transparent; color: var(--heading-color, #161921); border: 1px solid currentColor; }
+.home-offer__secondary.theme-btn:hover { background: var(--heading-color, #161921); color: #fff; }
+@media (max-width: 575.98px) {
+    .home-offer__formulas { grid-template-columns: 1fr; }
+    .home-offer__actions .theme-btn { width: 100%; justify-content: center; text-align: center; }
+}
+
+/* The template's stock backgrounds of the footer and the key-figures section were removed
+   (2026-10-19): same dark look from a plain colour under their overlays. */
+.main-footer, .luxivo-counter_one { background-color: var(--primary-black-color, #161921); }
+
+
+/* Home page under 1200 px (tablets, phones): the template hid the « Nos chambres » photo and the
+   left photo of « Ce que nous vous offrons » — and with it the « Appelez-nous » phone box. Both
+   come back in the flow, above their section's content (computers unchanged). */
+@media (max-width: 1199.98px) {
+    .luxivo-room_one .room-bg {
+        display: block; position: relative; z-index: 0;
+        width: calc(100% - 32px); max-width: 960px; height: clamp(200px, 42vw, 340px);
+        margin: -40px auto 36px; border-radius: 22px; overflow: hidden;
+        background-size: cover; background-position: center;
+    }
+    .luxivo-room_one .room-bg:after { background-color: rgba(22, 25, 33, .15); }
+
+    .luxivo-contact_one .contact-bg-left {
+        display: flex; position: relative; z-index: 0;
+        width: calc(100% - 32px); max-width: 960px; min-height: clamp(260px, 52vw, 420px);
+        margin: 0 auto 28px; padding: 24px; border-radius: 22px; overflow: hidden;
+        background-size: cover; background-position: center;
+    }
+    .luxivo-contact_one .contact-bg-left .luxivo-info-box { max-width: 100%; padding: 22px 26px; }
+}
+@media (max-width: 575.98px) {
+    .luxivo-contact_one .contact-bg-left .luxivo-info-box { width: 100%; }
+    .luxivo-contact_one .contact-bg-left .luxivo-info-box h3 { font-size: 24px; }
+}

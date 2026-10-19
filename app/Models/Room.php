@@ -285,13 +285,14 @@ class Room extends Model
     }
 
     /**
-     * The formulas offered for this room with their price (room type's rates), in display order.
+     * What the public website shows of this room's prices: the séjour only (PricingMode::WEBSITE,
+     * client decision 2026-10-19), empty when its type has no séjour rate (« Tarif sur demande »).
      *
      * @return list<array{mode: PricingMode, rate: float}>
      */
     public function publicRates(): array
     {
-        return collect(PricingMode::cases())
+        return collect([PricingMode::WEBSITE])
             ->map(fn (PricingMode $mode) => ['mode' => $mode, 'rate' => $mode->rateFor($this->roomType)])
             ->filter(fn (array $r) => $r['rate'] !== null)
             ->map(fn (array $r) => ['mode' => $r['mode'], 'rate' => (float) $r['rate']])

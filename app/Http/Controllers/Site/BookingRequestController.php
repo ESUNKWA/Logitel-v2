@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 /**
- * « Réserver » on the website: a guest asks for a booking (room type, formula, dates). The
+ * « Réserver » on the website: a guest asks for a booking (room type, séjour dates — the only
+ * formula the site offers, PricingMode::WEBSITE). The
  * request lands in the application (Réservations → Demandes en ligne), where the réception calls
  * the guest back and creates the réservation. See App\Http\Controllers\Admin\BookingRequestController.
  */
@@ -26,8 +27,8 @@ class BookingRequestController extends Controller
         return view('site.pages.reservation', [
             'types' => $types,
             'selectedType' => old('room_type_id', $types->firstWhere('id', $request->integer('type'))?->id ?? $types->first()?->id),
-            'rates' => $types->mapWithKeys(fn (RoomType $type) => [$type->id => collect(PricingMode::cases())
-                ->mapWithKeys(fn (PricingMode $mode) => [$mode->value => $mode->rateFor($type) !== null ? (float) $mode->rateFor($type) : null])]),
+            // The séjour only: the website never offers the other formulas (PricingMode::WEBSITE).
+            'rates' => $types->mapWithKeys(fn (RoomType $type) => [$type->id => [PricingMode::WEBSITE->value => (float) PricingMode::WEBSITE->rateFor($type)]]),
         ]);
     }
 

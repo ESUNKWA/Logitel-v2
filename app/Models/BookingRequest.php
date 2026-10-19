@@ -130,7 +130,8 @@ class BookingRequest extends Model
             ->whereHas('rooms', fn (Builder $q) => $q->where('is_published', true))
             ->orderBy('name')
             ->get()
-            ->filter(fn (RoomType $type) => collect(PricingMode::cases())->contains(fn (PricingMode $m) => $m->rateFor($type) !== null))
+            // Online requests are for a séjour only (PricingMode::WEBSITE): a type without that rate isn't offered.
+            ->filter(fn (RoomType $type) => PricingMode::WEBSITE->rateFor($type) !== null)
             ->values();
     }
 }

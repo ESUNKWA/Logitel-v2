@@ -66,12 +66,10 @@
                         <h5>{{ $room->bathrooms }} salle{{ $room->bathrooms > 1 ? 's' : '' }} de bain</h5>
                     </div>
                 @endif
-                @if ($lowest)
-                    <div class="meta-box text-center mb-30">
-                        <img src="{{ asset('site/images/innerpage/icon/icon-17.png') }}" class="mb-15" alt="">
-                        <h5>dès {{ $fcfa($lowest['rate']) }} FCFA {{ $lowest['mode']->rateUnit() }}</h5>
-                    </div>
-                @endif
+                <div class="meta-box text-center mb-30">
+                    <img src="{{ asset('site/images/innerpage/icon/icon-17.png') }}" class="mb-15" alt="">
+                    <h5>{{ $lowest ? 'dès '.$fcfa($lowest['rate']).' FCFA '.$lowest['mode']->rateUnit() : 'Tarif sur demande' }}</h5>
+                </div>
             </div>
 
             <div class="room-image mb-40">
@@ -102,17 +100,8 @@
                                         @foreach ($rates as $rate)
                                             <tr>
                                                 <th>{{ $rate['mode']->getLabel() }}</th>
-                                                <td>
-                                                    @if ($rate['mode'] === \App\Enums\PricingMode::Nuitee)
-                                                        de {{ str_replace(':', 'h', config('hotel.night.from')) }} à {{ str_replace(':', 'h', config('hotel.night.until')) }} le lendemain
-                                                    @elseif ($rate['mode'] === \App\Enums\PricingMode::Journee)
-                                                        {{ config('hotel.day_hours') }} heures
-                                                    @elseif ($rate['mode'] === \App\Enums\PricingMode::Sejour)
-                                                        par période de {{ config('hotel.stay_min_hours') }} heures
-                                                    @else
-                                                        à partir d'une heure
-                                                    @endif
-                                                </td>
+                                                {{-- The séjour only (Room::publicRates(), PricingMode::WEBSITE). --}}
+                                                <td>par période de {{ config('hotel.stay_min_hours') }} heures</td>
                                                 <td class="text-end"><strong>{{ $fcfa($rate['rate']) }} FCFA</strong> <small>{{ $rate['mode']->rateUnit() }}</small></td>
                                             </tr>
                                         @endforeach

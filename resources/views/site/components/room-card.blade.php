@@ -1,6 +1,7 @@
 {{--
     A published room on the website (list and home page): cover photo, name, type, capacity,
-    surface, beds and the lowest price. <x-site::room-card :room="$room" />
+    surface, beds and the séjour price (the only formula the site shows, Room::publicRates()).
+    <x-site::room-card :room="$room" />
     No loading="lazy" on the photo: the template's Isotope grid waits for the images
     (imagesLoaded) to size the cards — lazy images made them collapse and overlap.
 --}}
@@ -22,6 +23,8 @@
                 <h4><a href="{{ $room->publicUrl() }}">{{ $room->displayName() }}</a></h4>
                 @if ($lowest)
                     <div class="price"><small>à partir de</small> {{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA<span class="time">{{ $lowest['mode']->rateUnit() }}</span></div>
+                @else
+                    <div class="price"><small>Tarif sur demande</small></div>
                 @endif
                 <div class="room-meta">
                     @if ($room->roomType->capacity_adults)
@@ -40,6 +43,8 @@
                 <h4><a href="{{ $room->publicUrl() }}">{{ $room->displayName() }}</a></h4>
                 @if ($lowest)
                     <div class="price-line">dès {{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA <small>{{ $lowest['mode']->rateUnit() }}</small></div>
+                @else
+                    <div class="price-line">Tarif sur demande</div>
                 @endif
                 <a href="{{ $room->publicUrl() }}" class="theme-btn style-two">VOIR DÉTAILS <i class="far fa-arrow-right"></i></a>
             </div>

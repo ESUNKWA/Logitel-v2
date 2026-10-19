@@ -7,7 +7,7 @@
 
 {{-- Texts and photos: « Site web → Accueil » in the application (SiteContent). --}}
 <section class="luxivo-hero">
-    <div class="luxivo-hero_one p-r z-1 bg_cover {{ $capsules ? 'has-video' : '' }}" data-src="{{ \App\Models\SiteContent::photoUrl('hero_background') ?? asset('site/images/stock/hero-bg.jpg') }}">
+    <div class="luxivo-hero_one p-r z-1 bg_cover {{ $capsules ? 'has-video' : '' }}" data-src="{{ \App\Models\SiteContent::photoUrl('hero_background') ?? asset('site/images/stock/ch1.jpeg') }}">
         @if ($capsules)
             @include('site.partials.hero-video')
         @endif
@@ -21,7 +21,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="hero-content text-center text-xl-start mb-25">
-                        <h1 data-aos="fade-left" data-aos-duration="2500">{{ \App\Models\SiteContent::get('hero_title', 'Bienvenue à '.$hotelInfo->name()) }}</h1>
+                        <h1 data-aos="fade-left" data-aos-duration="2500">{{ \App\Models\SiteContent::get('hero_title', $hotelInfo->name()) }}</h1>
                     </div>
                 </div>
             </div>
@@ -206,6 +206,8 @@
                         <div class="room-bottom">
                             @if ($lowest)
                                 <div class="price">{{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA<span>{{ $lowest['mode']->rateUnit() }}</span></div>
+                            @else
+                                <div class="price"><span>Tarif sur demande</span></div>
                             @endif
                             <a href="{{ $room->publicUrl() }}" class="theme-btn style-two">VOIR DÉTAILS<i class="far fa-arrow-right"></i></a>
                         </div>
@@ -247,7 +249,7 @@
 
 
 @if ($stats)
-<section class="luxivo-counter_one bg_cover pt-110 pb-70" data-src="{{ asset('site/images/stock/footer-bg.jpg') }}">
+<section class="luxivo-counter_one pt-110 pb-70">
     <div class="container">
         <div class="row justify-content-center">
             @foreach ($stats as [$value, $label])
@@ -265,6 +267,36 @@
 </section>
 @endif
 
+
+<section class="luxivo-contact_one pt-60 pb-60">
+    <div class="contact-bg-left bg_cover" data-src="{{ asset('site/images/stock/bg1.png') }}" data-aos="fade-up" data-aos-duration="800">
+        <div class="luxivo-info-box">
+            <div class="content">
+                <span class="line d-block mb-10"><img src="{{ asset('site/images/home-one/contact/d-line.png') }}" alt="ligne"></span>
+                @if ($hotelInfo->get('phone'))
+                    <span>Appelez-nous pour toute demande</span>
+                    <h3><a href="{{ $hotelInfo->telHref($hotelInfo->get('phone')) }}">{{ $hotelInfo->get('phone') }}</a></h3>
+                @else
+                    <span>Une question, une demande ?</span>
+                    <h3><a href="{{ route('contact') }}">Contactez-nous</a></h3>
+                @endif
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row justify-content-end">
+            <div class="col-xl-7">
+                {{-- « Ce que nous vous offrons » replaces the template's decorative contact form (it sent nothing). --}}
+                @include('site.partials.home-offer')
+            </div>
+        </div>
+    </div>
+</section>
+
+
+@include('site.partials.photo-strip')
+
+{{-- Customer reviews: last section of the page, right before the footer (client request, 2026-10-19). --}}
 @php($testimonials = \App\Models\SiteContent::testimonials())
 @if ($testimonials)
 <section class="luxivo-testimonial-one pt-110 pb-120">
@@ -302,79 +334,5 @@
     </div>
 </section>
 @endif
-
-<section class="luxivo-contact_one pt-60 pb-60">
-    <div class="contact-bg-left bg_cover" data-src="{{ asset('site/images/stock/bg1.png') }}" data-aos="fade-up" data-aos-duration="800">
-        <div class="luxivo-info-box">
-            <div class="content">
-                <span class="line d-block mb-10"><img src="{{ asset('site/images/home-one/contact/d-line.png') }}" alt="ligne"></span>
-                @if ($hotelInfo->get('phone'))
-                    <span>Appelez-nous pour toute demande</span>
-                    <h3><a href="{{ $hotelInfo->telHref($hotelInfo->get('phone')) }}">{{ $hotelInfo->get('phone') }}</a></h3>
-                @else
-                    <span>Une question, une demande ?</span>
-                    <h3><a href="{{ route('contact') }}">Contactez-nous</a></h3>
-                @endif
-            </div>
-        </div>
-    </div>
-    <div class="contact-bg-right bg_cover" data-src="{{ asset('site/images/stock/gallery-2.jpg') }}"></div>
-    <div class="container">
-        <div class="row justify-content-end">
-            <div class="col-xl-7">
-                <div class="booking-wrapper">
-                    <div class="section-title mb-50">
-                        <span class="line d-block mb-10" data-aos="fade-up" data-aos-duration="800"><img src="{{ asset('site/images/home-one/gallery/d-line.png') }}" alt="ligne"></span>
-                        <span class="sub-title" data-aos="fade-up" data-aos-duration="1000">Contactez-nous</span>
-                        <h2 data-aos="fade-up" data-aos-duration="1200">Faisons de votre séjour un moment inoubliable</h2>
-                        <p data-aos="fade-up" data-aos-duration="1400">Une question, besoin d'aide pour une réservation ou envie d'une expérience sur mesure ? Notre équipe n'est qu'à un message.</p>
-                    </div>
-                    <form class="booking-form" data-aos="fade-up" data-aos-duration="1600">
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label>Nom</label>
-                                    <input type="text" class="form_control" placeholder="Votre nom" name="name">
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label>E-mail</label>
-                                    <input type="email" class="form_control" placeholder="Votre e-mail" name="email">
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label>Arrivée</label>
-                                    <input type="date" class="form_control" name="CheckIn">
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label>Départ</label>
-                                    <input type="date" class="form_control" name="CheckOut">
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <label>Message</label>
-                                <div class="form-group">
-                                    <textarea name="message" class="form_control" rows="4" placeholder="Écrivez votre message"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="form-group">
-                                    <button class="theme-btn style-one" type="button">VÉRIFIER LES DISPONIBILITÉS <i class="far fa-arrow-right"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-
-@include('site.partials.photo-strip')
 
 @endsection

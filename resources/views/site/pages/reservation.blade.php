@@ -19,7 +19,8 @@
                 <a href="{{ route('contact') }}" class="theme-btn style-one mt-3">Nous contacter <i class="far fa-arrow-right"></i></a>
             </div>
         @else
-            @php($mode = \App\Enums\PricingMode::tryFrom((string) old('pricing_mode')) ?? \App\Enums\PricingMode::Nuitee)
+            {{-- The website offers the séjour only (PricingMode::WEBSITE, client decision 2026-10-19). --}}
+            @php($mode = \App\Enums\PricingMode::WEBSITE)
             <form method="POST" action="{{ route('booking.store') }}" class="site-booking__form" data-booking
                 data-rates='@json($rates)' data-night-from="{{ config('hotel.night.from') }}" data-night-until="{{ config('hotel.night.until') }}"
                 data-day-hours="{{ config('hotel.day_hours') }}" data-stay-hours="{{ config('hotel.stay_min_hours') }}" novalidate>
@@ -57,19 +58,18 @@
                             @endforeach
                         </div>
 
-                        <h4 class="site-booking__step"><span>2</span> Formule et dates</h4>
-                        <div class="site-booking__modes">
-                            @foreach (\App\Enums\PricingMode::cases() as $case)
-                                <label class="site-booking__mode">
-                                    <input type="radio" name="pricing_mode" value="{{ $case->value }}" data-mode data-unit="{{ $case->rateUnit() }}" data-units="{{ $case->unitPlural() }}" @checked($mode === $case)>
-                                    <span>{{ $case->getLabel() }}<small data-mode-price></small></span>
-                                </label>
-                            @endforeach
+                        <h4 class="site-booking__step"><span>2</span> Dates du séjour</h4>
+                        {{-- One fixed formula: the radio stays (checked, hidden) for reservation.js's estimate. --}}
+                        <div class="site-booking__modes site-booking__modes--single">
+                            <label class="site-booking__mode">
+                                <input type="radio" name="pricing_mode" value="{{ $mode->value }}" data-mode data-unit="{{ $mode->rateUnit() }}" data-units="{{ $mode->unitPlural() }}" checked class="visually-hidden">
+                                <span>{{ $mode->getLabel() }}<small data-mode-price></small></span>
+                            </label>
                         </div>
                         <div class="row g-3 mt-1">
                             <div class="col-md-6">
-                                <label class="site-booking__label" for="check_in" data-check-in-label>{{ $mode === \App\Enums\PricingMode::Nuitee ? 'Nuit du' : 'Arrivée le' }}</label>
-                                <input type="{{ $mode === \App\Enums\PricingMode::Nuitee ? 'date' : 'datetime-local' }}" class="form_control" id="check_in" name="check_in" value="{{ old('check_in', $mode === \App\Enums\PricingMode::Nuitee ? today()->addDay()->toDateString() : now()->addDay()->setTime(10, 0)->format('Y-m-d\TH:i')) }}" min="{{ today()->toDateString() }}" required data-check-in>
+                                <label class="site-booking__label" for="check_in" data-check-in-label>Arrivée le</label>
+                                <input type="datetime-local" class="form_control" id="check_in" name="check_in" value="{{ old('check_in', now()->addDay()->setTime(10, 0)->format('Y-m-d\TH:i')) }}" min="{{ today()->toDateString() }}" required data-check-in>
                             </div>
                             <div class="col-md-6">
                                 <label class="site-booking__label" for="duration">Nombre de <span data-units-label>{{ $mode->unitPlural() }}</span></label>

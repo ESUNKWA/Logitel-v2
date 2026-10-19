@@ -16,8 +16,10 @@ class HomeAndServicesContentTest extends TestCase
 
     public function test_an_empty_home_page_shows_no_sample_content(): void
     {
+        // No title entered: the banner shows the hotel's name (no « Bienvenue à », no sample text).
         $this->get('/')->assertOk()
-            ->assertSee('Bienvenue à')
+            ->assertSee('<h1 data-aos="fade-left" data-aos-duration="2500">'.e(app(\App\Support\HotelInfo::class)->name()).'</h1>', false)
+            ->assertDontSee('Bienvenue à')
             ->assertSee('Une question sur nos chambres ?')
             ->assertDontSee('Notre hôtel & resort de luxe', false)
             ->assertDontSee('100k+')
@@ -57,7 +59,13 @@ class HomeAndServicesContentTest extends TestCase
             ->assertDontSee('10 ans')
             ->assertSee('Très bon accueil.')
             ->assertSee('Awa K.')
-            ->assertDontSee('Sans nom : masqué.');
+            ->assertDontSee('Sans nom : masqué.')
+            // Customer reviews: the last section, right before the footer (client request, 2026-10-19).
+            ->assertSeeInOrder(['Ce que nous vous offrons', 'Ce que disent nos clients', 'Très bon accueil.', '<footer class="main-footer'], false);
+
+        $html = $this->get('/')->getContent();
+        $between = substr($html, strpos($html, 'Ce que disent nos clients'), strpos($html, '<footer class="main-footer') - strpos($html, 'Ce que disent nos clients'));
+        $this->assertSame(0, substr_count($between, '<section'), 'No other section between the reviews and the footer.');
     }
 
     public function test_managed_texts_are_escaped(): void
@@ -76,11 +84,20 @@ class HomeAndServicesContentTest extends TestCase
         Service::create(['title' => 'Blanchisserie', 'is_published' => true, 'show_on_home' => false]);
         Service::create(['title' => 'Spa caché', 'is_published' => false, 'show_on_home' => true]);
 
-        $this->get('/')->assertOk()
-            ->assertSee('Restaurant Le Baobab')
-            ->assertSee('fa-utensils', false)
-            ->assertDontSee('Blanchisserie')
-            ->assertDontSee('Spa caché');
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // The « Nos services » section: featured (show_on_home) published services only.
+        $featured = substr($html, strpos($html, '<section class="site-services'));
+        $featured = substr($featured, 0, strpos($featured, '</section>'));
+        $this->assertStringContainsString('Restaurant Le Baobab', $featured);
+        $this->assertStringContainsString('fa-utensils', $featured);
+        $this->assertStringNotContainsString('Blanchisserie', $featured);
+
+        // « Ce que nous vous offrons » lists every published service — never an unpublished one.
+        $offer = substr($html, strpos($html, '<div class="booking-wrapper home-offer">'));
+        $this->assertStringContainsString('Blanchisserie', $offer);
+        $this->assertStringContainsString('Restaurant Le Baobab', $offer);
+        $this->assertStringNotContainsString('Spa caché', $html);
     }
 
     public function test_the_services_page_lists_published_services_in_order(): void

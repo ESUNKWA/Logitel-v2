@@ -1,6 +1,6 @@
 @props(['title', 'subtitle' => null, 'breadcrumb'])
 
-<section class="page-hero bg_cover p-r z-1" data-src="{{ asset('site/images/stock/page-hero-bg.jpg') }}">
+<section class="page-hero bg_cover p-r z-1" data-src="{{ asset('site/images/stock/ch1.jpeg') }}">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">

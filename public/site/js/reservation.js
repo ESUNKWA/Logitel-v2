@@ -1,5 +1,6 @@
-// « Réserver » (site/pages/reservation): enables the formulas offered by the chosen room type,
-// switches the arrival field (date for a nuitée, date + time otherwise) and shows an estimate.
+// « Réserver » (site/pages/reservation): shows the estimate for the chosen room type. The site
+// offers the séjour only (PricingMode::WEBSITE): one hidden, checked formula; the other branches
+// below are never reached there.
 // Display only: the server recomputes everything (App\Enums\PricingMode).
 (function () {
     'use strict';

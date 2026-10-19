@@ -17,6 +17,14 @@ enum PricingMode: string
     case Nuitee = 'nuitee';
     case Sejour = 'sejour';
 
+    /**
+     * The only formula the public website mentions (client decision, 2026-10-19: for
+     * advertising and reliability, the hourly, day and night formulas never appear on the site —
+     * prices, texts, online booking requests). The management application keeps all four, and so
+     * does the lobby QR-code page /demande (guests already on site).
+     */
+    public const WEBSITE = self::Sejour;
+
     public function getLabel(): string
     {
         return match ($this) {

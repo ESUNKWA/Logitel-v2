@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Room;
 use App\Models\Service;
 use App\Models\SiteEvent;
+use App\Support\HotelOffer;
 use App\Support\VideoCapsules;
 use Illuminate\View\View;
 
@@ -25,6 +26,8 @@ class HomeController extends Controller
             'events' => SiteEvent::query()->upcoming()->limit(3)->get(),
             // Advertising video capsules played in the banner (config/site.php, existing files only).
             'capsules' => VideoCapsules::all(),
+            // « Ce que nous vous offrons »: formulas, equipment, services, payments (published data only).
+            'offer' => HotelOffer::summary(),
         ]);
     }
 }

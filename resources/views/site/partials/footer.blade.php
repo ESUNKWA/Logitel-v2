@@ -1,4 +1,4 @@
-<footer class="main-footer bg_cover" data-src="{{ asset('site/images/stock/footer-bg.jpg') }}">
+<footer class="main-footer">
     <div class="container">
         <div class="footer-top-area">
             <div class="row">
@@ -56,14 +56,6 @@
                                     @endforeach
                                 </div>
                             @endif
-                            <div class="newsletter-box">
-                                <form>
-                                    <div class="form-group">
-                                        <input type="email" placeholder="Votre adresse e-mail" class="form_control" required>
-                                        <button class="theme-btn style-one" type="button">S'ABONNER <i class="far fa-paper-plane"></i></button>
-                                    </div>
-                                </form>
-                            </div>
                         </div>
                     </div>
                 </div>

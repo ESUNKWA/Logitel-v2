@@ -10,7 +10,7 @@ use App\Models\RoomType;
 use App\Models\StayRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
@@ -42,7 +42,8 @@ class BookingRequestRequest extends FormRequest
     {
         return [
             'room_type_id' => ['required', 'integer'],
-            'pricing_mode' => ['required', new Enum(PricingMode::class)],
+            // The séjour only (PricingMode::WEBSITE): any other formula sent is refused.
+            'pricing_mode' => ['nullable', Rule::in([PricingMode::WEBSITE->value])],
             'check_in' => ['required', 'date'],
             'duration' => ['required', 'integer', 'min:1', 'max:30'],
             'adults' => ['required', 'integer', 'min:1', 'max:10'],
@@ -120,7 +121,7 @@ class BookingRequestRequest extends FormRequest
 
     public function pricingMode(): PricingMode
     {
-        return PricingMode::tryFrom((string) $this->input('pricing_mode')) ?? PricingMode::Nuitee;
+        return PricingMode::WEBSITE;
     }
 
     /**
@@ -164,6 +165,7 @@ class BookingRequestRequest extends FormRequest
             'phone.required' => 'Indiquez votre numéro de téléphone : la réception vous rappelle pour confirmer.',
             'phone.regex' => 'Saisissez un numéro de téléphone valide (chiffres uniquement, ex. 07 00 00 00 00).',
             'website.max' => 'Votre demande n\'a pas pu être envoyée.',
+            'pricing_mode.in' => 'Les demandes en ligne concernent un séjour (par période de 24 h).',
         ];
     }
 }

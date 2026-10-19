@@ -11,10 +11,10 @@
         <div class="row justify-content-center">
             <div class="col-xl-7">
                 <div class="section-title text-center mb-60">
-                    <span class="line d-block mb-10"><img src="{{ asset('site/images/home-one/gallery/d-line.png') }}" alt=""></span>
+                    <span class="line d-block mb-10"><img src="{{ asset('site/images/stock/ch1.jpeg') }}" alt=""></span>
                     <span class="sub-title">NOS CHAMBRES</span>
                     <h2>Des chambres pour chaque séjour</h2>
-                    <p class="mt-3">À l'heure, à la journée, pour la nuit ou pour plusieurs jours : découvrez nos chambres et leurs tarifs.</p>
+                    <p class="mt-3">Pour un court séjour ou plusieurs jours de détente : découvrez nos chambres et leurs tarifs.</p>
                 </div>
             </div>
         </div>

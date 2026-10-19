@@ -77,4 +77,12 @@ class PublicSmokeTest extends TestCase
     {
         $this->get('/route-inexistante')->assertNotFound();
     }
+
+    public function test_the_footer_has_no_decorative_newsletter_form(): void
+    {
+        // The template's « S'abonner » field sent nothing: removed (client request, 2026-10-19).
+        foreach (['/', '/chambres', '/contact'] as $page) {
+            $this->get($page)->assertOk()->assertDontSee('newsletter-box', false)->assertDontSee("S'ABONNER", false);
+        }
+    }
 }

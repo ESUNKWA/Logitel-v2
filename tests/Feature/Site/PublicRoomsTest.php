@@ -24,7 +24,8 @@ class PublicRoomsTest extends TestCase
     {
         parent::setUp();
         $this->travelTo('2026-10-08 14:00:00');
-        $this->confort = RoomType::factory()->create(['name' => 'Confort', 'hourly_rate' => 5000, 'day_rate' => 15000, 'night_rate' => 25000, 'stay_rate' => null, 'capacity_adults' => 2, 'capacity_children' => 1]);
+        // Hourly / day / night rates exist but the website only shows the séjour (PricingMode::WEBSITE).
+        $this->confort = RoomType::factory()->create(['name' => 'Confort', 'hourly_rate' => 5000, 'day_rate' => 15000, 'night_rate' => 25000, 'stay_rate' => 45000, 'capacity_adults' => 2, 'capacity_children' => 1]);
     }
 
     private int $rooms = 0;
@@ -50,7 +51,8 @@ class PublicRoomsTest extends TestCase
         $this->room(['number' => 'P-3', 'public_name' => 'Type inactif', 'room_type_id' => RoomType::factory()->create(['is_active' => false])->id]);
 
         $this->get('/chambres')->assertOk()
-            ->assertSee('Suite Lagune')->assertSee('Confort')->assertSee('à partir de')->assertSee('5 000 FCFA')
+            ->assertSee('Suite Lagune')->assertSee('Confort')->assertSee('à partir de')->assertSee('45 000 FCFA')->assertSee('/ 24 h')
+            ->assertDontSee('/ heure')->assertDontSee('/ nuit')->assertDontSee('/ journée')
             ->assertSee('2 pers.')->assertSee('32 m²')->assertSee('2 lits')
             ->assertDontSee('Brouillon')->assertDontSee('Type inactif')
             ->assertDontSee('635')->assertDontSee('Clients heureux'); // no fictive figures any more
@@ -78,13 +80,24 @@ class PublicRoomsTest extends TestCase
         $this->get($room->publicUrl())->assertOk()
             ->assertSee('Suite Lagune')->assertSee('Vue sur le jardin')
             ->assertSee('Une chambre lumineuse.')->assertSee('Avec un balcon.')
-            ->assertSeeInOrder(['Tarifs', "À l'heure", '5 000 FCFA', 'Journée', '15 000 FCFA', 'Nuitée', '25 000 FCFA'], false)
-            ->assertDontSee('Séjour (24 h)')
+            ->assertSeeInOrder(['Tarifs', 'Séjour (24 h)', 'par période de 24 heures', '45 000 FCFA'], false)
+            ->assertDontSee("À l'heure", false)->assertDontSee('Journée')->assertDontSee('Nuitée')
+            ->assertDontSee('15 000 FCFA')->assertDontSee('25 000 FCFA')
             ->assertSee('Wi-Fi gratuit')->assertSee('Climatisation')
             ->assertSee('Bouilloire')->assertSee('Non-fumeur')->assertSee('Annulation gratuite 24 h avant.')
             ->assertSee('storage/rooms/'.$room->id.'/a.jpg', false)->assertSee('storage/rooms/'.$room->id.'/b.jpg', false)
             ->assertSee('2 adultes')->assertSee('1 enfant');
         $this->assertStringEndsWith('/chambres/'.$room->id.'/suite-lagune', $room->publicUrl());
+    }
+
+    public function test_a_room_without_a_sejour_rate_shows_no_other_formula(): void
+    {
+        $type = RoomType::factory()->create(['name' => 'Express', 'hourly_rate' => 3000, 'day_rate' => 10000, 'night_rate' => 20000, 'stay_rate' => null]);
+        $room = $this->room(['public_name' => 'Chambre express', 'room_type_id' => $type->id]);
+
+        $this->get('/chambres')->assertOk()->assertSee('Chambre express')->assertSee('Tarif sur demande')->assertDontSee('3 000 FCFA');
+        $this->get($room->publicUrl())->assertOk()->assertSee('Tarif sur demande')
+            ->assertDontSee("À l'heure", false)->assertDontSee('Nuitée')->assertDontSee('20 000');
     }
 
     public function test_text_from_the_application_is_escaped(): void
