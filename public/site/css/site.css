@@ -223,3 +223,65 @@
     .site-preloader__logo, .site-preloader .brand-logo-text, .site-preloader__bar::after { animation: none; }
 }
 
+
+/* ===== Home banner video capsules (site/partials/hero-video, js/hero-video.js) =====
+   Landscape screens: full-bleed background under the banner's overlay (texts stay readable,
+   the banner keeps its size). Portrait screens: the whole 16:9 frame at the top of the banner,
+   never cropped. Controls: white on dark (contrast > 7:1), 44 px targets, visible focus. */
+.hero-video { position: absolute; inset: 0; pointer-events: none; }
+.hero-video__screen { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: var(--primary-black-color, #161921); }
+.hero-video__media { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hero-video__start {
+    position: absolute; left: 50%; top: 50%; z-index: 3; transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    width: 76px; height: 76px; border: 2px solid rgba(255, 255, 255, .85); border-radius: 50%;
+    background: rgba(22, 25, 33, .72); color: #fff; font-size: 26px; pointer-events: auto; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .35); transition: transform .2s, background .2s;
+}
+.hero-video__start i { margin-left: 4px; }
+.hero-video__start:hover { background: var(--primary-color, #6d7c6a); transform: translate(-50%, -50%) scale(1.05); }
+.hero-video__controls {
+    /* Bottom right of the banner, but never below the visible screen (phones in landscape). */
+    position: absolute; right: 24px; top: min(calc(100% - 80px), calc(100svh - 80px)); z-index: 4; pointer-events: auto;
+    display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px;
+    background: rgba(22, 25, 33, .78); box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+}
+.hero-video__btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+    border: 0; border-radius: 50%; background: transparent; color: #fff; font-size: 16px; cursor: pointer;
+}
+.hero-video__btn:hover { background: rgba(255, 255, 255, .16); }
+.hero-video__btn[aria-pressed="true"] { background: rgba(255, 255, 255, .22); }
+.hero-video__dots { display: flex; align-items: center; gap: 2px; padding: 0 6px; }
+.hero-video__dot { width: 24px; height: 44px; border: 0; background: transparent; cursor: pointer; position: relative; }
+.hero-video__dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(255, 255, 255, .45); transition: width .2s, background .2s; }
+.hero-video__dot[aria-current="true"]::after { width: 18px; border-radius: 6px; background: #fff; }
+.hero-video__start:focus-visible, .hero-video__btn:focus-visible, .hero-video__dot:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* Sound refused by the browser until a first interaction: the sound button becomes an obvious
+   « Activer le son » pill (dark text on the light pill: contrast > 10:1). */
+.hero-video__btn-text { display: none; }
+.hero-video.is-sound-blocked .hero-video__btn--sound { width: auto; padding: 0 16px 0 14px; gap: 8px; border-radius: 999px; background: #fff; color: #161921; font-weight: 600; font-size: 14px; animation: hero-video-sound 2.4s ease-in-out infinite; }
+.hero-video.is-sound-blocked .hero-video__btn--sound .hero-video__btn-text { display: inline; }
+@keyframes hero-video-sound { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .55); } 50% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); } }
+@media (prefers-reduced-motion: reduce) { .hero-video.is-sound-blocked .hero-video__btn--sound { animation: none; } }
+
+/* Readable title over bright footage (sky, pool): a slightly denser overlay than the photo's. */
+.luxivo-hero_one.has-video:after { background: linear-gradient(180deg, rgba(22, 25, 33, .55) 0%, rgba(22, 25, 33, .4) 55%, rgba(22, 25, 33, .6) 100%); }
+
+/* Portrait screens (phones, tablets held upright): the frame in the flow, above the title, and
+   the controls under it — the picture itself is never covered. */
+@media (max-aspect-ratio: 1/1) {
+    .luxivo-hero_one.has-video { padding-top: 130px; }
+    .luxivo-hero_one.has-video:after { background: rgba(22, 25, 33, .5); }
+    .hero-video { position: relative; inset: auto; z-index: 2; width: calc(100% - 32px); max-width: 720px; margin: 0 auto 78px; aspect-ratio: 16 / 9; pointer-events: auto; }
+    .hero-video__screen { z-index: 0; border-radius: 16px; box-shadow: 0 18px 40px rgba(0, 0, 0, .4); }
+    .hero-video__controls { left: 50%; right: auto; top: calc(100% + 12px); transform: translateX(-50%); gap: 2px; padding: 3px; }
+    .hero-video__btn { width: 40px; height: 40px; font-size: 15px; }
+    .hero-video__dot { width: 20px; height: 40px; }
+}
+@media (max-aspect-ratio: 1/1) and (max-width: 380px) {
+    .hero-video__dots { display: none; } /* very small phones: previous / next are enough */
+}
+@media (prefers-reduced-motion: reduce) {
+    .hero-video__start, .hero-video__dot::after { transition: none; }
+}

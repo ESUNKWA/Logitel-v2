@@ -7,7 +7,10 @@
 
 {{-- Texts and photos: « Site web → Accueil » in the application (SiteContent). --}}
 <section class="luxivo-hero">
-    <div class="luxivo-hero_one p-r z-1 bg_cover" data-src="{{ \App\Models\SiteContent::photoUrl('hero_background') ?? asset('site/images/stock/hero-bg.jpg') }}">
+    <div class="luxivo-hero_one p-r z-1 bg_cover {{ $capsules ? 'has-video' : '' }}" data-src="{{ \App\Models\SiteContent::photoUrl('hero_background') ?? asset('site/images/stock/hero-bg.jpg') }}">
+        @if ($capsules)
+            @include('site.partials.hero-video')
+        @endif
         @if (\App\Models\SiteContent::photoUrl('hero_photo_1'))
             <div class="hero-image hero-image_one" data-aos="fade-up" data-aos-duration="2500" data-aos-delay="10"><img src="{{ \App\Models\SiteContent::photoUrl('hero_photo_1') }}" alt="{{ $hotelInfo->name() }}"></div>
         @endif
@@ -161,7 +164,7 @@
 
 @if ($rooms->isNotEmpty())
 <section class="luxivo-room_one p-r z-1 pt-120 pb-120">
-    <div class="room-bg" data-src="{{ asset('site/images/stock/hero-bg.jpg') }}"></div>
+    <div class="room-bg" data-src="{{ asset('site/images/stock/piscine.jpeg') }}"></div>
     <div class="container">
         <div class="row align-items-end">
             <div class="col-xl-6 col-lg-8">
@@ -301,7 +304,7 @@
 @endif
 
 <section class="luxivo-contact_one pt-60 pb-60">
-    <div class="contact-bg-left bg_cover" data-src="{{ asset('site/images/stock/about-1.jpg') }}" data-aos="fade-up" data-aos-duration="800">
+    <div class="contact-bg-left bg_cover" data-src="{{ asset('site/images/stock/bg1.png') }}" data-aos="fade-up" data-aos-duration="800">
         <div class="luxivo-info-box">
             <div class="content">
                 <span class="line d-block mb-10"><img src="{{ asset('site/images/home-one/contact/d-line.png') }}" alt="ligne"></span>

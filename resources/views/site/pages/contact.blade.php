@@ -86,7 +86,7 @@
 
 <section class="luxivo-map-sec">
     <div class="map-box mb-5 mb-xl-0">
-        <iframe src="https://www.google.com/maps/embed?pb=!1m10!1m8!1m3!1d63316.16150026117!2d-5.03!3d7.69!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sfr!2sci!4v1706508986625!5m2!1sfr!2sci" loading="lazy"></iframe>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3971.8717855326395!2d-4.005891588986964!3d5.436436234816749!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfc1956557970a51%3A0x7aae95327a429d62!2sComplexe%20h%C3%B4telier%20Evasion%20abobo%20plaque%201!5e0!3m2!1sfr!2sci!4v1792402053893!5m2!1sfr!2sci" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
     </div>
 </section>
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Room;
 use App\Models\Service;
 use App\Models\SiteEvent;
+use App\Support\VideoCapsules;
 use Illuminate\View\View;
 
 /**
@@ -22,6 +23,8 @@ class HomeController extends Controller
             'services' => Service::query()->published()->where('show_on_home', true)->ordered()->limit(6)->get(),
             // Upcoming events: the soonest in the banner under the hero, the next three as cards.
             'events' => SiteEvent::query()->upcoming()->limit(3)->get(),
+            // Advertising video capsules played in the banner (config/site.php, existing files only).
+            'capsules' => VideoCapsules::all(),
         ]);
     }
 }
