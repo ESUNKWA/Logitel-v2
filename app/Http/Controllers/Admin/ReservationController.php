@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Http\Controllers\Controller;
@@ -10,8 +11,10 @@ use App\Models\BookingRequest;
 use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\RoomType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -88,6 +91,7 @@ class ReservationController extends Controller
             'statuses' => [ReservationStatus::EnAttente, ReservationStatus::Confirmee],
             'bookingRequest' => $bookingRequest,
             'prefillClient' => $prefillClient,
+            'roomTypes' => $this->roomTypeOptions(),
         ]);
     }
 
@@ -157,7 +161,26 @@ class ReservationController extends Controller
                 'label' => "N°{$reservation->room->number} — {$reservation->room->roomType?->name}",
                 'rate' => $reservation->unit_rate, // the rate agreed when booking (kept while room and mode don't change)
             ] : null,
+            'roomTypes' => $this->roomTypeOptions($reservation->room?->room_type_id),
         ]);
+    }
+
+    /**
+     * Room types offered in the form's first choice (client request, 2026-10-19: the type comes
+     * first, then only its modes): active types with at least one rate, natural name order — plus
+     * the booking's own type when editing, even if it was deactivated since.
+     *
+     * @return Collection<int, RoomType>
+     */
+    private function roomTypeOptions(?int $keepTypeId = null): Collection
+    {
+        return RoomType::query()
+            ->where(fn ($query) => $query->where('is_active', true)->when($keepTypeId, fn ($q) => $q->orWhere('id', $keepTypeId)))
+            ->get()
+            ->filter(fn (RoomType $type) => $type->id === $keepTypeId
+                || collect(PricingMode::cases())->contains(fn (PricingMode $mode) => $mode->rateFor($type) !== null))
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
     }
 
     public function update(ReservationRequest $request, Reservation $reservation): RedirectResponse

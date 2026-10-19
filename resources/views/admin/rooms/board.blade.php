@@ -302,7 +302,7 @@
                                     @endforeach
                                 </div>
                                 <div class="form-text" data-mode-hint>
-                                    Nuitée : de {{ str_replace(':', 'h', config('hotel.night.from')) }} à {{ str_replace(':', 'h', config('hotel.night.until')) }}@unless ($nightOpen), disponible à partir de {{ str_replace(':', 'h', config('hotel.night.from')) }}@endunless. Les modes sans tarif pour ce type de chambre sont désactivés.
+                                    Nuitée : de {{ str_replace(':', 'h', config('hotel.night.from')) }} à {{ str_replace(':', 'h', config('hotel.night.until')) }} le lendemain@unless ($nightOpen) — une entrée avant {{ str_replace(':', 'h', config('hotel.night.from')) }} compte pour la nuit de ce soir@endunless.
                                 </div>
                             </div>
                             <div class="col-4">
@@ -329,7 +329,10 @@
                         <div class="col-lg-6 border-start-lg">
                           <div class="assign-pay">
                             <h6 class="text-uppercase text-muted small fw-bold mb-3">Règlement</h6>
-                            <div class="assign-pay__total" data-stay-preview>Choisissez un mode.</div>
+                            <div class="assign-pay__total">
+                                @include('admin.partials._entry-time')
+                                <div data-stay-preview>Choisissez un mode.</div>
+                            </div>
 
                             {{-- Payment lines, then — right under « Ajouter un mode » — the discount and the cash received. --}}
                             @can('payments.create')

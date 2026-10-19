@@ -97,9 +97,8 @@ class RoomAssignmentRequest extends FormRequest
                     }
                 }
 
-                if (! $mode->canStartAt($this->arrival())) {
-                    $validator->errors()->add('pricing_mode', 'La nuitée commence à '.str_replace(':', 'h', config('hotel.night.from')).' : choisissez « À l\'heure », « Journée » ou « Séjour » pour une entrée immédiate.');
-                }
+                // A nuitée may start before its window (client request, 2026-10-19: the réception may
+                // let a guest in at 21h30) — it's then that evening's night (PricingMode::end()).
             },
         ];
     }

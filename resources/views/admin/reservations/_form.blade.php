@@ -74,14 +74,33 @@
         </select>
     </div>
 
+    {{-- The room type comes first, then only its modes (client request, 2026-10-19: modes the
+         type doesn't offer are hidden, not greyed); the room list is limited to that type. --}}
+    @php
+        $roomTypes = $roomTypes ?? collect();
+        $selectedTypeId = (string) old('room_type_id', $reservation->room?->room_type_id ?? ($bookingRequest ?? null)?->room_type_id ?? ($roomTypes->count() === 1 ? $roomTypes->first()->id : ''));
+        $selectedType = $roomTypes->first(fn ($type) => (string) $type->id === $selectedTypeId);
+        $offers = fn ($case) => ! $selectedType || $case->rateFor($selectedType) !== null;
+    @endphp
+    <div class="col-md-6">
+        <label class="form-label" for="booking_room_type">Type de chambre</label>
+        <select class="form-select @error('room_type_id') is-invalid @enderror" id="booking_room_type" name="room_type_id" data-booking-type required>
+            <option value="">Choisissez un type de chambre…</option>
+            @foreach ($roomTypes as $type)
+                <option value="{{ $type->id }}" @selected((string) $type->id === $selectedTypeId)@foreach (\App\Enums\PricingMode::cases() as $case) data-{{ $case->value }}="{{ $case->rateFor($type) !== null ? '1' : '' }}"@endforeach>{{ $type->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
     <div class="col-12">
         <label class="form-label d-block">Mode</label>
         <div class="btn-group w-100 booking-modes" role="group">
             @foreach (\App\Enums\PricingMode::cases() as $case)
-                <input type="radio" class="btn-check" name="pricing_mode" id="booking-mode-{{ $case->value }}" value="{{ $case->value }}" data-booking-mode data-availability-trigger @checked($mode === $case)>
-                <label class="btn mode-btn mode--{{ $case->value }}" for="booking-mode-{{ $case->value }}"><i class="fas {{ $case->icon() }}" aria-hidden="true"></i> {{ $case->getLabel() }}</label>
+                <input type="radio" class="btn-check" name="pricing_mode" id="booking-mode-{{ $case->value }}" value="{{ $case->value }}" data-booking-mode data-availability-trigger @checked($mode === $case)@disabled(! $offers($case))>
+                <label class="btn mode-btn mode--{{ $case->value }}" for="booking-mode-{{ $case->value }}"@unless ($offers($case)) hidden @endunless><i class="fas {{ $case->icon() }}" aria-hidden="true"></i> {{ $case->getLabel() }}</label>
             @endforeach
         </div>
+        <div class="form-text" data-booking-type-hint{{ $selectedType ? ' hidden' : '' }}>Choisissez d'abord le type de chambre : seuls ses modes s'affichent.</div>
     </div>
 
     <div class="col-md-4">
@@ -107,7 +126,7 @@
             @if ($currentRoomOption ?? null)
                 <option value="{{ $currentRoomOption['id'] }}" data-rate="{{ $currentRoomOption['rate'] }}" selected>{{ $currentRoomOption['label'] }}</option>
             @else
-                <option value="">Renseignez d'abord l'arrivée</option>
+                <option value="">Choisissez le type de chambre et l'arrivée</option>
             @endif
         </select>
     </div>

@@ -3022,6 +3022,9 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
     color: var(--ek-ink);
     line-height: 1.5;
 }
+/* « Entrée : … » line, right above « Départ prévu » in the same box. */
+.assign-pay__entry { font-weight: 600; color: var(--ek-muted, #5b6474); }
+.assign-pay__entry [data-entry-time] { color: var(--ek-ink); font-weight: 700; }
 .assign-pay__label { font-weight: 700; color: var(--ek-ink); margin-bottom: 8px; font-size: .9rem; }
 .assign-pay .payment-lines__summary { margin-top: 8px; }
 

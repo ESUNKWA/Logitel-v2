@@ -147,10 +147,25 @@
     var stayForm = stayScope ? stayScope.querySelector('[data-stay-form]') : null;
     var currentCard = assignModal ? null : stayScope;
 
+    // « Entrée » ([data-entry-time], above « Départ prévu »): the stay starts when the form is
+    // saved, so it follows the current minute (display only — the server uses its own time).
+    var refreshEntryTime = function () {
+        if (!stayForm) {
+            return;
+        }
+        stayForm.querySelectorAll('[data-entry-time]').forEach(function (el) {
+            el.textContent = formatDateTime(new Date());
+        });
+    };
+    if (stayForm && stayForm.querySelector('[data-entry-time]')) {
+        window.setInterval(refreshEntryTime, 15000);
+    }
+
     var refreshStayPreview = function () {
         if (!stayForm) {
             return;
         }
+        refreshEntryTime();
         var config = {
             nightUntil: stayForm.dataset.nightUntil,
             stayHours: parseInt(stayForm.dataset.stayHours, 10),
@@ -296,16 +311,23 @@
             var preferred = null;
             var kept = null;
 
+            // Only the modes the room type offers are shown (client request, 2026-10-19) — the
+            // others are hidden, not greyed. The nuitée stays selectable before its window: the
+            // receptionist may let a guest in at 21h30 (it's then that evening's night).
             stayForm.querySelectorAll('[data-mode-option]').forEach(function (radio) {
                 var offered = card.dataset[RATE_KEYS[radio.value]] !== '';
-                radio.disabled = !offered || (radio.value === 'nuitee' && !nightOpen);
+                radio.disabled = !offered;
+                var label = stayForm.querySelector('label[for="' + radio.id + '"]');
+                if (label) {
+                    label.hidden = !offered;
+                }
                 if (restore && radio.checked && !radio.disabled) {
                     kept = radio;
                 }
                 radio.checked = false;
                 if (!radio.disabled) {
                     firstEnabled = firstEnabled || radio;
-                    if (radio.value === 'nuitee' || (radio.value === 'heure' && !preferred)) {
+                    if ((radio.value === 'nuitee' && nightOpen) || (radio.value === 'heure' && !preferred)) {
                         preferred = radio;
                     }
                 }
@@ -320,11 +342,8 @@
                     selectMode(initial);
                 } else {
                     stayForm.querySelector('[data-unit-rate-input]').value = '';
-                    var nightOnly = card.dataset.nightRate !== '' && !nightOpen;
-                    stayForm.querySelector('[data-stay-preview]').textContent = nightOnly
-                        ? 'Ce type de chambre n\'est tarifé qu\'à la nuitée, disponible à partir de ' + stayForm.dataset.nightFrom.replace(':', 'h')
-                            + '. Pour une entrée immédiate, ajoutez un tarif à l\'heure, journée ou séjour (Configuration → Types de chambre).'
-                        : "Aucun tarif n'est défini pour ce type de chambre : renseignez-en un dans Configuration → Types de chambre.";
+                    stayForm.querySelector('[data-stay-preview]').textContent =
+                        "Aucun tarif n'est défini pour ce type de chambre : renseignez-en un dans Configuration → Types de chambre.";
                 }
             }
         }
@@ -443,6 +462,14 @@
             }
             if (!field('check_in')) {
                 return;
+            }
+            // Réservation form: the room type is chosen first and limits the list to its rooms.
+            if (form.querySelector('[name="room_type_id"]')) {
+                if (!field('room_type_id')) {
+                    roomSelect.innerHTML = '<option value="">Choisissez d\'abord le type de chambre</option>';
+                    return;
+                }
+                params.set('room_type_id', field('room_type_id'));
             }
 
             fetch(url + '?' + params.toString(), { headers: { Accept: 'application/json' } })
@@ -1290,6 +1317,49 @@
                 refreshBooking();
             });
         });
+
+        // Room type first ([data-booking-type]): only its modes show (the others are hidden, not
+        // greyed — client request, 2026-10-19); the checked mode moves to one it offers, then the
+        // room list (limited to the type) is reloaded through that mode's change event.
+        var bookingType = bookingForm.querySelector('[data-booking-type]');
+        var applyTypeModes = function (reload) {
+            var option = bookingType.options[bookingType.selectedIndex];
+            var chosen = option && option.value !== '';
+            var radios = Array.prototype.slice.call(bookingForm.querySelectorAll('[data-booking-mode]'));
+            radios.forEach(function (radio) {
+                var offered = !chosen || option.dataset[radio.value] === '1';
+                radio.disabled = !offered;
+                var label = bookingForm.querySelector('label[for="' + radio.id + '"]');
+                if (label) {
+                    label.hidden = !offered;
+                }
+            });
+            var hint = bookingForm.querySelector('[data-booking-type-hint]');
+            if (hint) {
+                hint.hidden = chosen;
+            }
+            var checked = bookingForm.querySelector('[data-booking-mode]:checked');
+            var target = checked && !checked.disabled ? checked : null;
+            if (!target) {
+                // Same default as before: the nuitée when offered, else the first mode offered.
+                target = radios.filter(function (r) { return !r.disabled && r.value === 'nuitee'; })[0]
+                    || radios.filter(function (r) { return !r.disabled; })[0] || null;
+                if (target) {
+                    target.checked = true;
+                    reload = true;
+                }
+            }
+            if (reload && target) {
+                if (bookingRoom) {
+                    bookingRoom.value = '';
+                }
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+        if (bookingType) {
+            bookingType.addEventListener('change', function () { applyTypeModes(true); });
+            applyTypeModes(false);
+        }
         bindDiscount(bookingForm, refreshBooking);
 
         [bookingCheckIn, bookingDuration, bookingRate].forEach(function (input) {

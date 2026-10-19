@@ -64,6 +64,8 @@ class ReservationRequest extends FormRequest
             'adults' => ['required', 'integer', 'min:1'],
             'children' => ['required', 'integer', 'min:0'],
             'status' => ['required', Rule::in([ReservationStatus::EnAttente->value, ReservationStatus::Confirmee->value])],
+            // The form's first choice (display aid): when sent, the room must be of that type.
+            'room_type_id' => ['nullable', 'integer'],
             'room_id' => ['required', 'exists:rooms,id', new RoomIsAvailableForDates($reservation?->id)],
             'notes' => ['nullable', 'string'],
             // Created from an online booking request (« Demandes en ligne »), marked handled on save.
@@ -94,6 +96,11 @@ class ReservationRequest extends FormRequest
                 }
 
                 $room = Room::with('roomType')->find($this->input('room_id'));
+                if ($room && $this->filled('room_type_id') && (int) $this->input('room_type_id') !== (int) $room->room_type_id) {
+                    $validator->errors()->add('room_id', "La chambre N°{$room->number} n'est pas du type de chambre choisi : choisissez une chambre de ce type.");
+
+                    return;
+                }
                 if ($room && $room->status === RoomStatus::HorsService) {
                     $validator->errors()->add('room_id', "La chambre N°{$room->number} est hors service : elle ne peut pas être réservée.");
                 }

@@ -135,15 +135,25 @@ class StayPricingTest extends TestCase
         $this->assertSame('2026-10-08 12:00', $room->reservations()->firstOrFail()->check_out->format('Y-m-d H:i'));
     }
 
-    public function test_nuitee_is_refused_before_22h(): void
+    public function test_a_nuitee_may_start_before_22h_and_is_that_evening_s_night(): void
     {
-        $this->travelTo('2026-10-07 16:00:00');
+        // Client request, 2026-10-19: the réception may let a guest in at 21h30.
+        $this->travelTo('2026-10-07 21:30:00');
         $room = $this->room();
 
-        $this->assign($room, 'nuitee', 1)->assertSessionHasErrors('pricing_mode');
+        $this->assign($room, 'nuitee', 1)->assertSessionHasNoErrors();
 
-        $this->assertSame(0, Reservation::count());
-        $this->assertSame(RoomStatus::Disponible, $room->fresh()->status);
+        $stay = Reservation::sole();
+        $this->assertSame('2026-10-07 21:30', $stay->check_in->format('Y-m-d H:i'));
+        $this->assertSame('2026-10-08 12:00', $stay->check_out->format('Y-m-d H:i')); // noon the next day
+        $this->assertSame('40000.00', (string) $stay->total_amount);
+        $this->assertSame(RoomStatus::Occupee, $room->fresh()->status);
+
+        // Earlier in the afternoon too, for two nights.
+        $this->travelTo('2026-10-07 16:00:00');
+        $other = $this->room();
+        $this->assign($other, 'nuitee', 2)->assertSessionHasNoErrors();
+        $this->assertSame('2026-10-09 12:00', Reservation::where('room_id', $other->id)->sole()->check_out->format('Y-m-d H:i'));
     }
 
     public function test_mode_without_a_rate_on_the_room_type_is_refused(): void

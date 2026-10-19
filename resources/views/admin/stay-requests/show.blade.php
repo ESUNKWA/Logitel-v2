@@ -123,10 +123,12 @@
                         <div class="col-12">
                             <label class="form-label d-block">Mode</label>
                             <div class="btn-group w-100" role="group">
+                                {{-- Only the modes the room type offers (client request, 2026-10-19); the nuitée
+                                     stays selectable before its window (that evening's night). --}}
                                 @foreach (\App\Enums\PricingMode::cases() as $mode)
+                                    @continue($mode->rateFor($type) === null)
                                     <input type="radio" class="btn-check" name="pricing_mode" id="mode-{{ $mode->value }}" value="{{ $mode->value }}" data-mode-option
-                                        @checked($selectedMode === $mode->value)
-                                        @disabled($mode->rateFor($type) === null || ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen))>
+                                        @checked($selectedMode === $mode->value)>
                                     <label class="btn mode-btn mode--{{ $mode->value }}" for="mode-{{ $mode->value }}"><i class="fas {{ $mode->icon() }}" aria-hidden="true"></i> {{ $mode->getLabel() }}</label>
                                 @endforeach
                             </div>
@@ -153,7 +155,10 @@
                         <div class="col-12">
                             <div class="assign-pay">
                                 <h6 class="text-uppercase text-muted small fw-bold mb-3">Règlement</h6>
-                                <div class="assign-pay__total" data-stay-preview>Choisissez un mode.</div>
+                                <div class="assign-pay__total">
+                                    @include('admin.partials._entry-time')
+                                    <div data-stay-preview>Choisissez un mode.</div>
+                                </div>
                                 <div class="assign-pay__label">Encaissement <span class="text-muted fw-normal">— totalité du séjour, en un ou plusieurs modes</span></div>
                                 @include('admin.payments._lines', ['due' => null, 'required' => true, 'full' => true, 'cashReceivedRequired' => true,
                                     'sharedReceived' => true, 'idPrefix' => 'approve',

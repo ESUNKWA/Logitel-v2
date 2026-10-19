@@ -213,6 +213,7 @@ class RoomController extends Controller
             'check_out' => ['required_without:duration', 'nullable', 'date', 'after:check_in'],
             'duration' => ['required_without:check_out', 'nullable', 'integer', 'min:1', 'max:365'],
             'exclude_reservation_id' => ['nullable', 'integer'],
+            'room_type_id' => ['nullable', 'integer'],
         ]);
 
         $mode = PricingMode::tryFrom($request->string('pricing_mode')->toString()) ?? PricingMode::Nuitee;
@@ -226,6 +227,7 @@ class RoomController extends Controller
         $rooms = Room::query()
             ->with('roomType')
             ->where('status', '!=', RoomStatus::HorsService)
+            ->when($request->integer('room_type_id'), fn ($query, $typeId) => $query->where('room_type_id', $typeId))
             ->availableBetween($start, $end, $request->integer('exclude_reservation_id') ?: null)
             ->orderBy('number')
             ->get()
