@@ -95,26 +95,12 @@
             <div class="row"><span>Date</span><span>{{ $at($invoice->payments->last()?->paid_at ?? $reservation->created_at) }}</span></div>
 
             <hr class="sep">
-            <div class="row"><span>Client</span><span class="strong">{{ $reservation->guest?->fullName() }}</span></div>
-            @if ($reservation->guest?->isCompany())
-                @if ($reservation->guest->tax_id)
-                    <div class="row"><span>RCCM / NCC</span><span>{{ $reservation->guest->tax_id }}</span></div>
-                @endif
-                @if ($reservation->guest->contactName())
-                    <div class="row"><span>Contact</span><span>{{ $reservation->guest->contactName() }}</span></div>
-                @endif
-            @endif
-            @if ($reservation->guest?->phone)
-                <div class="row"><span>Tél.</span><span>{{ $reservation->guest->phone }}</span></div>
-            @endif
-
-            <hr class="sep">
+            {{-- No client part (name, phone, RCCM / contact), room type nor number of guests on the
+                 ticket (client request, 2026-10-19). --}}
             <div class="row"><span>Chambre</span><span class="strong">N°{{ $reservation->room?->number }}</span></div>
-            <div class="row"><span>Type</span><span>{{ $reservation->room?->roomType?->name }}</span></div>
             <div class="row"><span>Formule</span><span>{{ $reservation->pricing_mode->getLabel() }}</span></div>
             <div class="row"><span>{{ $isStay ? 'Entrée' : 'Arrivée prévue' }}</span><span>{{ $at($reservation->check_in) }}</span></div>
             <div class="row"><span>{{ $isStay ? 'Sortie prévue' : 'Départ prévu' }}</span><span>{{ $at($reservation->check_out) }}</span></div>
-            <div class="row"><span>Personnes</span><span>{{ $reservation->adults }} ad.{{ $reservation->children ? ' + '.$reservation->children.' enf.' : '' }}</span></div>
 
             <hr class="sep">
             @if ($reservation->hasSpecialRate())
@@ -132,17 +118,11 @@
             @endif
             <div class="row total"><span>TOTAL</span><span>{{ $fcfa($invoice->amount) }} FCFA</span></div>
 
+            {{-- Payment part: only the amount paid (client request, 2026-10-19) — no method,
+                 time, cash received or change on the ticket (they stay on the invoice page). --}}
             @if ($invoice->payments->isNotEmpty())
                 <hr class="sep">
-                <div class="strong">Paiements</div>
-                @foreach ($invoice->payments as $payment)
-                    <div class="row"><span>{{ $payment->method->getLabel() }} <span class="muted">{{ $payment->paid_at?->format('d/m H\hi') }}</span></span><span>{{ $fcfa($payment->amount) }}</span></div>
-                    @if ($payment->amount_received !== null && (float) $payment->change_given > 0)
-                        <div class="row sub"><span>Reçu</span><span>{{ $fcfa($payment->amount_received) }}</span></div>
-                        <div class="row sub"><span>Monnaie rendue</span><span>{{ $fcfa($payment->change_given) }}</span></div>
-                    @endif
-                @endforeach
-                <div class="row strong"><span>Total payé</span><span>{{ $fcfa($paid) }} FCFA</span></div>
+                <div class="row strong"><span>Montant payé</span><span>{{ $fcfa($paid) }} FCFA</span></div>
             @endif
 
             @if ($cancelled)
@@ -157,6 +137,8 @@
             @if ($receipt['footer'])
                 <div class="center strong">{{ $receipt['footer'] }}</div>
             @endif
+            {{-- Fixed notice on every ticket (client request, 2026-10-19), not a setting. --}}
+            <div class="center strong" style="margin-top: 1mm;">Le ticket vendu ne sera ni échangé ni remboursé</div>
             <div class="center muted" style="margin-top: 1.5mm;">Imprimé le {{ now()->format('d/m/Y à H\hi') }}</div>
         </div>
     </div>

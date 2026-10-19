@@ -65,7 +65,8 @@ class ClientTypeTest extends TestCase
 
         $this->actingAs($this->staff)->get('/admin/reservations')->assertSee('SARL Transports du Centre');
         $this->actingAs($this->staff)->get("/admin/recus/{$booking->id}")->assertOk()
-            ->assertSee('SARL Transports du Centre')->assertSee('RCCM / NCC')->assertSee('CI-BKE-2026-B-77')->assertSee('Koffi Yao');
+            // No client part on the ticket (client request, 2026-10-19).
+            ->assertDontSee('SARL Transports du Centre')->assertDontSee('RCCM / NCC')->assertDontSee('CI-BKE-2026-B-77')->assertDontSee('Koffi Yao');
     }
 
     public function test_company_fields_are_ignored_for_a_person(): void

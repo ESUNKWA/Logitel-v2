@@ -52,7 +52,7 @@ class OptionalClientAndMoneyInputTest extends TestCase
         $stay = Reservation::sole();
         $user = User::factory()->create();
         $this->actingAs($user)->get("/admin/affectations/{$stay->id}")->assertOk()->assertDontSee('Client de passage —');
-        $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertOk()->assertSee('Client de passage');
+        $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertOk()->assertDontSee('Client de passage'); // no client part on the ticket
     }
 
     public function test_partial_client_details_are_kept(): void

@@ -58,12 +58,15 @@ class ReceiptTest extends TestCase
         $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertOk()
             ->assertDontSee('REÇU')->assertDontSee('class="title"', false) // no "REÇU / Affectation" heading (client request)
             ->assertSee($stay->invoice->number)
-            ->assertSee('Awa Koné')->assertSee('0711223344')
-            ->assertSee('N°RC-1')->assertSee('Confort')
+            ->assertDontSee('Awa Koné')->assertDontSee('0711223344')->assertDontSee('<span>Client</span>', false)->assertDontSee('Tél.') // no client part (client request, 2026-10-19)
+            ->assertSee('N°RC-1')
+            ->assertDontSee('Confort')->assertDontSee('<span>Type</span>', false)->assertDontSee('Personnes')->assertDontSee(' ad.') // neither room type nor guests (client request, 2026-10-19)
             ->assertSee('3 heures × 5 000')
             ->assertSee('15 000 FCFA')
-            ->assertSee('Espèces')->assertSee('Wave')
-            ->assertSee('12 000')->assertSee('Monnaie rendue')->assertSee('2 000')
+            // Payment part: only the amount paid (client request, 2026-10-19).
+            ->assertSee('<div class="row strong"><span>Montant payé</span><span>15 000 FCFA</span></div>', false)
+            ->assertDontSee('Espèces')->assertDontSee('Wave')->assertDontSee('Paiements')
+            ->assertDontSee('12 000')->assertDontSee('Monnaie rendue')->assertDontSee('<span>Reçu</span>', false)
             ->assertSee('SOLDÉ')
             ->assertDontSee('Établi par')->assertDontSee('Aminata Réception') // no staff name on the ticket (client request)
             ->assertSee('Imprimer')
@@ -84,7 +87,7 @@ class ReceiptTest extends TestCase
         $this->actingAs($user)->get('/admin/reservations')->assertSee('id="receiptModal"', false);
         $this->actingAs($user)->get("/admin/recus/{$booking->id}")->assertOk()
             ->assertSee('Arrivée prévue')->assertSee('10/10/2026 14h00')
-            ->assertSee('Orange Money')->assertSee('4 000')
+            ->assertSee('<span>Montant payé</span><span>4 000 FCFA</span>', false)->assertDontSee('Orange Money')
             ->assertSee("À PAYER À L'ARRIVÉE")->assertSee('6 000 FCFA')
             ->assertDontSee('SOLDÉ');
     }
@@ -121,6 +124,24 @@ class ReceiptTest extends TestCase
         $this->actingAs($user)->post("/admin/affectations/{$stay->id}/cancel");
 
         $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertSee('ANNULÉ')->assertDontSee('SOLDÉ');
+    }
+
+    public function test_every_ticket_says_it_is_neither_exchanged_nor_refunded(): void
+    {
+        // Client request, 2026-10-19: fixed notice, after the footer message, on every ticket.
+        $user = User::factory()->create();
+        $this->assign($user);
+        $stay = Reservation::sole();
+
+        $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertOk()
+            ->assertSeeInOrder(['SOLDÉ', 'Merci de votre visite', 'Le ticket vendu ne sera ni échangé ni remboursé', 'Imprimé le']);
+
+        // Even with an empty footer message, and on a cancelled file.
+        $this->actingAs($user)->put('/admin/parametres', [...$this->settings, 'receipt_footer' => ''])->assertSessionHasNoErrors();
+        $this->actingAs($user)->post("/admin/affectations/{$stay->id}/cancel");
+        $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertOk()
+            ->assertDontSee('Merci de votre visite')
+            ->assertSeeInOrder(['ANNULÉ', 'Le ticket vendu ne sera ni échangé ni remboursé', 'Imprimé le']);
     }
 
     public function test_the_manager_sets_the_roll_width_and_footer(): void
