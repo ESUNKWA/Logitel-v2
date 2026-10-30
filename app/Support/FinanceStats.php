@@ -22,7 +22,8 @@ class FinanceStats
     private static function payments(CarbonInterface $from, CarbonInterface $to, ?int $byUser, ?string $kind = null): Builder
     {
         return Payment::query()->where('paid_at', '>=', $from)->where('paid_at', '<', $to)
-            ->when($byUser !== null, fn (Builder $q) => $q->where('created_by', $byUser))
+            // Attributed sales (« prise de service »: the receptionist of the day), not who typed them.
+            ->when($byUser !== null, fn (Builder $q) => $q->where('attributed_to', $byUser))
             ->ofKind($kind);
     }
 
@@ -63,8 +64,9 @@ class FinanceStats
     }
 
     /**
-     * Cash received per staff member who recorded it (« Recettes par réceptionniste »), largest
-     * first; payments without an author (recorded before authorship existed) are grouped apart.
+     * Cash received per staff member it is attributed to (« Recettes par réceptionniste »: the
+     * receptionist of the day — prise de service — else whoever recorded it), largest first;
+     * payments without an author (recorded before authorship existed) are grouped apart.
      * `$kind` (Payment::KIND_*) keeps only réservation or affectation payments (Recettes filter).
      *
      * @return list<array{user_id: int|null, name: string, total: float, count: int, booking: float, byMethod: array<string, float>}>
@@ -72,22 +74,22 @@ class FinanceStats
     public static function cashByUser(CarbonInterface $from, CarbonInterface $to, ?string $kind = null): array
     {
         $amounts = self::payments($from, $to, null, $kind)
-            ->selectRaw('created_by, method, sum(amount) as amount')
-            ->groupBy('created_by', 'method')
+            ->selectRaw('attributed_to, method, sum(amount) as amount')
+            ->groupBy('attributed_to', 'method')
             ->toBase()->get();
         // One "encaissement" may be several lines (mixed payment): count settlements, not rows.
         $counts = self::payments($from, $to, null, $kind)
-            ->selectRaw('created_by, count(distinct coalesce(cast(settlement as varchar(40)), cast(id as varchar(40)))) as n')
-            ->groupBy('created_by')
-            ->toBase()->pluck('n', 'created_by');
-        $names = User::query()->whereIn('id', $amounts->pluck('created_by')->filter()->unique())->pluck('name', 'id');
+            ->selectRaw('attributed_to, count(distinct coalesce(cast(settlement as varchar(40)), cast(id as varchar(40)))) as n')
+            ->groupBy('attributed_to')
+            ->toBase()->pluck('n', 'attributed_to');
+        $names = User::query()->whereIn('id', $amounts->pluck('attributed_to')->filter()->unique())->pluck('name', 'id');
         // Each one's réservation payments (option B), for the « dont réservations » column.
         $bookings = self::payments($from, $to, null, $kind)->bookingPayments()
-            ->selectRaw('created_by, sum(amount) as amount')
-            ->groupBy('created_by')
-            ->toBase()->pluck('amount', 'created_by');
+            ->selectRaw('attributed_to, sum(amount) as amount')
+            ->groupBy('attributed_to')
+            ->toBase()->pluck('amount', 'attributed_to');
 
-        return $amounts->groupBy(fn ($r) => (string) $r->created_by)
+        return $amounts->groupBy(fn ($r) => (string) $r->attributed_to)
             ->map(fn ($lines, $userId) => [
                 'user_id' => $userId === '' ? null : (int) $userId,
                 'name' => $userId === '' ? 'Non attribué (anciens paiements)' : ($names[$userId] ?? 'Compte supprimé'),

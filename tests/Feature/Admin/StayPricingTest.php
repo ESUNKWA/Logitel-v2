@@ -321,7 +321,8 @@ class StayPricingTest extends TestCase
         $this->actingAs($user)->get('/admin/rooms/board')->assertOk()->assertSee('data-stay-form', false);
         // An affectation lives on the affectations side, not in the réservations list.
         $this->actingAs($user)->get('/admin/affectations')->assertOk()->assertSee("À l'heure")->assertSee('2 heures');
-        $this->actingAs($user)->get("/admin/affectations/{$stay->id}")->assertOk()->assertSee('name="duration"', false);
+        // The affectation page extends in the stay's unit (« Ajouter (heures) »), no total-duration form any more.
+        $this->actingAs($user)->get("/admin/affectations/{$stay->id}")->assertOk()->assertSee('name="extra"', false)->assertSee('Ajouter (heures)')->assertDontSee('name="duration"', false);
         $this->actingAs($user)->get("/admin/invoices/{$stay->invoice->id}")->assertOk()->assertSee('2 heures × 5 000 FCFA');
         $this->actingAs($user)->get('/admin/rooms?status=occupee')->assertOk()->assertSee('07/10/2026 à 12h00');
     }

@@ -11,12 +11,14 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BookingRequestController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DutyController;
 use App\Http\Controllers\Admin\FrontDeskController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\HotelInfoController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LiveFiguresController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\PerkController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PwaController;
 use App\Http\Controllers\Admin\ReceiptController;
@@ -38,6 +40,7 @@ use App\Http\Controllers\Admin\SpecialRateController;
 use App\Http\Controllers\Admin\StayRequestController;
 use App\Http\Controllers\Admin\UiModeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Middleware\EnsureDutyTaken;
 use App\Http\Middleware\EnsureStaffAccountIsUsable;
 use App\Http\Middleware\NormalizeMoneyInputs;
 use Illuminate\Support\Facades\Route;
@@ -56,7 +59,7 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('login.attempt');
 
-    Route::middleware(['auth', EnsureStaffAccountIsUsable::class, NormalizeMoneyInputs::class])->group(function () {
+    Route::middleware(['auth', EnsureStaffAccountIsUsable::class, EnsureDutyTaken::class, NormalizeMoneyInputs::class])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
         // Home: front-desk tiles in "Mode simple", figures dashboard in "Mode complet" (per account).
@@ -75,6 +78,13 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::get('/recettes/export', [RevenueController::class, 'export'])->middleware('can:payments.create')->name('revenue.export');
         Route::get('/recherche', [FrontDeskController::class, 'search'])->middleware('can:guests.view')->name('front-desk.search');
 
+        // « Prise de service »: the receptionist of the business day (mandatory), every sale of the day is hers.
+        Route::get('/prise-de-service', [DutyController::class, 'show'])->middleware('can:duty.take')->name('duty.show');
+        Route::post('/prise-de-service', [DutyController::class, 'take'])->middleware('can:duty.take')->name('duty.take');
+        Route::post('/prise-de-service/plus-tard', [DutyController::class, 'defer'])->middleware('can:duty.take')->name('duty.defer');
+        Route::get('/prises-de-service', [DutyController::class, 'index'])->middleware('can:duty.manage')->name('duty.index');
+        Route::post('/prises-de-service', [DutyController::class, 'assign'])->middleware('can:duty.manage')->name('duty.assign');
+
         Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:6,1')->name('profile.update');
         Route::put('/profil/mot-de-passe', [ProfileController::class, 'updatePassword'])->middleware('throttle:6,1')->name('profile.password.update');
@@ -83,6 +93,9 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         // Forfaits for affectations (« 2 heures = 5 000 FCFA »), applied automatically.
         Route::resource('tarifs-speciaux', SpecialRateController::class)->except(['show'])
             ->parameters(['tarifs-speciaux' => 'specialRate'])->names('special-rates')->middleware('can:rooms.manage');
+        // Included perks (« Accès piscine gratuit » for the suites in séjour): receipt, desk, website.
+        Route::resource('avantages', PerkController::class)->except(['show'])
+            ->parameters(['avantages' => 'perk'])->names('perks')->middleware('can:rooms.manage');
 
         // Rooms CSV import: analyse (nothing saved) then confirm; existing rooms are never modified.
         Route::get('/rooms/import', [RoomImportController::class, 'create'])->middleware('can:rooms.manage')->name('rooms.import');
@@ -100,7 +113,7 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
 
         Route::get('/guests/search', [GuestController::class, 'search'])->middleware('can:guests.view')->name('guests.search');
         Route::resource('guests', GuestController::class)->except(['show'])
-            ->middlewareFor('index', 'can:guests.view')
+            ->middlewareFor('index', 'can:guests.list')
             ->middlewareFor(['create', 'store', 'edit', 'update'], 'can:guests.manage')
             ->middlewareFor('destroy', 'can:guests.delete');
 
@@ -115,6 +128,8 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::get('/affectations', [AffectationController::class, 'index'])->middleware('can:affectations.view')->name('affectations.index');
         Route::get('/affectations/{affectation}', [AffectationController::class, 'show'])->middleware('can:affectations.view')->name('affectations.show');
         Route::put('/affectations/{affectation}', [AffectationController::class, 'update'])->middleware('can:affectations.manage')->name('affectations.update');
+        // Extend at the guest's request, any time: + N units of the same formula, supplement cashed or left due.
+        Route::post('/affectations/{affectation}/prolonger', [AffectationController::class, 'extend'])->middleware('can:affectations.manage')->name('affectations.extend');
         Route::post('/affectations/{affectation}/check-out', [AffectationController::class, 'checkOut'])->middleware('can:affectations.manage')->name('affectations.check-out');
         Route::post('/affectations/{affectation}/cancel', [AffectationController::class, 'cancel'])->middleware('can:affectations.cancel')->name('affectations.cancel');
 

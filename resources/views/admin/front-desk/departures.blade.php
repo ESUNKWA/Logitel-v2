@@ -62,6 +62,7 @@
                             @csrf
                             <button type="submit" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Sortie</button>
                         </form>
+                        <a href="{{ route('admin.affectations.show', $stay) }}#prolonger" class="btn btn-outline-primary"><i class="far fa-clock"></i> Prolonger</a>
                     @endcan
                     <a href="{{ route('admin.affectations.show', $stay) }}" class="btn btn-link">Ouvrir</a>
                 </div>

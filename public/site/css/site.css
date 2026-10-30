@@ -35,6 +35,9 @@
 .site-rates th { font-family: var(--heading-font); font-weight: 400; font-size: 20px; color: var(--heading-color); white-space: nowrap; }
 .site-rates td, .site-rates th { padding: 14px 10px; vertical-align: middle; border-color: rgba(22, 25, 33, .08); }
 .site-rates strong { color: var(--heading-color); font-size: 18px; }
+.site-perks__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.site-perks__list li { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--heading-color); }
+.site-perks__list i { color: var(--primary-color); font-size: 18px; width: 22px; text-align: center; }
 
 /* Room gallery (photos after the cover) */
 .site-room-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }

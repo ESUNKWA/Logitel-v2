@@ -81,13 +81,14 @@
         $selectedTypeId = (string) old('room_type_id', $reservation->room?->room_type_id ?? ($bookingRequest ?? null)?->room_type_id ?? ($roomTypes->count() === 1 ? $roomTypes->first()->id : ''));
         $selectedType = $roomTypes->first(fn ($type) => (string) $type->id === $selectedTypeId);
         $offers = fn ($case) => ! $selectedType || $case->rateFor($selectedType) !== null;
+        $perkMenus = \App\Models\Perk::menusFor($roomTypes); // « Inclus : … » under the modes
     @endphp
     <div class="col-md-6">
         <label class="form-label" for="booking_room_type">Type de chambre</label>
         <select class="form-select @error('room_type_id') is-invalid @enderror" id="booking_room_type" name="room_type_id" data-booking-type required>
             <option value="">Choisissez un type de chambre…</option>
             @foreach ($roomTypes as $type)
-                <option value="{{ $type->id }}" @selected((string) $type->id === $selectedTypeId)@foreach (\App\Enums\PricingMode::cases() as $case) data-{{ $case->value }}="{{ $case->rateFor($type) !== null ? '1' : '' }}"@endforeach>{{ $type->name }}</option>
+                <option value="{{ $type->id }}" @selected((string) $type->id === $selectedTypeId)@foreach (\App\Enums\PricingMode::cases() as $case) data-{{ $case->value }}="{{ $case->rateFor($type) !== null ? '1' : '' }}"@endforeach data-perks="{{ json_encode((object) ($perkMenus[$type->id] ?? [])) }}">{{ $type->name }}</option>
             @endforeach
         </select>
     </div>
@@ -101,6 +102,7 @@
             @endforeach
         </div>
         <div class="form-text" data-booking-type-hint{{ $selectedType ? ' hidden' : '' }}>Choisissez d'abord le type de chambre : seuls ses modes s'affichent.</div>
+        <div class="perks-hint mt-2" data-perks-hint hidden></div>
     </div>
 
     <div class="col-md-4">

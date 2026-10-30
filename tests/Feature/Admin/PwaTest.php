@@ -38,13 +38,13 @@ class PwaTest extends TestCase
         $this->get('/admin/login')->assertOk()
             ->assertSee('rel="manifest"', false)
             ->assertSee('name="app-sw"', false)
-            ->assertSee('Installer l\'application sur cet appareil', false)
+            ->assertDontSee('Installer l\'application', false) // no install button (client request, 2026-10-25): phones use the APK
             // Versioned so a deployment reaches phones at once (Caddy lets them cache /app/* a week).
             ->assertSee('/app/js/pwa.js?v='.filemtime(public_path('app/js/pwa.js')), false)
             ->assertSee('/app/css/admin.css?v=', false);
         $this->actingAs(User::factory()->create())->get('/admin')->assertOk()
             ->assertSee('rel="manifest"', false)
-            ->assertSee('data-pwa-install', false);
+            ->assertDontSee('data-pwa-install', false);
 
         foreach (['/', '/chambres', '/services', '/galerie', '/contact', '/reservation', '/demande'] as $page) {
             $this->get($page)->assertOk()->assertDontSee('rel="manifest"', false)->assertDontSee('app-sw', false);

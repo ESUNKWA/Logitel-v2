@@ -91,6 +91,17 @@ class User extends Authenticatable
             && $this->role->grants(Permission::AlertsCheckout);
     }
 
+    /**
+     * Receptionists must take their service (« prise de service ») before working: staff whose
+     * role explicitly grants `duty.take` — never the Gérant's system role (client request,
+     * 2026-10-25: the manager's own sales go to the receptionist of the day too).
+     */
+    public function takesDuty(): bool
+    {
+        return $this->is_active && $this->role !== null && ! $this->role->is_system
+            && $this->role->grants(Permission::DutyTake);
+    }
+
     public function hasPermission(Permission|string $permission): bool
     {
         return $this->is_active && $this->role !== null && $this->role->grants($permission);

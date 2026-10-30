@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AffectationExtensionRequest;
 use App\Http\Requests\Admin\AffectationRequest;
 use App\Models\Payment;
 use App\Models\Reservation;
@@ -182,7 +183,83 @@ class AffectationController extends Controller
             ? (SpecialRate::menuFor($affectation->room->roomType, BusinessDay::dateOf($affectation->check_in))[$affectation->pricing_mode->value] ?? [])
             : [];
 
-        return view('admin.affectations.show', ['affectation' => $affectation, 'forfaits' => $forfaits]);
+        return view('admin.affectations.show', [
+            'affectation' => $affectation,
+            'forfaits' => $forfaits,
+            'extensionQuotes' => $affectation->status === ReservationStatus::Enregistree ? $this->extensionQuotes($affectation, $forfaits) : [],
+        ]);
+    }
+
+    /** How many « + N » choices the extension form previews exactly (beyond: computed on save). */
+    private const EXTENSION_PREVIEW_MAX = 48;
+
+    /**
+     * Live preview of the extension form: for each « + N » units, the new departure, the new
+     * total and the supplement — same rules as the model (forfait of the entry day for that
+     * duration when cheaper, then the stay's discount). Display only: the server recomputes.
+     *
+     * @param  array<int, float>  $forfaits  duration => forfait price (entry day, this mode)
+     * @return array<int, array{end: string, total: float, supplement: float}>
+     */
+    private function extensionQuotes(Reservation $stay, array $forfaits): array
+    {
+        $quotes = [];
+        $current = (float) $stay->total_amount;
+
+        for ($extra = 1; $extra <= self::EXTENSION_PREVIEW_MAX && $stay->duration + $extra <= 365; $extra++) {
+            $duration = $stay->duration + $extra;
+            [, $end] = $stay->pricing_mode->resolve($stay->check_in, $duration);
+            $normal = bcmul((string) $stay->unit_rate, (string) $duration, 2);
+            $subtotal = isset($forfaits[$duration]) && bccomp((string) $forfaits[$duration], $normal, 2) < 0
+                ? bcadd((string) $forfaits[$duration], '0', 2)
+                : $normal;
+            $total = (float) bcsub($subtotal, Reservation::discountFor($subtotal, $stay->discount_type, (string) ($stay->discount_value ?? '0')), 2);
+
+            $quotes[$extra] = ['end' => $end->format('d/m/Y à H\hi'), 'total' => $total, 'supplement' => $total - $current];
+        }
+
+        return $quotes;
+    }
+
+    /**
+     * Extends a stay in progress at the guest's request, at any time (client request,
+     * 2026-10-25): + N units of its own formula; the supplement is cashed now or left due.
+     */
+    public function extend(AffectationExtensionRequest $request, Reservation $affectation): RedirectResponse
+    {
+        abort_unless($affectation->isStay() && $affectation->status === ReservationStatus::Enregistree, 404);
+        // Cashing the supplement needs the payment permission too.
+        abort_if($request->paymentLines() !== [] && $request->user()->cannot('payments.create'), 403);
+
+        $before = (float) $affectation->total_amount;
+
+        $payments = DB::transaction(function () use ($request, $affectation) {
+            $duration = $request->newDuration();
+            [, $end] = $affectation->pricing_mode->resolve($affectation->check_in, $duration);
+            Room::lockAvailable($affectation->room_id, $affectation->check_in, $end, $affectation->id, 'extra');
+
+            // The model re-derives check_out and total, re-bills the invoice and clears any alarm snooze.
+            $affectation->update(['duration' => $duration]);
+
+            return $request->paymentLines() !== []
+                ? $affectation->invoice->refresh()->settle($request->paymentLines(), now(), 'Prolongation')
+                : collect();
+        });
+
+        $cashed = (float) $payments->sum('amount');
+        $change = (float) $payments->sum('change_given');
+        $remaining = (float) $affectation->invoice->refresh()->remainingAmount();
+        $fcfa = fn (float $v) => number_format($v, 0, ',', ' ');
+
+        return redirect()
+            ->route('admin.affectations.show', $affectation)
+            ->with('receipt', $affectation->id)
+            ->with('status', 'Séjour prolongé de '.$affectation->pricing_mode->durationLabel((int) $request->validated('extra'))
+                .' : sortie le '.$affectation->check_out->format('d/m/Y à H\hi')
+                .', supplément '.$fcfa((float) $affectation->total_amount - $before).' FCFA.'
+                .($cashed > 0 ? ' Encaissé : '.$fcfa($cashed).' FCFA.' : '')
+                .($change > 0 ? ' Monnaie à rendre : '.$fcfa($change).' FCFA.' : '')
+                .($remaining > 0 ? ' Reste dû : '.$fcfa($remaining).' FCFA.' : ' Facture soldée.'));
     }
 
     public function update(AffectationRequest $request, Reservation $affectation): RedirectResponse

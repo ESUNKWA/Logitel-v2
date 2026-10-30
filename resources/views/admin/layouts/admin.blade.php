@@ -78,7 +78,7 @@
                             @endif
                         </a>
                     @endcan
-                    @can('guests.view')
+                    @can('guests.list')
                         <a href="{{ route('admin.guests.index') }}" class="{{ request()->routeIs('admin.guests.*') ? 'active' : '' }}">
                             <i class="far fa-users"></i> Clients
                         </a>
@@ -91,6 +91,11 @@
                     @can('payments.create')
                         <a href="{{ route('admin.revenue.index') }}" class="{{ request()->routeIs('admin.revenue.*') ? 'active' : '' }}">
                             <i class="far fa-cash-register"></i> Recettes
+                        </a>
+                    @endcan
+                    @can('duty.manage')
+                        <a href="{{ route('admin.duty.index') }}" class="{{ request()->routeIs('admin.duty.*') ? 'active' : '' }}">
+                            <i class="far fa-user-clock"></i> Prises de service
                         </a>
                     @endcan
                     @canany(['site.manage', 'site.stats'])
@@ -122,6 +127,9 @@
                         </a>
                         <a href="{{ route('admin.special-rates.index') }}" class="{{ request()->routeIs('admin.special-rates.*') ? 'active' : '' }}">
                             <i class="far fa-tags"></i> Tarifs spéciaux
+                        </a>
+                        <a href="{{ route('admin.perks.index') }}" class="{{ request()->routeIs('admin.perks.*') ? 'active' : '' }}">
+                            <i class="far fa-gift"></i> Avantages inclus
                         </a>
                     @endcan
                     @can('settings.manage')
@@ -159,10 +167,17 @@
                         </button>
                     @endif
                     <div class="admin-topbar__spacer"></div>
-                    {{-- Shown by admin.js when the device can install the application (or on iPhone: how to). --}}
-                    <button type="button" class="btn btn-sm btn-outline-primary pwa-install" data-pwa-install hidden>
-                        <i class="far fa-mobile-alt"></i><span class="pwa-install__label"> Installer l'application</span>
-                    </button>
+                    {{-- Receptionist of the business day (« prise de service »), to whom every sale of the day goes. --}}
+                    @canany(['duty.take', 'duty.manage'])
+                        @php($dutyToday = \App\Models\DutyDay::today())
+                        @if ($dutyToday)
+                            <span class="duty-pill" title="Réceptionniste de la journée : toutes les ventes de la journée lui sont attribuées"><i class="far fa-user-clock"></i><span class="duty-pill__text"><span class="duty-pill__label">De service : </span>{{ $dutyToday->user?->name }}</span></span>
+                        @elseif (auth()->user()->takesDuty())
+                            <a href="{{ route('admin.duty.show') }}" class="duty-pill duty-pill--none"><i class="far fa-user-clock"></i><span class="duty-pill__text">Prendre mon service</span></a>
+                        @else
+                            <a href="{{ route('admin.duty.index') }}" class="duty-pill duty-pill--none" title="Personne n'a encore pris le service de la journée"><i class="far fa-user-clock"></i><span class="duty-pill__text">Personne de service</span></a>
+                        @endif
+                    @endcanany
                     <form method="POST" action="{{ route('admin.ui-mode.update') }}" class="ui-mode-switch">
                         @csrf
                         <input type="hidden" name="mode" value="{{ $simpleUi ? 'complet' : 'simple' }}">

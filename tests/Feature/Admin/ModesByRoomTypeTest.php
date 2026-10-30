@@ -67,7 +67,7 @@ class ModesByRoomTypeTest extends TestCase
         foreach (['nuitee', 'sejour'] as $shown) {
             $this->assertStringContainsString('for="booking-mode-'.$shown.'"><i', $html);
         }
-        $this->assertStringContainsString("data-booking-type-hint hidden", $html);
+        $this->assertStringContainsString('data-booking-type-hint hidden', $html);
 
         // An online booking request pre-selects its type.
         $request = BookingRequest::create(['room_type_id' => $type->id, 'pricing_mode' => 'sejour', 'check_in' => '2026-10-28 14:00', 'duration' => 1,
@@ -115,7 +115,7 @@ class ModesByRoomTypeTest extends TestCase
         Room::factory()->create(['room_type_id' => $this->type(['night_rate' => 25000])->id, 'status' => RoomStatus::Disponible]);
 
         $this->get('/admin/rooms/board')->assertOk()
-            ->assertSee('une entrée avant 22h00 compte pour la nuit de ce soir', false)
+            ->assertSee('id="mode-nuitee"', false)
             ->assertDontSee('Les modes sans tarif pour ce type de chambre sont désactivés', false);
     }
 

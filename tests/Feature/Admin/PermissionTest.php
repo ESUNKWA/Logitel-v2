@@ -60,7 +60,6 @@ class PermissionTest extends TestCase
             ['/admin/profil'],
             ['/admin/rooms/board'],
             ['/admin/rooms'],
-            ['/admin/guests'],
             ['/admin/guests/create'],
             ['/admin/reservations'],
             ['/admin/reservations/create'],
@@ -81,6 +80,7 @@ class PermissionTest extends TestCase
     public static function receptionForbiddenPages(): array
     {
         return [
+            ['/admin/guests'], // the clients list is the Gérant's (guests.list)
             ['/admin/room-types'],
             ['/admin/room-types/create'],
             ['/admin/rooms/create'],

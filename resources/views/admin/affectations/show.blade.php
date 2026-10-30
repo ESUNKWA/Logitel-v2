@@ -76,6 +76,10 @@
                     </dd>
                     <dt class="col-5">Occupants</dt>
                     <dd class="col-7">{{ $affectation->adults }} adulte(s), {{ $affectation->children }} enfant(s)</dd>
+                    @if ($affectation->perkLabels() !== [])
+                        <dt class="col-5">Avantages inclus</dt>
+                        <dd class="col-7"><i class="far fa-gift text-muted"></i> {{ implode(', ', $affectation->perkLabels()) }}</dd>
+                    @endif
                 </dl>
             </div>
 
@@ -118,45 +122,44 @@
         <div class="col-lg-6">
             @if ($inProgress)
                 @can('affectations.manage')
+                    {{-- Extension at the guest's request, any time (client request, 2026-10-25): + N units
+                         of the same formula; the supplement is cashed now or left due. --}}
                     <div class="admin-card" id="prolonger">
-                        <h5>Prolonger ou modifier le séjour</h5>
-                        <form method="POST" action="{{ route('admin.affectations.update', $affectation) }}">
+                        <h5><i class="far fa-clock text-muted me-1"></i> Prolonger le séjour</h5>
+                        <p class="text-muted small">À la demande du client, même avant l'heure de sortie. La formule reste <x-admin::mode-badge :mode="$affectation->pricing_mode" /> ; le supplément peut être encaissé maintenant ou rester dû.</p>
+                        <form method="POST" action="{{ route('admin.affectations.extend', $affectation) }}"
+                            data-extend-form
+                            data-quotes="{{ json_encode((object) $extensionQuotes) }}"
+                            data-paid="{{ (float) ($invoice?->amountPaid() ?? 0) }}">
                             @csrf
-                            @method('PUT')
-                            <div class="row g-3">
-                                <div class="col-sm-6">
-                                    <label class="form-label" for="duration">Durée (nombre de {{ $affectation->pricing_mode->unitPlural() }})</label>
-                                    <input type="number" min="1" max="365" class="form-control" id="duration" name="duration" value="{{ old('duration', $affectation->duration) }}" required>
-                                    @if ($forfaits !== [])
-                                        <div class="form-text">
-                                            <i class="far fa-tags"></i> Forfaits (jour d'entrée) :
-                                            {{ collect($forfaits)->map(fn ($price, $units) => $affectation->pricing_mode->durationLabel((int) $units).' = '.number_format((float) $price, 0, ',', ' ').' FCFA')->implode(' · ') }}
-                                            — appliqué automatiquement à la durée correspondante.
-                                        </div>
-                                    @endif
+                            <div class="row g-3 align-items-end">
+                                <div class="col-sm-5">
+                                    <label class="form-label" for="extend-extra">Ajouter ({{ $affectation->pricing_mode->unitPlural() }})</label>
+                                    <input type="number" min="1" max="{{ max(1, 365 - $affectation->duration) }}" step="1" class="form-control @error('extra') is-invalid @enderror" id="extend-extra" name="extra" value="{{ old('extra', 1) }}" data-extend-extra required>
+                                    @error('extra')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
-                                <div class="col-sm-6">
-                                    <label class="form-label" for="unit_rate">Tarif {{ $affectation->pricing_mode->rateUnit() }} (FCFA)</label>
-                                    <input type="text" class="form-control rate-locked" id="unit_rate" value="{{ number_format((float) $affectation->unit_rate, 0, ',', ' ') }}" readonly tabindex="-1">
+                                <div class="col-sm-7">
+                                    <div class="small text-muted">Sortie actuelle : <strong class="text-body">{{ $affectation->check_out->format('d/m/Y à H\hi') }}</strong></div>
                                 </div>
-                                <div class="col-12">
-                                    @include('admin.partials._discount-fields', ['file' => $affectation, 'idPrefix' => 'stay'])
-                                </div>
-                                <div class="col-sm-6">
-                                    <label class="form-label" for="adults">Adultes</label>
-                                    <input type="number" min="1" class="form-control" id="adults" name="adults" value="{{ old('adults', $affectation->adults) }}" required>
-                                </div>
-                                <div class="col-sm-6">
-                                    <label class="form-label" for="children">Enfants</label>
-                                    <input type="number" min="0" class="form-control" id="children" name="children" value="{{ old('children', $affectation->children) }}" required>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label" for="notes">Notes</label>
-                                    <textarea class="form-control" id="notes" name="notes" rows="2">{{ old('notes', $affectation->notes) }}</textarea>
-                                </div>
+                                @if ($forfaits !== [])
+                                    <div class="col-12 form-text mt-1">
+                                        <i class="far fa-tags"></i> Forfaits (jour d'entrée) :
+                                        {{ collect($forfaits)->map(fn ($price, $units) => $affectation->pricing_mode->durationLabel((int) $units).' = '.number_format((float) $price, 0, ',', ' ').' FCFA')->implode(' · ') }}
+                                        — appliqué automatiquement si la durée totale correspond.
+                                    </div>
+                                @endif
                             </div>
-                            <p class="text-muted small mt-2 mb-0">L'heure de sortie et le montant sont recalculés automatiquement (une remise en % suit la nouvelle durée) ; la facture suit.</p>
-                            <button type="submit" class="btn btn-primary mt-3">Enregistrer</button>
+                            <div class="assign-pay mt-3">
+                                <div class="assign-pay__total mode--{{ $affectation->pricing_mode->value }}" data-extend-preview>
+                                    Nouvelle sortie et supplément calculés à l'enregistrement.
+                                </div>
+                                @can('payments.create')
+                                    <div class="assign-pay__label">Encaissement <span class="text-muted fw-normal">— facultatif : laissez vide pour le régler plus tard</span></div>
+                                    @include('admin.payments._lines', ['due' => null, 'required' => false, 'full' => false, 'cashReceivedRequired' => true,
+                                        'sharedReceived' => true, 'idPrefix' => 'extend'])
+                                @endcan
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3"><i class="far fa-clock"></i> Prolonger</button>
                         </form>
                     </div>
                 @endcan

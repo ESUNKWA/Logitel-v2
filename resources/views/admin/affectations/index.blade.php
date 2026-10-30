@@ -185,6 +185,11 @@
                         </td>
                         <td class="text-end">
                             <a href="{{ route('admin.affectations.show', $stay) }}" class="btn btn-sm btn-outline-primary">Ouvrir</a>
+                            @if ($stay->status === \App\Enums\ReservationStatus::Enregistree)
+                                @can('affectations.manage')
+                                    <a href="{{ route('admin.affectations.show', $stay) }}#prolonger" class="btn btn-sm btn-outline-secondary"><i class="far fa-clock"></i> Prolonger</a>
+                                @endcan
+                            @endif
                         </td>
                     </tr>
                 @empty

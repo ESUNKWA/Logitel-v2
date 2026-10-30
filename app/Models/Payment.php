@@ -111,8 +111,21 @@ class Payment extends Model
         return $this->isBookingPayment() ? self::KIND_BOOKING : self::KIND_STAY;
     }
 
+    /**
+     * Whose sale it is: the receptionist of the business day it was recorded in (« prise de
+     * service »), else whoever recorded it. `creator` stays who actually typed it.
+     */
+    public function attributedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'attributed_to');
+    }
+
     protected static function booted(): void
     {
+        // Never from input (not fillable). Runs after RecordsCreator has set created_by.
+        static::creating(function (Payment $payment) {
+            $payment->attributed_to ??= DutyDay::attributeeAt(now()) ?? $payment->created_by;
+        });
         static::created(fn (Payment $payment) => $payment->invoice->recalculateStatus());
         static::deleted(fn (Payment $payment) => $payment->invoice->recalculateStatus());
     }

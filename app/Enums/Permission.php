@@ -13,6 +13,7 @@ enum Permission: string
     case RoomsView = 'rooms.view';
     case RoomsEdit = 'rooms.edit';
     case RoomsManage = 'rooms.manage';
+    case GuestsList = 'guests.list';
     case GuestsView = 'guests.view';
     case GuestsManage = 'guests.manage';
     case GuestsDelete = 'guests.delete';
@@ -27,6 +28,8 @@ enum Permission: string
     case PaymentsDelete = 'payments.delete';
     case DashboardRevenue = 'dashboard.revenue';
     case AlertsCheckout = 'alerts.checkout';
+    case DutyTake = 'duty.take';
+    case DutyManage = 'duty.manage';
     case UsersManage = 'users.manage';
     case RolesManage = 'roles.manage';
     case SettingsManage = 'settings.manage';
@@ -39,7 +42,8 @@ enum Permission: string
             self::RoomsView => 'Voir le tableau et la liste des chambres',
             self::RoomsEdit => 'Modifier une chambre (dont son statut)',
             self::RoomsManage => 'Créer/supprimer des chambres, gérer les types de chambre et leurs tarifs',
-            self::GuestsView => 'Voir les clients',
+            self::GuestsList => 'Voir la liste des clients (menu « Clients »)',
+            self::GuestsView => 'Rechercher un client (réservations, recherche à l\'accueil)',
             self::GuestsManage => 'Créer et modifier des clients',
             self::GuestsDelete => 'Supprimer un client',
             self::ReservationsView => 'Voir les réservations (séjours réservés à l\'avance)',
@@ -53,6 +57,8 @@ enum Permission: string
             self::PaymentsDelete => 'Supprimer un paiement',
             self::DashboardRevenue => "Voir le chiffre d'affaires sur le tableau de bord",
             self::AlertsCheckout => "Recevoir l'alarme de fin de séjour (sonne en continu jusqu'à la sortie du client ou à la prolongation ; jamais pour le Gérant)",
+            self::DutyTake => 'Prendre son service : réceptionniste du jour, à qui reviennent toutes les ventes de la journée (obligatoire avant de travailler ; jamais pour le Gérant)',
+            self::DutyManage => 'Voir les prises de service et désigner ou corriger la réceptionniste d\'un jour',
             self::UsersManage => 'Gérer les comptes du personnel',
             self::RolesManage => 'Gérer les rôles et leurs permissions',
             self::SettingsManage => "Modifier les paramètres de l'hôtel (journée commerciale, horaires des tarifs)",
@@ -65,12 +71,13 @@ enum Permission: string
     {
         return match ($this) {
             self::RoomsView, self::RoomsEdit, self::RoomsManage => 'Chambres',
-            self::GuestsView, self::GuestsManage, self::GuestsDelete => 'Clients',
+            self::GuestsList, self::GuestsView, self::GuestsManage, self::GuestsDelete => 'Clients',
             self::AffectationsView, self::AffectationsManage, self::AffectationsCancel => 'Affectations',
             self::ReservationsView, self::ReservationsManage, self::ReservationsCancel => 'Réservations',
             self::InvoicesView, self::PaymentsCreate, self::PaymentsDelete => 'Factures et paiements',
             self::DashboardRevenue => 'Tableau de bord',
             self::AlertsCheckout => 'Alertes',
+            self::DutyTake, self::DutyManage => 'Prise de service',
             self::UsersManage, self::RolesManage, self::SettingsManage => 'Administration',
             self::SiteManage, self::SiteStats => 'Site web',
         };

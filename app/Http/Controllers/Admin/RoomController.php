@@ -7,6 +7,7 @@ use App\Enums\RoomStatus;
 use App\Exceptions\DeletionBlocked;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RoomRequest;
+use App\Models\Perk;
 use App\Models\Room;
 use App\Models\RoomImage;
 use App\Models\RoomType;
@@ -91,8 +92,10 @@ class RoomController extends Controller
         // Today's forfaits per room type, for the assignment modal's live total (the server
         // applies them again on save).
         $forfaits = SpecialRate::menusForNow($rooms->pluck('roomType')->filter()->unique('id')->values());
+        // Included perks per room type and mode (« Inclus : … » in the modal; snapshotted on save).
+        $perks = Perk::menusFor($rooms->pluck('roomType')->filter()->unique('id')->values());
 
-        return view('admin.rooms.board', compact('rooms', 'groups', 'rateGrid', 'forfaits'));
+        return view('admin.rooms.board', compact('rooms', 'groups', 'rateGrid', 'forfaits', 'perks'));
     }
 
     /**

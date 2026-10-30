@@ -863,6 +863,12 @@ dl.row dd {
     color: var(--room-color);
 }
 
+/* Occupied card opened with the keyboard (role="link", tabindex="0"). */
+.room-card[data-open-url]:focus-visible {
+    outline: 3px solid rgba(var(--room-rgb), .5);
+    outline-offset: 2px;
+}
+
 .room-card__number {
     font-size: 1.45rem;
     font-weight: 800;
@@ -1834,6 +1840,13 @@ dl.row dd {
 .table > tbody tr.table-group-row th .room-sections-nav__dot {
     margin-right: 8px;
 }
+
+/* Cards reached by an anchor (#prolonger, #modifier, #check-out): not hidden under the sticky top bar. */
+.admin-card[id] { scroll-margin-top: 96px; }
+
+/* Occupied room card: « Ouvrir (sortie) » + « Prolonger » (any time, client request 2026-10-25). */
+.room-card__links { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.room-card__extend { padding: 2px 9px; font-size: .78rem; }
 
 /* Occupied room card: guest + entry/exit times */
 .room-card__stay {
@@ -3056,8 +3069,6 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 .checkout-alerts__unlock { box-shadow: var(--ek-shadow-lg); font-weight: 700; }
 
 /* Installable application: install button (topbar) and offline page */
-.pwa-install { white-space: nowrap; }
-@media (max-width: 560px) { .pwa-install__label { display: none; } }
 .pwa-offline { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: linear-gradient(135deg, var(--ek-sidebar-from), var(--ek-sidebar-to)); }
 .pwa-offline__card { max-width: 420px; padding: 32px 28px; border-radius: var(--ek-radius); background: var(--ek-surface); text-align: center; box-shadow: var(--ek-shadow-lg); }
 .pwa-offline__card img { border-radius: 18px; margin-bottom: 16px; }
@@ -3134,15 +3145,16 @@ table.dataTable th.text-end, table.dataTable td.text-end { text-align: right; }
 .mode--nuitee  { --mode: var(--ek-mode-nuitee);  --mode-rgb: var(--ek-mode-nuitee-rgb);  --mode-fill: var(--ek-mode-nuitee); --mode-on: #fff;    --mode-text: var(--ek-mode-nuitee); }
 .mode--sejour  { --mode: var(--ek-mode-sejour);  --mode-rgb: var(--ek-mode-sejour-rgb);  --mode-fill: var(--ek-mode-sejour); --mode-on: #fff;    --mode-text: var(--ek-mode-sejour); }
 
-/* Mode selector buttons: tinted outline, filled with the mode's colour once chosen. */
+/* Mode selector buttons: all the same neutral look at rest (client request, 2026-10-25),
+   filled with the mode's own colour once chosen. */
 .btn.mode-btn {
     --bs-btn-color: var(--ek-ink);
-    --bs-btn-bg: rgba(var(--mode-rgb), .06);
-    --bs-btn-border-color: rgba(var(--mode-rgb), .5);
+    --bs-btn-bg: var(--ek-surface);
+    --bs-btn-border-color: #c9d1dd;
     --bs-btn-border-width: 1.5px;
     --bs-btn-hover-color: var(--ek-ink);
-    --bs-btn-hover-bg: rgba(var(--mode-rgb), .14);
-    --bs-btn-hover-border-color: var(--mode);
+    --bs-btn-hover-bg: var(--ek-bg);
+    --bs-btn-hover-border-color: #aeb8c7;
     --bs-btn-active-color: var(--mode-on);
     --bs-btn-active-bg: var(--mode-fill);
     --bs-btn-active-border-color: var(--mode-fill);
@@ -3152,17 +3164,30 @@ table.dataTable th.text-end, table.dataTable td.text-end { text-align: right; }
     --bs-btn-focus-shadow-rgb: var(--mode-rgb);
     font-weight: 600;
 }
-.btn.mode-btn i { color: var(--mode); margin-right: 2px; }
+.btn.mode-btn i { color: var(--ek-muted); margin-right: 2px; }
 .btn-check:checked + .btn.mode-btn { box-shadow: 0 8px 18px -8px rgba(var(--mode-rgb), .9); }
 .btn-check:checked + .btn.mode-btn i { color: inherit; }
 .btn-check:focus-visible + .btn.mode-btn { box-shadow: 0 0 0 .25rem rgba(var(--mode-rgb), .3); }
 .btn-check:disabled + .btn.mode-btn i { color: inherit; }
 
-/* « Règlement » total: edged with the chosen mode's colour. */
-form:has(input[name="pricing_mode"][value="heure"]:checked) .assign-pay__total { border-left-color: var(--ek-mode-heure); }
-form:has(input[name="pricing_mode"][value="journee"]:checked) .assign-pay__total { border-left-color: #f5c518; }
-form:has(input[name="pricing_mode"][value="nuitee"]:checked) .assign-pay__total { border-left-color: var(--ek-mode-nuitee); }
-form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total { border-left-color: var(--ek-mode-sejour); }
+/* « Règlement » total: left edge in the chosen mode's colour, and the amount to pay
+   (.assign-pay__amount, written by admin.js) filled with it like the mode's button
+   (client request, 2026-10-25). Neutral until a mode is chosen. */
+form:has(input[name="pricing_mode"][value="heure"]:checked) .assign-pay__total { --pay-fill: var(--ek-mode-heure); --pay-on: #fff; }
+form:has(input[name="pricing_mode"][value="journee"]:checked) .assign-pay__total { --pay-fill: #f5c518; --pay-on: #2e2300; }
+form:has(input[name="pricing_mode"][value="nuitee"]:checked) .assign-pay__total { --pay-fill: var(--ek-mode-nuitee); --pay-on: #fff; }
+form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total { --pay-fill: var(--ek-mode-sejour); --pay-on: #fff; }
+.assign-pay__total { border-left-color: var(--pay-fill, var(--ek-primary)); }
+/* A box whose formula is fixed (stay extension) carries its mode class instead of radios. */
+.assign-pay__total[class*="mode--"] { --pay-fill: var(--mode-fill); --pay-on: var(--mode-on); }
+.assign-pay__amount {
+    display: inline-block;
+    padding: 1px 9px;
+    border-radius: 7px;
+    background: var(--pay-fill, var(--ek-primary));
+    color: var(--pay-on, #fff);
+    white-space: nowrap;
+}
 
 /* Badge (lists, file pages) and lone icon (board prices). */
 .mode-badge {
@@ -3196,6 +3221,23 @@ form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total 
 }
 .forfait-hint__item:hover, .forfait-hint__item.is-active { background: var(--ek-gold); border-style: solid; color: #fff; }
 
+/* Included perks (« Inclus : Accès piscine gratuit »), under the modes / duration. */
+.perks-hint:not([hidden]) {
+    padding: 7px 11px;
+    border-radius: 8px;
+    background: var(--ek-gold-50);
+    border: 1px solid rgba(var(--ek-gold-rgb), .45);
+    color: var(--ek-ink);
+    font-size: .875rem;
+}
+.perks-hint i { color: var(--ek-gold); }
+/* As a grid column (assignment modal, guest request): aligned with the fields, not the gutters. */
+.row > .perks-hint:not([hidden]) {
+    width: calc(100% - var(--bs-gutter-x));
+    margin-left: calc(var(--bs-gutter-x) * .5);
+    margin-right: calc(var(--bs-gutter-x) * .5);
+}
+
 /* Recettes: affectations vs réservations (option B) — two clickable totals that filter the page. */
 .revenue-kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .revenue-kind { display: block; color: inherit; text-decoration: none; border-left: 4px solid var(--kind-color); transition: box-shadow .15s ease, background .15s ease; }
@@ -3219,3 +3261,63 @@ form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total 
 .home-stat--primary .home-stat__booking { color: rgba(255, 255, 255, .85); }
 .home-stat--primary .home-stat__booking strong { color: #fff; }
 
+
+/* ================================================================== Prise de service
+   Topbar pill: receptionist of the business day (every sale of the day is hers), or a call to
+   take the service; the mandatory prise-de-service page (DutyController@show). */
+.duty-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: rgba(var(--ek-success-rgb), .1);
+    border: 1px solid rgba(var(--ek-success-rgb), .35);
+    color: #13704b;
+    font-size: .8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.duty-pill--none {
+    background: rgba(var(--ek-warning-rgb), .14);
+    border-color: rgba(var(--ek-warning-rgb), .55);
+    color: #7a4b00;
+}
+a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb), .24); }
+.duty-pill__text { overflow: hidden; text-overflow: ellipsis; }
+/* Simple layout on laptop widths: the top bar (brand, daily links, counters, « Plus », duty pill,
+   mode, user) overflowed the screen — drop the texts that have an icon or badge, as
+   under 1180 px. */
+@media (max-width: 1700px) {
+    .ui-simple .simple-nav__brand-name,
+    .ui-simple .admin-topbar__username { display: none; }
+}
+/* Safety net: if it still doesn't fit, only the daily links shrink and scroll sideways inside the
+   bar — never the page (the « Plus » dropdown sits outside them, so it is never clipped). */
+@media (min-width: 860px) {
+    .ui-simple .simple-nav { min-width: 0; flex-shrink: 1; overflow-x: auto; scrollbar-width: none; }
+    .ui-simple .simple-nav::-webkit-scrollbar { display: none; }
+    .ui-simple .admin-topbar > *:not(.simple-nav):not(.admin-topbar__spacer):not(.duty-pill) { flex-shrink: 0; }
+}
+@media (max-width: 859.98px) {
+    /* Phones: the top bar is tight — short pill, text cut with an ellipsis (full text in the title / page). */
+    .duty-pill { max-width: 34vw; min-width: 0; flex-shrink: 1; padding: 4px 9px; }
+    .duty-pill__label { display: none; }
+}
+
+.duty-take { display: flex; justify-content: center; padding: 24px 0; }
+.duty-take__card { width: 100%; max-width: 520px; text-align: center; padding: 32px 28px; }
+.duty-take__icon {
+    width: 64px; height: 64px; margin: 0 auto 14px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ek-gold-50);
+    color: var(--ek-gold);
+    font-size: 1.7rem;
+}
+.duty-take__day { font-size: 1.05rem; }
+.duty-take__card p { text-align: left; }
+.duty-take__card .duty-take__day { text-align: center; }
+.duty-take__defer { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--ek-border); text-align: left; }
+.duty-assign .form-select { min-width: 150px; }

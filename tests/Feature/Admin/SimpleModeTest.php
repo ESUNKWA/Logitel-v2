@@ -99,12 +99,20 @@ class SimpleModeTest extends TestCase
         $this->assertStringNotContainsString('Clients', $tabbar);
         $this->assertStringNotContainsString(route('admin.guests.index'), $tabbar);
 
-        // Still reachable on phones, from the « Plus » menu (Réception; the manager's phone menu drops it).
-        $this->assertStringContainsString('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.guests.index').'"><i class="far fa-users"></i> Clients</a></li>', $html);
+        // The Réception has no clients list at all (guests.list is the Gérant's, client request 2026-10-25).
+        $this->assertStringNotContainsString(route('admin.guests.index'), $html);
 
-        // Without guests.view, no entry at all.
+        // A role holding guests.list without the manager's figures reaches it on phones from « Plus ».
+        $role = Role::create(['name' => 'Accueil+', 'slug' => 'accueil-plus']);
+        $role->syncPermissions(['rooms.view', 'guests.list']);
+        $withList = User::factory()->simpleUi()->create();
+        $withList->forceFill(['role_id' => $role->id])->save();
+        $this->actingAs($withList)->get('/admin')->assertOk()
+            ->assertSee('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.guests.index').'"><i class="far fa-users"></i> Clients</a></li>', false);
+
+        // Without guests.list, no entry at all.
         $role = Role::create(['name' => 'Ménage', 'slug' => 'menage']);
-        $role->syncPermissions(['rooms.view']);
+        $role->syncPermissions(['rooms.view', 'guests.view']);
         $noGuests = User::factory()->simpleUi()->create();
         $noGuests->forceFill(['role_id' => $role->id])->save();
         $this->actingAs($noGuests)->get('/admin')->assertOk()->assertDontSee(route('admin.guests.index'), false);
@@ -130,10 +138,10 @@ class SimpleModeTest extends TestCase
         // The top « Demandes clients » icon is marked to be hidden on phones (CSS), still there on wider screens.
         $this->assertStringContainsString('class="simple-nav__icon simple-nav__requests "', $html);
 
-        // Réception: unchanged.
+        // Réception: desk screens everywhere, and no clients list (the Gérant's only).
         $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
         $this->assertStringNotContainsString('simple-nav__wide-only', $html);
-        $this->assertStringContainsString('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.guests.index').'">', $html);
+        $this->assertStringNotContainsString(route('admin.guests.index'), $html);
     }
 
     public function test_phones_always_get_the_simple_layout_without_touching_the_account_choice(): void

@@ -31,7 +31,7 @@
                 @csrf
                 <div class="mb-3">
                     <label class="form-label" for="email">E-mail ou téléphone</label>
-                    <input type="text" class="form-control" id="email" name="email" value="{{ old('email') }}" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nom@exemple.com ou 07 12 34 56 78" required autofocus>
+                    <input type="text" class="form-control" id="email" name="email" value="{{ old('email') }}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="" required autofocus>
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="password">Mot de passe</label>
@@ -43,10 +43,6 @@
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Se connecter</button>
             </form>
-            {{-- Installable application: shown by pwa.js until it's installed. --}}
-            <button type="button" class="btn btn-outline-primary w-100 mt-3 pwa-install" data-pwa-install hidden>
-                <i class="far fa-mobile-alt"></i> Installer l'application sur cet appareil
-            </button>
         </div>
         <script src="{{ \App\Support\Asset::url('app/js/pwa.js') }}"></script>
     </body>

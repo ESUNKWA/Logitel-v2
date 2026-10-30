@@ -7,6 +7,7 @@ use App\Enums\StayRequestStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StayRequestApprovalRequest;
 use App\Models\Guest;
+use App\Models\Perk;
 use App\Models\SpecialRate;
 use App\Models\StayRequest;
 use App\Support\RoomAssignment;
@@ -77,6 +78,8 @@ class StayRequestController extends Controller
             'canApprove' => $stayRequest->isPending() && $request->user()->can('affectations.manage') && $request->user()->can('payments.create'),
             // Today's forfaits for the request's room type (live total; the server applies them again).
             'forfaits' => $stayRequest->room?->roomType ? (SpecialRate::menusForNow(collect([$stayRequest->room->roomType]))[$stayRequest->room->roomType->id] ?? []) : [],
+            // Included perks of that room type per mode (« Inclus : … »).
+            'perks' => $stayRequest->room?->roomType ? (Perk::menusFor([$stayRequest->room->roomType])[$stayRequest->room->roomType->id] ?? []) : [],
         ]);
     }
 

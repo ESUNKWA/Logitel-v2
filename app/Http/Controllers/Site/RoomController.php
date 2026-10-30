@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Site;
 
+use App\Enums\PricingMode;
 use App\Http\Controllers\Controller;
+use App\Models\Perk;
 use App\Models\Room;
 use App\Models\RoomType;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +47,8 @@ class RoomController extends Controller
         return view('site.pages.chambre', [
             'room' => $room,
             'rates' => $room->publicRates(),
+            // Included perks of the séjour (the only formula the website shows) for its type.
+            'perks' => Perk::labelsFor($room->room_type_id, PricingMode::WEBSITE),
             // A guest already at the hotel can ask for it right away if it's free now.
             'requestable' => $room->isAvailableNow(),
             'otherRooms' => Room::query()->published()->whereKeyNot($room->id)->with(['roomType', 'images'])->inRandomOrder()->limit(3)->get(),

@@ -121,12 +121,19 @@
     };
 
     // "Total : 15 000 FCFA", or "Sous-total 15 000 FCFA − remise 1 500 FCFA = Total : 13 500 FCFA".
-    var totalText = function (subtotal, discount, tooHigh) {
+    // Writes « lead + Total : X » into el, the amount to pay in its own span (.assign-pay__amount,
+    // coloured like the chosen mode by admin.css — client request, 2026-10-25). textContent only.
+    var renderTotal = function (el, lead, subtotal, discount, tooHigh) {
+        el.textContent = lead + (!tooHigh && discount > 0
+            ? 'Sous-total ' + formatAmount(subtotal) + ' − remise ' + formatAmount(discount) + ' = '
+            : '') + 'Total : ';
+        var amount = document.createElement('span');
+        amount.className = 'assign-pay__amount';
+        amount.textContent = formatAmount(tooHigh ? subtotal : subtotal - discount);
+        el.appendChild(amount);
         if (tooHigh) {
-            return 'Total : ' + formatAmount(subtotal) + ' — ⚠ la remise dépasse le montant du séjour';
+            el.appendChild(document.createTextNode(' — ⚠ la remise dépasse le montant du séjour'));
         }
-        return (discount > 0 ? 'Sous-total ' + formatAmount(subtotal) + ' − remise ' + formatAmount(discount) + ' = ' : '')
-            + 'Total : ' + formatAmount(subtotal - discount);
     };
 
     var bindDiscount = function (scope, refresh) {
@@ -178,6 +185,7 @@
 
         if (!checked) {
             preview.textContent = 'Choisissez un mode.';
+            renderPerksHint(stayForm.querySelector('[data-perks-hint]'), null, null);
             return;
         }
 
@@ -195,10 +203,11 @@
         var tooHigh = discountTooHigh(stayScope, subtotal);
         var discount = tooHigh ? 0 : discountAmount(stayScope, subtotal);
 
-        preview.textContent = 'Départ prévu : ' + formatDateTime(departure) + ' — '
-            + (subtotal < normal ? 'Forfait : ' + formatAmount(subtotal) + ' au lieu de ' + formatAmount(normal) + ' — ' : '')
-            + totalText(subtotal, discount, tooHigh);
+        renderTotal(preview, 'Départ prévu : ' + formatDateTime(departure) + ' — '
+            + (subtotal < normal ? 'Forfait : ' + formatAmount(subtotal) + ' au lieu de ' + formatAmount(normal) + ' — ' : ''),
+            subtotal, discount, tooHigh);
         renderForfaitHint(checked.value, duration);
+        renderPerksHint(stayForm.querySelector('[data-perks-hint]'), currentCard, checked.value);
 
         var paymentBox = stayScope.querySelector('[data-payment-lines]');
         if (paymentBox && paymentBox.paymentLines) {
@@ -208,6 +217,35 @@
 
     // Forfaits ("2 heures = 5 000 FCFA") of the day for the card's room type: data-forfaits =
     // {"heure": {"2": 5000}} (only those cheaper than the normal price, built by the server).
+    // Included perks (Configuration → Avantages inclus): « Inclus : A, B » for the chosen mode,
+    // from a data-perks JSON {mode: [labels]} on the room card / room type option. Display only:
+    // the server snapshots them on save. textContent only.
+    var renderPerksHint = function (hint, source, mode) {
+        if (!hint) {
+            return;
+        }
+        var menu = {};
+        try {
+            menu = source && source.dataset.perks ? (JSON.parse(source.dataset.perks) || {}) : {};
+        } catch (e) {
+            menu = {};
+        }
+        var labels = mode && Array.isArray(menu[mode]) ? menu[mode] : [];
+        hint.textContent = '';
+        hint.hidden = labels.length === 0;
+        if (!labels.length) {
+            return;
+        }
+        var icon = document.createElement('i');
+        icon.className = 'far fa-gift';
+        icon.setAttribute('aria-hidden', 'true');
+        var title = document.createElement('strong');
+        title.textContent = ' Inclus : ';
+        hint.appendChild(icon);
+        hint.appendChild(title);
+        hint.appendChild(document.createTextNode(labels.join(', ')));
+    };
+
     var forfaitsOf = function (card) {
         if (!card || !card.dataset.forfaits) {
             return {};
@@ -353,6 +391,24 @@
             modal.show();
         }
     };
+
+    // Occupied room cards ([data-open-url]): the whole card opens the stay, by mouse or keyboard
+    // (client request, 2026-10-25); links inside the card (« Prolonger ») keep their own target.
+    document.querySelectorAll('[data-open-url]').forEach(function (card) {
+        var open = function () { window.location.href = card.dataset.openUrl; };
+        card.addEventListener('click', function (event) {
+            if (event.target.closest('a, button, form, input, select, textarea')) {
+                return;
+            }
+            open();
+        });
+        card.addEventListener('keydown', function (event) {
+            if (event.target === card && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                open();
+            }
+        });
+    });
 
     document.querySelectorAll('[data-assign-room]').forEach(function (card) {
         card.addEventListener('click', function () { openAssignModal(card, false); });
@@ -1136,6 +1192,49 @@
 
     document.querySelectorAll('[data-payment-lines]').forEach(setupPaymentLines);
 
+    // Stay extension (affectation page, #prolonger): « + N » units of the same formula. The new
+    // departure, total and supplement come precomputed from the server (data-quotes, same rules
+    // as the model); the optional encaissement is capped at what will then be due. Display only.
+    document.querySelectorAll('[data-extend-form]').forEach(function (form) {
+        var extraInput = form.querySelector('[data-extend-extra]');
+        var preview = form.querySelector('[data-extend-preview]');
+        var payments = form.querySelector('[data-payment-lines]');
+        var paid = parseFloat(form.dataset.paid) || 0;
+        var quotes = {};
+        try {
+            quotes = JSON.parse(form.dataset.quotes) || {};
+        } catch (e) {
+            quotes = {};
+        }
+
+        var refresh = function () {
+            var extra = parseInt(extraInput.value, 10) || 0;
+            var quote = quotes[String(extra)];
+            if (!quote) {
+                preview.textContent = extra > 0
+                    ? 'Nouvelle sortie et supplément calculés à l\'enregistrement.'
+                    : 'Indiquez la durée à ajouter.';
+                if (payments && payments.paymentLines) {
+                    payments.paymentLines.setDue('');
+                }
+                return;
+            }
+            var due = Math.max(0, quote.total - paid);
+            preview.textContent = 'Nouvelle sortie : ' + quote.end + ' — Supplément : ';
+            var amount = document.createElement('span');
+            amount.className = 'assign-pay__amount';
+            amount.textContent = formatAmount(quote.supplement);
+            preview.appendChild(amount);
+            preview.appendChild(document.createTextNode(' · Reste dû après prolongation : ' + formatAmount(due)));
+            if (payments && payments.paymentLines) {
+                payments.paymentLines.setDue(due);
+            }
+        };
+
+        extraInput.addEventListener('input', refresh);
+        refresh();
+    });
+
     // Standalone stay form (guest request validation): show the total and pre-fill the payment
     // with it, keeping the request's mode, duration and rate (or the re-submitted ones).
     if (stayForm && !assignModal) {
@@ -1298,9 +1397,9 @@
 
             if (bookingCheckIn.value) {
                 var start = new Date(mode === 'nuitee' ? bookingCheckIn.value + 'T' + bookingConfig.nightFrom : bookingCheckIn.value);
-                bookingPreview.textContent = 'Arrivée : ' + formatDateTime(start)
+                renderTotal(bookingPreview, 'Arrivée : ' + formatDateTime(start)
                     + ' — Départ prévu : ' + formatDateTime(departureFor(mode, start, duration, bookingConfig))
-                    + ' — ' + totalText(subtotal, discount, tooHigh);
+                    + ' — ', subtotal, discount, tooHigh);
             } else {
                 bookingPreview.textContent = "Renseignez l'arrivée.";
             }
@@ -1308,6 +1407,11 @@
             if (bookingDeposit && bookingDeposit.paymentLines) {
                 bookingDeposit.paymentLines.setDue(total);
             }
+
+            var typeSelect = bookingForm.querySelector('[data-booking-type]');
+            var typeOption = typeSelect && typeSelect.value !== '' ? typeSelect.options[typeSelect.selectedIndex] : null;
+            var checkedMode = bookingForm.querySelector('[data-booking-mode]:checked');
+            renderPerksHint(bookingForm.querySelector('[data-perks-hint]'), typeOption, checkedMode && !checkedMode.disabled ? checkedMode.value : null);
         };
 
         bookingForm.querySelectorAll('[data-booking-mode]').forEach(function (radio) {
@@ -1357,7 +1461,7 @@
             }
         };
         if (bookingType) {
-            bookingType.addEventListener('change', function () { applyTypeModes(true); });
+            bookingType.addEventListener('change', function () { applyTypeModes(true); refreshBooking(); });
             applyTypeModes(false);
         }
         bindDiscount(bookingForm, refreshBooking);

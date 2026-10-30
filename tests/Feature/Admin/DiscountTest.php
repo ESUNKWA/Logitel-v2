@@ -174,7 +174,8 @@ class DiscountTest extends TestCase
 
         $this->actingAs($this->staff)->get("/admin/affectations/{$stay->id}")->assertOk()
             ->assertSee('Remise')->assertSee('− 1 500 FCFA')->assertSee('10 % — Client fidèle')->assertSee('par Aminata Koffi')
-            ->assertSee('name="discount_value"', false)->assertSee('value="10"', false);
+            // No « Modifier le séjour » form any more (client request, 2026-10-25): the discount is shown, not edited.
+            ->assertDontSee('name="discount_value"', false);
         $this->actingAs($this->staff)->get("/admin/invoices/{$stay->invoice->id}")->assertOk()
             ->assertSee('Sous-total')->assertSee('15 000 FCFA')->assertSee('− 1 500 FCFA');
         $this->actingAs($this->staff)->get("/admin/recus/{$stay->id}")->assertOk()

@@ -32,7 +32,7 @@
             @endif
         </a>
     @endcan
-    @can('guests.view')
+    @can('guests.list')
         <a href="{{ route('admin.guests.index') }}" class="{{ $isActive('admin.guests.*') }}"><i class="far fa-users"></i> Clients</a>
     @endcan
 </nav>
@@ -52,7 +52,7 @@
     </button>
     <ul class="dropdown-menu dropdown-menu-end simple-nav__menu">
         @if ($deskOnWideScreens === '')
-            @can('guests.view')
+            @can('guests.list')
                 {{-- Phones only (the top links are hidden there and the tab bar has no « Clients »). --}}
                 <li class="simple-nav__phone-only"><a class="dropdown-item" href="{{ route('admin.guests.index') }}"><i class="far fa-users"></i> Clients</a></li>
             @endcan
@@ -70,6 +70,9 @@
         @endcan
         @can('payments.create')
             <li><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
+        @endcan
+        @can('duty.manage')
+            <li><a class="dropdown-item" href="{{ route('admin.duty.index') }}"><i class="far fa-user-clock"></i> Prises de service</a></li>
         @endcan
         <li><a class="dropdown-item" href="{{ route('admin.stats') }}"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>
         @canany(['site.manage', 'site.stats'])
@@ -94,6 +97,7 @@
             @can('rooms.manage')
                 <li><a class="dropdown-item" href="{{ route('admin.room-types.index') }}"><i class="far fa-layer-group"></i> Types de chambre</a></li>
                 <li><a class="dropdown-item" href="{{ route('admin.special-rates.index') }}"><i class="far fa-tags"></i> Tarifs spéciaux</a></li>
+                <li><a class="dropdown-item" href="{{ route('admin.perks.index') }}"><i class="far fa-gift"></i> Avantages inclus</a></li>
             @endcan
             @can('settings.manage')
                 <li><a class="dropdown-item" href="{{ route('admin.settings.edit') }}"><i class="far fa-sliders-h"></i> Paramètres</a></li>

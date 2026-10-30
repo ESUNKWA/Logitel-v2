@@ -51,6 +51,35 @@ class RoomAssignmentTest extends TestCase
         $this->assertDatabaseHas('guests', ['first_name' => 'Awa', 'last_name' => 'Koné']);
     }
 
+    public function test_the_assignment_modal_has_no_client_search(): void
+    {
+        Room::factory()->create(['status' => RoomStatus::Disponible]);
+
+        $this->actingAs(User::factory()->create())->get('/admin/rooms/board')->assertOk()
+            ->assertSee('id="assignRoomModal"', false)
+            ->assertSee('name="new_first_name"', false)
+            ->assertSee('name="new_phone"', false)
+            ->assertDontSee('data-guest-search', false)
+            ->assertDontSee('name="guest_id"', false)
+            ->assertDontSee('Rechercher un client existant');
+    }
+
+    public function test_the_assignment_modal_has_no_nuitee_hint_under_the_modes(): void
+    {
+        Room::factory()->create(['status' => RoomStatus::Disponible]);
+        $user = User::factory()->create();
+
+        foreach (['2026-10-07 22:30:00', '2026-10-08 20:40:00'] as $now) {
+            $this->travelTo($now);
+            $this->actingAs($user)->get('/admin/rooms/board')->assertOk()
+                ->assertSee('id="mode-nuitee"', false)
+                ->assertDontSee('data-mode-hint', false)
+                ->assertDontSee('Nuitée : de 22h00')
+                ->assertDontSee('compte pour la nuit de ce soir')
+                ->assertDontSee('@unless', false);
+        }
+    }
+
     public function test_assigning_a_room_with_an_existing_guest_reuses_that_guest(): void
     {
         $user = User::factory()->create();

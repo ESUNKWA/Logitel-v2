@@ -120,7 +120,7 @@ class MyCashTest extends TestCase
         $awaStay = $this->cashed($this->awa, 2, [['method' => 'wave', 'amount' => 10000]]);
         $koffiStay = $this->cashed($this->koffi, 3, [['method' => 'especes', 'amount' => 15000]]);
         $old = $this->cashed($this->awa, 1, [['method' => 'wave', 'amount' => 5000]]);
-        $old->invoice->payments()->update(['created_by' => null]); // recorded before authorship existed
+        $old->invoice->payments()->update(['created_by' => null, 'attributed_to' => null]); // recorded before authorship existed
 
         $this->actingAs($manager)->get(route('admin.revenue.index'))->assertOk()
             ->assertSee($awaStay->invoice->number)->assertSee($koffiStay->invoice->number)

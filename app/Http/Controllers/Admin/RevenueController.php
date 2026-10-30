@@ -18,7 +18,8 @@ use Throwable;
 
 /**
  * « Recettes »: the payments actually received over a period (business days), one line per
- * payment with who cashed it and who gave the room, split into affectations and réservations
+ * payment with whose sale it is (the receptionist of the day — prise de service — else who
+ * recorded it; « saisi par » when someone else typed it) and who gave the room, split into affectations and réservations
  * (a réservation's payment recorded before the guest arrived — Payment::isBookingPayment()). The manager (dashboard.revenue) sees every
  * staff member and can filter by one; anyone else only ever sees their own payments.
  */
@@ -47,12 +48,12 @@ class RevenueController extends Controller
         return view('admin.revenue.index', [
             'filters' => $filters,
             'manager' => $this->isManager($request),
-            'payments' => $payments->with(['creator', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
+            'payments' => $payments->with(['creator', 'attributedTo', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
                 ->orderBy('paid_at')->orderBy('id')->paginate(100)->withQueryString(),
             'summary' => $this->summary($all),
             'byKind' => [Payment::KIND_STAY => $this->summary($stay), Payment::KIND_BOOKING => $this->summary($booking)],
             'staff' => $this->isManager($request) ? FinanceStats::cashByUser($filters['start'], $filters['end'], $filters['kind']) : [],
-            'staffOptions' => $this->isManager($request) ? User::query()->whereIn('id', Payment::query()->whereNotNull('created_by')->distinct()->pluck('created_by'))->orderBy('name')->get(['id', 'name']) : collect(),
+            'staffOptions' => $this->isManager($request) ? User::query()->whereIn('id', Payment::query()->whereNotNull('attributed_to')->distinct()->pluck('attributed_to'))->orderBy('name')->get(['id', 'name']) : collect(),
         ]);
     }
 
@@ -63,7 +64,7 @@ class RevenueController extends Controller
     {
         $filters = $this->filters($request);
         $payments = $this->query($request, $filters)
-            ->with(['creator', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
+            ->with(['creator', 'attributedTo', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
             ->orderBy('paid_at')->orderBy('id');
         $name = 'recettes-'.$filters['from']->format('Y-m-d').($filters['from']->equalTo($filters['to']) ? '' : '-au-'.$filters['to']->format('Y-m-d')).'.csv';
 
@@ -74,7 +75,7 @@ class RevenueController extends Controller
         return response()->streamDownload(function () use ($payments, $cell) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Date', 'Heure', 'Type', 'Dossier', 'Chambre', 'Client', 'Facture', 'Mode', 'Montant', 'Reçu', 'Rendu', 'Encaissé par', 'Affecté par'], ';');
+            fputcsv($out, ['Date', 'Heure', 'Type', 'Dossier', 'Chambre', 'Client', 'Facture', 'Mode', 'Montant', 'Reçu', 'Rendu', 'Encaissé par', 'Affecté par', 'Saisi par'], ';');
             $payments->chunk(500, function ($chunk) use ($out, $cell) {
                 foreach ($chunk as $p) {
                     $file = $p->invoice?->reservation;
@@ -83,7 +84,7 @@ class RevenueController extends Controller
                         $file?->reference() ?? '', $file?->room?->number ?? '',
                         $file?->guest?->fullName() ?? '', $p->invoice?->number ?? '', $p->method->getLabel(), (int) round((float) $p->amount),
                         $p->amount_received !== null ? (int) round((float) $p->amount_received) : '', $p->change_given !== null ? (int) round((float) $p->change_given) : '',
-                        $p->creator?->name ?? 'Non attribué', $file?->assignedBy()?->name ?? '',
+                        $p->attributedTo?->name ?? 'Non attribué', $file?->assignedBy()?->name ?? '', $p->creator?->name ?? '',
                     ]), ';');
                 }
             });
@@ -120,8 +121,9 @@ class RevenueController extends Controller
 
         return Payment::query()
             ->where('paid_at', '>=', $filters['start'])->where('paid_at', '<', $filters['end'])
-            ->when($staff === 'aucun', fn (Builder $q) => $q->whereNull('created_by'))
-            ->when(ctype_digit($staff), fn (Builder $q) => $q->where('created_by', (int) $staff))
+            // Attributed sales (« prise de service »: the receptionist of the day), not who typed them.
+            ->when($staff === 'aucun', fn (Builder $q) => $q->whereNull('attributed_to'))
+            ->when(ctype_digit($staff), fn (Builder $q) => $q->where('attributed_to', (int) $staff))
             ->when($filters['method'], fn (Builder $q, PaymentMethod $m) => $q->where('method', $m))
             ->ofKind($filters['kind']);
     }

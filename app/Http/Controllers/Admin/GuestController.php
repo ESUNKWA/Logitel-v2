@@ -45,11 +45,9 @@ class GuestController extends Controller
 
     public function store(GuestRequest $request): RedirectResponse
     {
-        Guest::create($request->guestAttributes());
+        $guest = Guest::create($request->guestAttributes());
 
-        return redirect()
-            ->route('admin.guests.index')
-            ->with('status', 'Client créé.');
+        return $this->afterSave($request, $guest)->with('status', 'Client créé.');
     }
 
     public function edit(Guest $guest): View
@@ -61,12 +59,10 @@ class GuestController extends Controller
     {
         $guest->update($request->guestAttributes());
 
-        return redirect()
-            ->route('admin.guests.index')
-            ->with('status', 'Client mis à jour.');
+        return $this->afterSave($request, $guest)->with('status', 'Client mis à jour.');
     }
 
-    public function destroy(Guest $guest): RedirectResponse
+    public function destroy(Request $request, Guest $guest): RedirectResponse
     {
         try {
             $guest->delete();
@@ -74,9 +70,19 @@ class GuestController extends Controller
             return back()->withErrors(['delete' => $blocked->getMessage()]);
         }
 
-        return redirect()
-            ->route('admin.guests.index')
+        return ($request->user()->can('guests.list') ? redirect()->route('admin.guests.index') : redirect()->route('admin.dashboard'))
             ->with('status', 'Client supprimé.');
+    }
+
+    /**
+     * The clients list is the Gérant's (guests.list, client request 2026-10-25): anyone else who
+     * may edit a client (e.g. from the front-desk search) stays on the client's file.
+     */
+    private function afterSave(Request $request, Guest $guest): RedirectResponse
+    {
+        return $request->user()->can('guests.list')
+            ? redirect()->route('admin.guests.index')
+            : redirect()->route('admin.guests.edit', $guest);
     }
 
     /**

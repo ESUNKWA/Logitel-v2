@@ -106,8 +106,16 @@
     <div class="room-board">
         @foreach ($typeRooms as $room)
             @php($assignable = $room->isAvailableNow() && $canAssign)
+            {{-- Occupied: the whole card opens the stay (client request, 2026-10-25). --}}
+            @php($openable = ! $assignable && $room->currentStay && auth()->user()->can('affectations.view'))
             <div
-                class="room-card room-card--{{ in_array($room->displayState(), ['reservee', 'demande'], true) ? $room->displayState() : $room->status->value }} {{ $assignable ? 'is-clickable' : '' }}"
+                class="room-card room-card--{{ in_array($room->displayState(), ['reservee', 'demande'], true) ? $room->displayState() : $room->status->value }} {{ $assignable || $openable ? 'is-clickable' : '' }}"
+                @if ($openable)
+                    data-open-url="{{ route('admin.affectations.show', $room->currentStay) }}"
+                    role="link"
+                    tabindex="0"
+                    aria-label="Ouvrir l'affectation de la chambre N°{{ $room->number }}"
+                @endif
                 @if ($assignable)
                     data-assign-room
                     data-room-id="{{ $room->id }}"
@@ -119,6 +127,7 @@
                     data-night-rate="{{ $room->roomType?->night_rate }}"
                     data-stay-rate="{{ $room->roomType?->stay_rate }}"
                     data-forfaits="{{ json_encode((object) ($forfaits[$room->room_type_id] ?? [])) }}"
+                    data-perks="{{ json_encode((object) ($perks[$room->room_type_id] ?? [])) }}"
                 @endif
             >
                 <div class="room-card__number">N°{{ $room->number }}</div>
@@ -172,8 +181,12 @@
                         </div>
                     @endcan
                     @can('affectations.view')
-                        <div class="mt-2">
+                        <div class="mt-2 room-card__links">
                             <a href="{{ route('admin.affectations.show', $room->currentStay) }}" class="small">Ouvrir (sortie)</a>
+                            {{-- Extend at the guest's request, any time (client request, 2026-10-25). --}}
+                            @can('affectations.manage')
+                                <a href="{{ route('admin.affectations.show', $room->currentStay) }}#prolonger" class="btn btn-sm btn-outline-primary room-card__extend"><i class="far fa-clock"></i> Prolonger</a>
+                            @endcan
                         </div>
                     @endcan
                 @elseif ($room->status->value !== 'disponible')
@@ -258,24 +271,9 @@
                       >
                         <div class="col-lg-6">
                         <h6 class="text-uppercase text-muted small fw-bold mb-3">Client <span class="text-lowercase fw-normal">(facultatif)</span></h6>
-                        <div class="mb-3 position-relative">
-                            <label class="form-label">Rechercher un client existant</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                autocomplete="off"
-                                placeholder="Nom ou téléphone…"
-                                name="guest_label"
-                                value="{{ old('guest_label') }}"
-                                data-guest-search
-                                data-guest-search-url="{{ route('admin.guests.search') }}"
-                                data-guest-id-target="#assign-guest-id"
-                            >
-                            <div class="list-group position-absolute w-100" style="z-index: 1080;" data-guest-search-results></div>
-                            <input type="hidden" id="assign-guest-id" name="guest_id" value="{{ old('guest_id') }}">
-                        </div>
-
-                        <p class="text-muted small mb-2">Ou saisir un nouveau client (tout est facultatif ; sans nom, la fiche est créée en « Client de passage », à compléter plus tard) :</p>
+                        {{-- No search of existing clients here (client request, 2026-10-25): the
+                             réception only types the guest's details, all optional. --}}
+                        <p class="text-muted small mb-2">Tout est facultatif ; sans nom, la fiche est créée en « Client de passage », à compléter plus tard.</p>
                         <div class="row g-2">
                             <div class="col-6">
                                 <input type="text" class="form-control @error('new_first_name') is-invalid @enderror" name="new_first_name" value="{{ old('new_first_name') }}" placeholder="Prénom">
@@ -301,9 +299,6 @@
                                         <label class="btn mode-btn mode--{{ $mode->value }}" for="mode-{{ $mode->value }}"><i class="fas {{ $mode->icon() }}" aria-hidden="true"></i> {{ $mode->getLabel() }}</label>
                                     @endforeach
                                 </div>
-                                <div class="form-text" data-mode-hint>
-                                    Nuitée : de {{ str_replace(':', 'h', config('hotel.night.from')) }} à {{ str_replace(':', 'h', config('hotel.night.until')) }} le lendemain@unless ($nightOpen) — une entrée avant {{ str_replace(':', 'h', config('hotel.night.from')) }} compte pour la nuit de ce soir@endunless.
-                                </div>
                             </div>
                             <div class="col-4">
                                 <label class="form-label" for="assign-duration" data-duration-label>Durée</label>
@@ -318,6 +313,7 @@
                                 <input type="number" min="0" value="{{ old('children', 0) }}" class="form-control" name="children" required>
                             </div>
                             <div class="col-12 mt-1" data-forfait-hint hidden></div>
+                            <div class="col-12 mt-1 perks-hint" data-perks-hint hidden></div>
                             <div class="col-12">
                                 <label class="form-label" for="assign-rate">Tarif <span data-rate-unit></span> (FCFA)</label>
                                 <input type="text" class="form-control rate-locked" id="assign-rate" value="" data-money data-unit-rate-input readonly tabindex="-1">

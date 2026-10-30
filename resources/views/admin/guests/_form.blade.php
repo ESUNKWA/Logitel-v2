@@ -64,5 +64,6 @@
 
 <div class="mt-4">
     <button type="submit" class="btn btn-primary">Enregistrer</button>
-    <a href="{{ route('admin.guests.index') }}" class="btn btn-outline-secondary">Annuler</a>
+    {{-- The clients list is the Gérant's (guests.list); others go back to the front-desk search. --}}
+    <a href="{{ auth()->user()->can('guests.list') ? route('admin.guests.index') : (auth()->user()->can('guests.view') ? route('admin.front-desk.search') : route('admin.dashboard')) }}" class="btn btn-outline-secondary">Annuler</a>
 </div>

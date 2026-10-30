@@ -1,6 +1,10 @@
 @php
     $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
     $paid = (float) $invoice->amountPaid();
+    // What the guest handed over (cash: amount_received; Orange Money / Wave: the amount itself)
+    // and the change given back — so received − change = paid.
+    $received = (float) $invoice->payments->sum(fn ($p) => $p->amount_received ?? $p->amount);
+    $change = (float) $invoice->payments->sum(fn ($p) => $p->change_given ?? 0);
     $remaining = (float) $invoice->remainingAmount();
     $cancelled = $reservation->status === \App\Enums\ReservationStatus::Annulee;
     $receipt = config('hotel.receipt');
@@ -59,6 +63,7 @@
         .row > span:first-child { flex-shrink: 0; }
         .row > span:last-child { text-align: right; overflow-wrap: anywhere; }
         .sub { padding-left: 3mm; font-size: .92em; }
+        .perk { padding-left: 1mm; overflow-wrap: anywhere; }
         .total { font-size: 1.25em; font-weight: 800; }
         .strong { font-weight: 700; }
         .stamp { border: 2px solid #000; text-align: center; font-weight: 800; font-size: 1.2em; letter-spacing: 2px; padding: 1mm; margin: 2mm 0; }
@@ -118,10 +123,13 @@
             @endif
             <div class="row total"><span>TOTAL</span><span>{{ $fcfa($invoice->amount) }} FCFA</span></div>
 
-            {{-- Payment part: only the amount paid (client request, 2026-10-19) — no method,
-                 time, cash received or change on the ticket (they stay on the invoice page). --}}
+            {{-- Payment part: amount received from the guest, change given back (client request,
+                 2026-10-25) and amount paid — still no method or time (2026-10-19; they stay on
+                 the invoice page). --}}
             @if ($invoice->payments->isNotEmpty())
                 <hr class="sep">
+                <div class="row"><span>Montant reçu</span><span>{{ $fcfa($received) }} FCFA</span></div>
+                <div class="row"><span>Monnaie rendue</span><span>{{ $fcfa($change) }} FCFA</span></div>
                 <div class="row strong"><span>Montant payé</span><span>{{ $fcfa($paid) }} FCFA</span></div>
             @endif
 
@@ -131,6 +139,15 @@
                 <div class="stamp">SOLDÉ</div>
             @else
                 <div class="row total"><span>{{ $isStay ? 'RESTE DÛ' : 'À PAYER À L\'ARRIVÉE' }}</span><span>{{ $fcfa($remaining) }} FCFA</span></div>
+            @endif
+
+            {{-- Included perks snapshotted on the file (Configuration → Avantages inclus, 2026-10-25). --}}
+            @if ($reservation->perkLabels() !== [])
+                <hr class="sep">
+                <div class="strong">AVANTAGES INCLUS</div>
+                @foreach ($reservation->perkLabels() as $perk)
+                    <div class="perk">• {{ $perk }}</div>
+                @endforeach
             @endif
 
             <hr class="sep">

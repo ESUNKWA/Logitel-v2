@@ -69,6 +69,7 @@ class Reservation extends Model
             'duration' => 'integer',
             'unit_rate' => 'decimal:2',
             'special_price' => 'decimal:2',
+            'perks' => 'array',
             'overdue_acknowledged_at' => 'datetime',
             'checked_in_at' => 'datetime',
             'checked_out_at' => 'datetime',
@@ -315,6 +316,28 @@ class Reservation extends Model
         $this->special_price = $best?->price;
     }
 
+    /**
+     * Snapshot of the included perks (Perk::labelsFor()) for this file's room type and mode —
+     * affectations and réservations alike. Never from input.
+     */
+    private function applyPerks(): void
+    {
+        $roomTypeId = $this->room_id ? Room::query()->whereKey($this->room_id)->value('room_type_id') : null;
+        $labels = Perk::labelsFor($roomTypeId, $this->pricing_mode ?? PricingMode::Nuitee);
+
+        $this->perks = $labels === [] ? null : $labels;
+    }
+
+    /**
+     * The included perks promised on this file (receipt, file pages).
+     *
+     * @return list<string>
+     */
+    public function perkLabels(): array
+    {
+        return array_values(array_filter((array) ($this->perks ?? []), 'is_string'));
+    }
+
     public function hasDiscount(): bool
     {
         return bccomp((string) $this->discount_amount, '0', 2) > 0;
@@ -343,9 +366,10 @@ class Reservation extends Model
     }
 
     /**
-     * Who gave the room to the guest: for a stay, whoever checked it in (the board assignment,
+     * Whose stay it is: the receptionist of its check-in's business day (prise de service), else
+     * whoever checked it in (the board assignment,
      * a validated guest request or a réservation's arrival), else its creator; null for a
-     * booking whose guest hasn't arrived yet. Load `checkedInBy` and `creator` first.
+     * booking whose guest hasn't arrived yet. Load `attributedTo`, `checkedInBy` and `creator` first.
      */
     public function assignedBy(): ?User
     {
@@ -353,7 +377,16 @@ class Reservation extends Model
             return null;
         }
 
-        return $this->checkedInBy ?? ($this->origin === self::ORIGIN_AFFECTATION ? $this->creator : null);
+        return $this->attributedTo ?? $this->checkedInBy ?? ($this->origin === self::ORIGIN_AFFECTATION ? $this->creator : null);
+    }
+
+    /**
+     * Whose sale the stay is: the receptionist of its check-in's business day (« prise de
+     * service »), else whoever checked it in. `checkedInBy` stays who actually did it.
+     */
+    public function attributedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'attributed_to');
     }
 
     public function checkedOutBy(): BelongsTo
@@ -425,6 +458,10 @@ class Reservation extends Model
                     $reservation->{$stamp.'_at'} = now();
                     $reservation->{$stamp.'_by'} = Auth::id();
                 }
+                // The stay is the sale of the receptionist of the day (« prise de service »), else of whoever checked it in.
+                if ($stamp === 'checked_in') {
+                    $reservation->attributed_to = DutyDay::attributeeAt(now()) ?? Auth::id() ?? $reservation->created_by;
+                }
             }
 
             // A new departure time (stay extended/shortened) ends any snooze of the checkout alarm.
@@ -438,6 +475,13 @@ class Reservation extends Model
             // kept, so editing or deleting a forfait later never changes an existing invoice.
             if (! $reservation->exists || $reservation->isDirty(['duration', 'pricing_mode', 'unit_rate', 'room_id', 'check_in', 'origin'])) {
                 $reservation->applySpecialRate();
+            }
+
+            // Included perks: taken again when the room or the formula changes (a new file, a
+            // booking moved to another room/mode), else the snapshot is kept — editing or
+            // deleting a perk later never changes what an existing file was promised.
+            if (! $reservation->exists || $reservation->isDirty(['pricing_mode', 'room_id'])) {
+                $reservation->applyPerks();
             }
 
             // Total = subtotal (forfait or rate × duration) − discount, always derived (never trusted from input).

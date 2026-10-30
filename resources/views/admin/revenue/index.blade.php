@@ -218,7 +218,13 @@
                                     —
                                 @endif
                             </td>
-                            <td>{{ $payment->creator?->name ?? 'Non attribué' }}</td>
+                            <td>
+                                {{ $payment->attributedTo?->name ?? 'Non attribué' }}
+                                {{-- Typed by someone else than the receptionist of the day (prise de service). --}}
+                                @if ($payment->created_by && $payment->created_by !== $payment->attributed_to)
+                                    <div class="small text-muted">saisi par {{ $payment->creator?->name ?? '—' }}</div>
+                                @endif
+                            </td>
                             <td>
                                 @if ($assignedBy)
                                     {{ $assignedBy->name }}

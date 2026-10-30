@@ -30,6 +30,10 @@ return [
     // ending at 12:00 lets the next one start at 12:30 at the earliest.
     'cleaning_buffer_minutes' => 30,
 
+    // « Prise de service »: receptionists (role granting duty.take, never the Gérant) must take
+    // the service of the business day before working; every sale of the day is theirs.
+    'duty_required' => true,
+
     // A guest's room request made from their phone (public page /demande) holds the room for
     // this many minutes; past that, if the réception hasn't handled it, the room is released.
     'request_expiry_minutes' => 30,

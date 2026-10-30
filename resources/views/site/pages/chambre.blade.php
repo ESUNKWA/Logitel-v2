@@ -112,6 +112,18 @@
                         </div>
                     @endif
 
+                    {{-- Included perks of the séjour for this room type (Configuration → Avantages inclus). --}}
+                    @if ($perks !== [])
+                        <div class="room-content-box mb-25 site-perks">
+                            <h3>Inclus avec votre séjour</h3>
+                            <ul class="site-perks__list">
+                                @foreach ($perks as $perk)
+                                    <li><i class="far fa-gift" aria-hidden="true"></i> {{ $perk }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     @if ($room->amenities && $room->amenities->isNotEmpty())
                         <div class="room-content-box mb-25">
                             <h3>Services & équipements</h3>
