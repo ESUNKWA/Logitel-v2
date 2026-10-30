@@ -164,6 +164,19 @@
 .site-booking__total strong { color: #fff; font-size: 24px; }
 .site-booking__note { font-size: 14px; margin-bottom: 18px; color: rgba(255, 255, 255, .75); }
 .site-booking__note strong { color: #fff; }
+/* « Paiement par Mobile Money » notice: dark in the form summary, light on the follow-up page. */
+.site-booking__pay { padding: 14px 16px; margin-bottom: 18px; border-radius: 12px; font-size: 14px; text-align: left; }
+.site-booking__pay p { margin: 0 0 6px; }
+.site-booking__pay-title { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-weight: 700; font-size: 15px; }
+.site-booking__pay-methods { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; padding: 0; list-style: none; }
+.site-booking__pay-methods li { padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+.site-booking__pay-hint { font-size: 13px; }
+.site-booking__pay--dark { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .22); color: rgba(255, 255, 255, .85); }
+.site-booking__pay--dark strong, .site-booking__pay--dark .site-booking__pay-title { color: #fff; }
+.site-booking__pay--dark .site-booking__pay-methods li { background: #fff; color: var(--heading-color, #161921); }
+.site-booking__pay--light { max-width: 520px; margin: 22px auto 0; background: #fff8e6; border: 1px solid #f0d58c; color: #4a3b12; }
+.site-booking__pay--light .site-booking__pay-title { color: #3b2f0b; }
+.site-booking__pay--light .site-booking__pay-methods li { background: #fff; border: 1px solid #f0d58c; color: #3b2f0b; }
 .site-booking__errors { padding: 16px 20px; margin-bottom: 26px; border-radius: 12px; background: #fdecec; color: #8a1c1c; }
 .site-booking__errors ul { margin: 6px 0 0 18px; list-style: disc; }
 .site-booking__hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

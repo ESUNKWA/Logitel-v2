@@ -175,6 +175,31 @@ class BookingRequestTest extends TestCase
         $this->post('/reservation', $this->payload(['phone' => '0505050505', 'check_in' => '2026-10-20T14:00']))->assertSessionHasErrors('check_in');
     }
 
+    public function test_the_client_is_told_the_booking_is_only_effective_once_paid_by_mobile_money(): void
+    {
+        $notice = "Votre réservation ne sera <strong>effective qu'après votre paiement par Mobile Money</strong>";
+
+        // On the form, right before « Envoyer ma demande ».
+        $this->get(route('booking.create'))->assertOk()
+            ->assertSeeInOrder([$notice, '<li>Wave</li>', '<li>Orange Money</li>', 'Envoyer ma demande'], false)
+            ->assertSee('Aucun paiement sur ce site.')->assertDontSee('Aucun paiement en ligne');
+
+        // On the follow-up page while pending and once recorded; not once refused.
+        $this->post('/reservation', $this->payload())->assertRedirect();
+        $booking = BookingRequest::sole();
+        $url = URL::signedRoute('booking.show', $booking);
+        $this->get($url)->assertOk()->assertSee($notice, false)->assertSee('<li>Wave</li>', false)->assertSee('<li>Orange Money</li>', false);
+
+        $booking->forceFill(['status' => BookingRequest::STATUS_HANDLED])->save();
+        $this->get($url)->assertOk()->assertSee($notice, false);
+
+        $booking->forceFill(['status' => BookingRequest::STATUS_REFUSED])->save();
+        $this->get($url)->assertOk()->assertDontSee('Paiement par Mobile Money');
+
+        // Only on the booking pages, not on the lobby QR request page.
+        $this->get('/demande')->assertOk()->assertDontSee('Paiement par Mobile Money');
+    }
+
     public function test_the_follow_up_page_shows_the_outcome(): void
     {
         $this->post('/reservation', $this->payload());

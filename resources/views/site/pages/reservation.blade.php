@@ -123,7 +123,8 @@
                                 <span>Montant estimé</span>
                                 <strong data-sum-total>—</strong>
                             </div>
-                            <p class="site-booking__note">Ce n'est pas encore une réservation : la réception vérifie la disponibilité et <strong>vous rappelle pour confirmer</strong>. Aucun paiement en ligne.</p>
+                            <p class="site-booking__note">Ce n'est pas encore une réservation : la réception vérifie la disponibilité et <strong>vous rappelle pour confirmer</strong>. Aucun paiement sur ce site.</p>
+                            @include('site.partials.booking-payment-notice', ['variant' => 'dark'])
                             <button type="submit" class="theme-btn style-one w-100">Envoyer ma demande <i class="far fa-arrow-right"></i></button>
                         </div>
                     </div>

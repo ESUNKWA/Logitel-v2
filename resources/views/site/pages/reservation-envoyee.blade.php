@@ -23,6 +23,10 @@
                 <p>La réception vérifie la disponibilité et <strong>vous rappelle au {{ $booking->phone }}</strong> pour confirmer votre réservation.</p>
             @endif
 
+            @unless ($booking->status === \App\Models\BookingRequest::STATUS_REFUSED)
+                @include('site.partials.booking-payment-notice', ['variant' => 'light'])
+            @endunless
+
             <dl class="site-booking__recap">
                 <dt>Chambre</dt><dd>{{ $booking->roomType?->name ?? '—' }}</dd>
                 <dt>Formule</dt><dd>{{ $booking->pricing_mode->getLabel() }} — {{ $booking->pricing_mode->durationLabel($booking->duration) }}</dd>
