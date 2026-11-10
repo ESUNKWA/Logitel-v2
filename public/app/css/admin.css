@@ -3368,3 +3368,11 @@ a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb)
 .room-pager[hidden] { display: none; }
 .room-pager__label { font-weight: 600; color: var(--ek-muted, #64748b); white-space: nowrap; }
 @media (min-width: 861px) { .room-pager { display: none; } }
+
+/* Software provider credit at the bottom of every page (client request, 2026-11-10). */
+.vendor-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin-top: 32px; padding-top: 14px; border-top: 1px solid var(--ek-border); font-size: .8rem; color: var(--ek-muted, #64748b); text-align: center; }
+.vendor-footer strong { font-weight: 600; color: var(--ek-ink, #1e293b); }
+.vendor-footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.vendor-footer a:hover { color: var(--ek-primary); }
+.vendor-footer--auth { margin-top: 20px; }
+@media print { .vendor-footer { display: none !important; } }

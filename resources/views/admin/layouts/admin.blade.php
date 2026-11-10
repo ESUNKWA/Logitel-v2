@@ -213,6 +213,8 @@
                     @endif
 
                     @yield('content')
+
+                    @include('admin.layouts._vendor-footer')
                 </main>
 
                 @if ($simpleUi)

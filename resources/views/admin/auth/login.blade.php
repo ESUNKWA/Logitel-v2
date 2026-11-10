@@ -43,6 +43,7 @@
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Se connecter</button>
             </form>
+            @include('admin.layouts._vendor-footer', ['class' => 'vendor-footer--auth'])
         </div>
         <script src="{{ \App\Support\Asset::url('app/js/pwa.js') }}"></script>
     </body>
