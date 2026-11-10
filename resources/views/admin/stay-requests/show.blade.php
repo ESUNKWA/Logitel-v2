@@ -34,7 +34,7 @@
                     <dt class="col-5">Client</dt>
                     <dd class="col-7">{{ $stayRequest->fullName() }}</dd>
                     <dt class="col-5">Téléphone</dt>
-                    <dd class="col-7">{{ $stayRequest->phone ?: '—' }}</dd>
+                    <dd class="col-7">{{ $stayRequest->phone ? \App\Support\PhoneFormat::display($stayRequest->phone) : '—' }}</dd>
                     <dt class="col-5">Personnes</dt>
                     <dd class="col-7">{{ $stayRequest->adults }} adulte(s), {{ $stayRequest->children }} enfant(s)</dd>
                     <dt class="col-5">Chambre</dt>
@@ -101,7 +101,7 @@
                         @if ($matchingGuest)
                             <div class="alert alert-secondary py-2 mb-2">
                                 <i class="far fa-user-check me-1"></i>
-                                Client déjà connu avec ce numéro : <strong>{{ $matchingGuest->fullName() }}</strong> ({{ $matchingGuest->phone }}). Le séjour sera rattaché à sa fiche.
+                                Client déjà connu avec ce numéro : <strong>{{ $matchingGuest->fullName() }}</strong> ({{ \App\Support\PhoneFormat::display($matchingGuest->phone) }}). Le séjour sera rattaché à sa fiche.
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="new_guest" value="1" id="new_guest" @checked(old('new_guest'))>

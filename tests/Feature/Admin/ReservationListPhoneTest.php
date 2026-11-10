@@ -32,11 +32,14 @@ class ReservationListPhoneTest extends TestCase
         $this->booking(Guest::factory()->create(['first_name' => 'Awa', 'last_name' => 'Koné', 'phone' => '07 11 22 33 44']));
         $this->booking(Guest::factory()->create(['first_name' => 'Sans', 'last_name' => 'Numéro', 'phone' => '']));
 
-        $this->actingAs(User::factory()->create())->get(route('admin.reservations.index'))->assertOk()
+        $html = $this->actingAs(User::factory()->create())->get(route('admin.reservations.index'))->assertOk()
             ->assertSeeInOrder(['<th>Client</th>', '<th>Téléphone</th>', '<th>Chambre</th>'], false)
+            // Shown by pairs (client request, 2026-11-10); the link and the table search keep the digits.
             ->assertSee('<a href="tel:0711223344"><i class="far fa-phone-alt"></i> 07 11 22 33 44</a>', false)
-            ->assertSee('<td class="text-nowrap"> — </td>', false)
-            ->assertDontSee('cell-show-sm', false); // shown on PC too
+            ->assertSee('data-search="07 11 22 33 44 0711223344"', false)
+            ->assertDontSee('cell-show-sm', false) // shown on PC too
+            ->getContent();
+        $this->assertStringContainsString('<td class="text-nowrap" data-search=""> — </td>', $html);
     }
 
     public function test_the_receptionist_sees_it_too_and_the_empty_list_still_spans_the_table(): void

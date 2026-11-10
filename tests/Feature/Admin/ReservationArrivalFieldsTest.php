@@ -105,7 +105,7 @@ class ReservationArrivalFieldsTest extends TestCase
         $this->get("/admin/reservations/{$booking->id}/edit")->assertOk()
             ->assertSee('name="arrival_date" value="2026-10-12"', false)
             ->assertSee('name="arrival_time" value="14:30"', false)
-            ->assertSee('<strong>Awa</strong> — 0101010101', false)
+            ->assertSee('<strong>Awa</strong> — 01 01 01 01 01', false)
             ->assertSee('<input type="hidden" name="guest_id" value="'.$awa->id.'" data-current-client-id >', false)
             ->assertSee('Remplacer par un nouveau client')
             ->assertSee('<div data-new-client  hidden >', false);

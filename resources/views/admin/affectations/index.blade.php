@@ -156,7 +156,7 @@
                     @endphp
                     <tr>
                         <td><strong>N°{{ $stay->room?->number }}</strong><div class="small text-muted">{{ $stay->room?->roomType?->name }}</div><a href="{{ route('admin.affectations.show', $stay) }}" class="file-ref">{{ $stay->reference() }}</a></td>
-                        <td>{{ $stay->guest?->fullName() }}<div class="small text-muted">{{ $stay->guest?->phone }}</div></td>
+                        <td data-search="{{ $stay->guest?->fullName() }} {{ \App\Support\PhoneFormat::searchText($stay->guest?->phone) }}">{{ $stay->guest?->fullName() }}<div class="small text-muted">{{ \App\Support\PhoneFormat::display($stay->guest?->phone) }}</div></td>
                         <td><x-admin::mode-badge :mode="$stay->pricing_mode" /><div class="small text-muted">{{ $stay->billingLabel() }}</div></td>
                         <td class="text-nowrap">{{ $stay->check_in->format('d/m/Y') }}<div class="small text-muted">{{ $stay->check_in->format('H\hi') }}</div></td>
                         <td class="text-nowrap">

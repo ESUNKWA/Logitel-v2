@@ -55,7 +55,7 @@
                     <div class="fd-item">
                         <div class="fd-item__main">
                             <div class="fd-item__title">{{ $guest->fullName() }}</div>
-                            <div>@if ($guest->phone)<a href="tel:{{ $guest->phone }}">{{ $guest->phone }}</a> · @endif{{ $guest->reservations->count() }} séjour(s) / réservation(s)</div>
+                            <div>@if ($guest->phone)<a href="tel:{{ preg_replace('/[^0-9+]/', '', $guest->phone) }}">{{ \App\Support\PhoneFormat::display($guest->phone) }}</a> · @endif{{ $guest->reservations->count() }} séjour(s) / réservation(s)</div>
                             @if ($last)
                                 <div class="small text-muted">Dernier : <x-admin::file-badge :file="$last" /> chambre N°{{ $last->room?->number }}, {{ $last->check_in->format('d/m/Y') }} — {{ $last->isStay() ? $last->status->affectationLabel() : $last->status->reservationLabel() }}</div>
                             @endif

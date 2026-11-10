@@ -95,7 +95,7 @@
             <div class="center">
                 <div class="name">{{ $hotelInfo->name() }}</div>
                 @if ($hotelInfo->fullAddress())<div class="muted">{{ $hotelInfo->fullAddress() }}</div>@endif
-                @if ($hotelInfo->phones())<div class="contact">Tél. {{ implode(' / ', $hotelInfo->phones()) }}</div>@endif
+                @if ($hotelInfo->phones())<div class="contact">Tél. {{ implode(' / ', array_map([\App\Support\PhoneFormat::class, 'display'], $hotelInfo->phones())) }}</div>@endif
                 @if ($hotelInfo->websiteLabel())<div class="contact contact--web">{{ $hotelInfo->websiteLabel() }}</div>@endif
                 @if ($hotelInfo->legalLine())<div class="muted">{{ $hotelInfo->legalLine() }}</div>@endif
             </div>
@@ -110,7 +110,7 @@
             <div class="row"><span>Reçu N°</span><span class="strong">{{ $invoice->number }}</span></div>
             <div class="row"><span>Date</span><span>{{ $at($invoice->payments->last()?->paid_at ?? $reservation->created_at) }}</span></div>
             @if (! $isStay && $reservation->guest?->phone)
-                <div class="row"><span>Tél. client</span><span class="strong">{{ $reservation->guest->phone }}</span></div>
+                <div class="row"><span>Tél. client</span><span class="strong">{{ \App\Support\PhoneFormat::display($reservation->guest->phone) }}</span></div>
             @endif
 
             <hr class="sep">

@@ -47,7 +47,7 @@
                 <div>
                     <div class="booking-request-card__label">Client</div>
                     <strong>{{ $item->fullName() }}</strong>
-                    <div><a href="tel:{{ preg_replace('/[^0-9+]/', '', $item->phone) }}"><i class="far fa-phone-alt"></i> {{ $item->phone }}</a></div>
+                    <div><a href="tel:{{ preg_replace('/[^0-9+]/', '', $item->phone) }}"><i class="far fa-phone-alt"></i> {{ \App\Support\PhoneFormat::display($item->phone) }}</a></div>
                     @if ($item->email)
                         <div class="small"><a href="mailto:{{ $item->email }}">{{ $item->email }}</a></div>
                     @endif

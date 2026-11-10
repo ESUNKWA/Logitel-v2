@@ -27,7 +27,7 @@
             <div class="fd-item">
                 <div class="fd-item__main">
                     <div class="fd-item__title">{{ $booking->guest?->fullName() }} <span class="file-ref ms-1">{{ $booking->reference() }}</span></div>
-                    <div>Chambre N°{{ $booking->room?->number }} <span class="text-muted">· {{ $booking->room?->roomType?->name }}</span>@if ($booking->guest?->phone) · <a href="tel:{{ $booking->guest->phone }}">{{ $booking->guest->phone }}</a>@endif</div>
+                    <div>Chambre N°{{ $booking->room?->number }} <span class="text-muted">· {{ $booking->room?->roomType?->name }}</span>@if ($booking->guest?->phone) · <a href="tel:{{ preg_replace('/[^0-9+]/', '', $booking->guest->phone) }}">{{ \App\Support\PhoneFormat::display($booking->guest->phone) }}</a>@endif</div>
                     <div class="small text-muted">{{ $booking->billingLabel() }} · départ {{ $booking->check_out->format('d/m H\hi') }}</div>
                 </div>
                 <div class="fd-item__when">

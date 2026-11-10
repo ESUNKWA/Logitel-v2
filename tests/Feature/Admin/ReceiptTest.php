@@ -93,7 +93,7 @@ class ReceiptTest extends TestCase
         $this->actingAs($user)->get('/admin/reservations')->assertSee('id="receiptModal"', false);
         $this->actingAs($user)->get("/admin/recus/{$booking->id}")->assertOk()
             // « RÉSERVATION » on top and the client's phone (client request, 2026-11-10); still no name.
-            ->assertSeeInOrder(['<div class="doc-title">RÉSERVATION</div>', 'Reçu N°', '<div class="row"><span>Tél. client</span><span class="strong">0102030405</span></div>', 'N°RC-1'], false)
+            ->assertSeeInOrder(['<div class="doc-title">RÉSERVATION</div>', 'Reçu N°', '<div class="row"><span>Tél. client</span><span class="strong">01 02 03 04 05</span></div>', 'N°RC-1'], false)
             ->assertDontSee('Jean Yao')
             ->assertSee('Arrivée prévue')->assertSee('10/10/2026 14h00')
             ->assertSee('<span>Montant payé</span><span>4 000 FCFA</span>', false)->assertDontSee('Orange Money')

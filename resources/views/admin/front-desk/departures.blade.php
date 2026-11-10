@@ -27,7 +27,7 @@
             <div class="fd-item {{ $overdue ? 'is-overdue' : '' }}">
                 <div class="fd-item__main">
                     <div class="fd-item__title">Chambre N°{{ $stay->room?->number }} <small>{{ $stay->room?->roomType?->name }}</small> <span class="file-ref ms-1">{{ $stay->reference() }}</span></div>
-                    <div>{{ $stay->guest?->fullName() }}@if ($stay->guest?->phone) · <a href="tel:{{ $stay->guest->phone }}">{{ $stay->guest->phone }}</a>@endif</div>
+                    <div>{{ $stay->guest?->fullName() }}@if ($stay->guest?->phone) · <a href="tel:{{ preg_replace('/[^0-9+]/', '', $stay->guest->phone) }}">{{ \App\Support\PhoneFormat::display($stay->guest->phone) }}</a>@endif</div>
                     <div class="small text-muted">{{ $stay->billingLabel() }} · entrée {{ $stay->check_in->format('d/m H\hi') }}</div>
                 </div>
                 <div class="fd-item__when">

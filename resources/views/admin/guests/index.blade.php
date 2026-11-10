@@ -43,7 +43,7 @@
                                 <div class="small text-muted">RCCM / NCC : {{ $guest->tax_id }}</div>
                             @endif
                         </td>
-                        <td>{{ $guest->phone }}</td>
+                        <td data-search="{{ \App\Support\PhoneFormat::searchText($guest->phone) }}">{{ \App\Support\PhoneFormat::display($guest->phone) }}</td>
                         <td>{{ $guest->email ?: '—' }}</td>
                         <td class="text-center">{{ $guest->stays_count }}</td>
                         <td class="text-center">{{ $guest->bookings_count }}</td>

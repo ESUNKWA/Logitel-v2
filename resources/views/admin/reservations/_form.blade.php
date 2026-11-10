@@ -37,7 +37,7 @@
             <label class="form-label d-block">Client</label>
             @if ($currentGuest)
                 <div class="booking-current-client mb-2" data-current-client>
-                    <div><i class="far fa-user me-1"></i> <strong>{{ $currentGuest->fullName() }}</strong>@if ($currentGuest->phone) — {{ $currentGuest->phone }}@endif</div>
+                    <div><i class="far fa-user me-1"></i> <strong>{{ $currentGuest->fullName() }}</strong>@if ($currentGuest->phone) — {{ \App\Support\PhoneFormat::display($currentGuest->phone) }}@endif</div>
                     <input type="hidden" name="guest_id" value="{{ $currentGuest->id }}" data-current-client-id @disabled($replacing)>
                     <div class="form-check mt-1">
                         <input class="form-check-input" type="checkbox" name="replace_client" value="1" id="replace-client" data-replace-client @checked($replacing)>

@@ -58,7 +58,7 @@
                     <dt class="col-5">Chambre</dt>
                     <dd class="col-7">N°{{ $affectation->room?->number }} — {{ $affectation->room?->roomType?->name }}</dd>
                     <dt class="col-5">Client</dt>
-                    <dd class="col-7">{{ $affectation->guest?->fullName() }}@if ($affectation->guest?->phone) — {{ $affectation->guest->phone }}@endif</dd>
+                    <dd class="col-7">{{ $affectation->guest?->fullName() }}@if ($affectation->guest?->phone) — {{ \App\Support\PhoneFormat::display($affectation->guest->phone) }}@endif</dd>
                     <dt class="col-5">Formule</dt>
                     <dd class="col-7"><x-admin::mode-badge :mode="$affectation->pricing_mode" /> : {{ $affectation->billingLabel() }}</dd>
                     @if ($affectation->hasDiscount())
