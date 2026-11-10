@@ -78,11 +78,6 @@
                             @endif
                         </a>
                     @endcan
-                    @can('guests.list')
-                        <a href="{{ route('admin.guests.index') }}" class="{{ request()->routeIs('admin.guests.*') ? 'active' : '' }}">
-                            <i class="far fa-users"></i> Clients
-                        </a>
-                    @endcan
                     @can('invoices.view')
                         <a href="{{ route('admin.invoices.index') }}" class="{{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
                             <i class="far fa-file-invoice-dollar"></i> Factures

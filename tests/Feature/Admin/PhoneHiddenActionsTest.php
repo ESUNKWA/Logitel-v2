@@ -54,6 +54,15 @@ class PhoneHiddenActionsTest extends TestCase
         $this->assertStringContainsString('.phone-hidden { display: none !important; }', $phone);
     }
 
+    public function test_the_board_header_buttons_are_hidden_on_phones(): void
+    {
+        // « Vue tableau », « Chambres occupées », « Nouvelle chambre » and the rate grid: wider screens only (client request, 2026-11-10).
+        $this->actingAs(User::factory()->create())->get('/admin/rooms/board')->assertOk()
+            ->assertSeeInOrder(['<div class="d-flex gap-2 phone-hidden">', 'Vue tableau', 'Chambres occupées', 'Nouvelle chambre', '</div>'], false);
+        RoomType::factory()->create(); // a priced type, so the grid shows
+        $this->get('/admin/rooms/board')->assertSee('<details class="rate-grid admin-card phone-hidden" data-rate-grid>', false);
+    }
+
     public function test_on_phones_the_affectations_list_keeps_three_filters_unless_another_is_in_use(): void
     {
         $this->actingAs(User::factory()->create());

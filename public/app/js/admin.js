@@ -2125,3 +2125,73 @@
         apply();
     });
 })();
+
+// Room board on phones: 5 rooms per page in each state tab (client request, 2026-11-10). Purely
+// visual — every card stays in the page; wider screens show them all. A type heading (« Libres »)
+// hides with its rooms when none of them is on the current page.
+(function () {
+    var panels = document.querySelectorAll('[data-room-panel]');
+    if (!panels.length || !window.matchMedia) {
+        return;
+    }
+    var perPage = 5;
+    var phone = window.matchMedia('(max-width: 860px)');
+    var reopenId = (document.getElementById('assignRoomModal') || {}).dataset;
+    reopenId = reopenId ? reopenId.reopenRoom : '';
+
+    Array.prototype.forEach.call(panels, function (panel) {
+        var cards = Array.prototype.slice.call(panel.querySelectorAll('.room-card'));
+        var pages = Math.ceil(cards.length / perPage);
+        if (pages < 2) {
+            return;
+        }
+        var boards = Array.prototype.slice.call(panel.querySelectorAll('.room-board'));
+        var pager = document.createElement('nav');
+        pager.className = 'room-pager';
+        pager.setAttribute('aria-label', 'Pages des chambres');
+        var prev = document.createElement('button');
+        var next = document.createElement('button');
+        var label = document.createElement('span');
+        prev.type = next.type = 'button';
+        prev.className = next.className = 'btn btn-outline-primary';
+        prev.innerHTML = '<i class="far fa-chevron-left"></i> Précédent';
+        next.innerHTML = 'Suivant <i class="far fa-chevron-right"></i>';
+        label.className = 'room-pager__label';
+        label.setAttribute('aria-live', 'polite');
+        pager.append(prev, label, next);
+        panel.appendChild(pager);
+
+        var current = 0;
+        var show = function (page, scroll) {
+            current = Math.max(0, Math.min(pages - 1, page));
+            var paged = phone.matches;
+            cards.forEach(function (card, i) {
+                card.classList.toggle('is-paged-out', paged && Math.floor(i / perPage) !== current);
+            });
+            boards.forEach(function (board) {
+                var empty = paged && !board.querySelector('.room-card:not(.is-paged-out)');
+                board.classList.toggle('is-paged-out', empty);
+                var heading = board.previousElementSibling;
+                if (heading && heading.classList.contains('room-type-heading')) {
+                    heading.classList.toggle('is-paged-out', empty);
+                }
+            });
+            pager.hidden = !paged;
+            label.textContent = 'Page ' + (current + 1) + ' / ' + pages;
+            prev.disabled = current === 0;
+            next.disabled = current === pages - 1;
+            if (scroll) {
+                panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
+        };
+
+        prev.addEventListener('click', function () { show(current - 1, true); });
+        next.addEventListener('click', function () { show(current + 1, true); });
+        if (phone.addEventListener) {
+            phone.addEventListener('change', function () { show(current, false); });
+        }
+        // Start on the page of a room whose assignment modal reopens.
+        var start = reopenId ? cards.findIndex(function (card) { return card.dataset.roomId === reopenId; }) : -1;
+        show(start > 0 ? Math.floor(start / perPage) : 0, false);
+    });
+})();

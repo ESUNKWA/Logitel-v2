@@ -5,7 +5,8 @@
 @section('content')
     <div class="admin-page-header">
         <h1>Chambres</h1>
-        <div class="d-flex gap-2">
+        {{-- Hidden on phones (client request, 2026-11-10). --}}
+        <div class="d-flex gap-2 phone-hidden">
             <a href="{{ route('admin.rooms.index') }}" class="btn btn-outline-primary">
                 <i class="far fa-table"></i> Vue tableau
             </a>
@@ -30,7 +31,7 @@
     {{-- Rate grid: every formula per room type, to inform guests (folded by default). --}}
     @php($nightOpen = \App\Enums\PricingMode::Nuitee->canStartAt(now()))
     @if ($rateGrid->isNotEmpty())
-        <details class="rate-grid admin-card" data-rate-grid>
+        <details class="rate-grid admin-card phone-hidden" data-rate-grid>
             <summary><i class="fas fa-tags me-2"></i>Grille tarifaire <span class="text-muted fw-normal">— tarifs par type de chambre (FCFA)</span></summary>
             <div class="table-responsive mt-3">
                 <table class="table align-middle mb-0">

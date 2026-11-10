@@ -1,11 +1,11 @@
 {{--
-    "Mode simple" top navigation: brand, the daily screens, the guest-request counter and a
+    "Mode simple" top navigation: brand, the daily screens and a
     "Plus" menu (invoices, figures, configuration). On phones the daily screens move to the
-    bottom tab bar (_simple-tabbar) and only the brand, counter and "Plus" stay here.
+    bottom tab bar (_simple-tabbar) and only the brand and "Plus" stay here. The top « Demandes clients » 📱 counter was removed (client
+    request, 2026-11-10): new requests still pop up as alerts and open from « Plus ».
 --}}
 @php
     $isActive = fn (string ...$patterns) => request()->routeIs(...$patterns) ? 'active' : '';
-    $pendingRequests = auth()->user()->can('affectations.view') ? \App\Models\StayRequest::query()->holding()->count() : null;
     $pendingBookings = auth()->user()->can('reservations.view') ? \App\Models\BookingRequest::query()->pending()->count() : 0;
     $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage']);
     // The manager's « Plus » menu is long: on phones it drops the desk screens (client request,
@@ -32,23 +32,11 @@
             @endif
         </a>
     @endcan
-    @can('guests.list')
-        <a href="{{ route('admin.guests.index') }}" class="{{ $isActive('admin.guests.*') }}"><i class="far fa-users"></i> Clients</a>
-    @endcan
     @can('payments.create')
         {{-- Top link (client request, 2026-11-09); phones reach it through « Plus ». --}}
         <a href="{{ route('admin.revenue.index') }}" class="{{ $isActive('admin.revenue.*') }}"><i class="far fa-cash-register"></i> Recettes</a>
     @endcan
 </nav>
-
-@if ($pendingRequests !== null)
-    {{-- Hidden on phones (client request, 2026-10-17): there, new requests pop up as alerts and the
-         Réception opens them from the « Plus » menu. --}}
-    <a href="{{ route('admin.stay-requests.index') }}" class="simple-nav__icon simple-nav__requests {{ $isActive('admin.stay-requests.*') }}" title="Demandes clients" aria-label="Demandes clients">
-        <i class="far fa-mobile-alt"></i>
-        <span class="badge rounded-pill bg-warning text-dark" data-request-count @if (! $pendingRequests) hidden @endif>{{ $pendingRequests }}</span>
-    </a>
-@endif
 
 <div class="dropdown">
     <button class="simple-nav__icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Plus">

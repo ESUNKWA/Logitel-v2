@@ -2513,7 +2513,6 @@ a.home-tile:focus-visible { outline: 3px solid rgba(var(--tile-rgb), .4); outlin
     .simple-nav__phone-only { display: list-item; }
     .simple-nav__wide-only { display: none; }
     .ui-mode-switch { display: none; } /* phones: simple layout only (User::usesSimpleUi()) */
-    .simple-nav__requests { display: none; }
     /* No export / print buttons on phones (client request, 2026-10-17): receipt reprints, Recettes
        export + print, QR poster print + download, the receipt preview's print button. */
     .phone-hidden { display: none !important; }
@@ -3362,3 +3361,10 @@ a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb)
 .duty-take__card .duty-take__day { text-align: center; }
 .duty-take__defer { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--ek-border); text-align: left; }
 .duty-assign .form-select { min-width: 150px; }
+
+/* Room board on phones: 5 rooms per page (admin.js; client request, 2026-11-10). */
+.room-card.is-paged-out, .room-board.is-paged-out, .room-type-heading.is-paged-out { display: none; }
+.room-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 0 8px; }
+.room-pager[hidden] { display: none; }
+.room-pager__label { font-weight: 600; color: var(--ek-muted, #64748b); white-space: nowrap; }
+@media (min-width: 861px) { .room-pager { display: none; } }

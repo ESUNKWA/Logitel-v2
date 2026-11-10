@@ -16,12 +16,12 @@ class ClientsMenuManagerOnlyTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_manager_sees_the_clients_menu_and_list_in_both_layouts(): void
+    public function test_the_manager_keeps_the_list_but_no_clients_menu_in_either_layout(): void
     {
+        // Removed from the PC menus (top links, sidebar) — client request, 2026-11-10; the list stays by its address.
         foreach ([User::factory()->create(), User::factory()->simpleUi()->create()] as $manager) {
             $this->actingAs($manager)->get('/admin/rooms')->assertOk()
-                ->assertSee('href="'.route('admin.guests.index').'"', false)
-                ->assertSee('Clients');
+                ->assertDontSee('href="'.route('admin.guests.index').'"', false);
             $this->actingAs($manager)->get('/admin/guests')->assertOk();
         }
     }

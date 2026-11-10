@@ -148,8 +148,8 @@ class SimpleModeTest extends TestCase
         $this->assertStringContainsString(route('admin.special-rates.index'), $html);
         $this->assertStringContainsString(route('admin.site.gallery.index'), $html);
 
-        // The top « Demandes clients » icon is marked to be hidden on phones (CSS), still there on wider screens.
-        $this->assertStringContainsString('class="simple-nav__icon simple-nav__requests "', $html);
+        // No top « Demandes clients » icon any more, on any screen (client request, 2026-11-10).
+        $this->assertStringNotContainsString('simple-nav__requests', $html);
 
         // Réception: desk screens everywhere, and no clients list (the Gérant's only).
         $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
