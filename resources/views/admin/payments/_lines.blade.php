@@ -4,6 +4,7 @@
     $due      : amount still due (FCFA) — null when computed client-side (assignment modal)
     $required : whether at least one line must be filled
     $full     : the due amount must be cashed in full (affectation): first line pre-filled with it
+    $prefill  : first line pre-filled with the due amount until edited, without requiring it (réservation deposit)
     $cashReceivedRequired : the "Reçu du client" field is mandatory on cash lines (at the desk)
     $sharedReceived : one « Montant reçu » field under the actions instead of one per line (there is
                       at most one cash line: methods are distinct); admin.js copies it into the
@@ -22,6 +23,7 @@
     data-due="{{ $due ?? '' }}"
     data-required="{{ $required ? '1' : '0' }}"
     data-full="{{ ($full ?? false) ? '1' : '0' }}"
+    data-prefill="{{ ($prefill ?? false) ? '1' : '0' }}"
     data-received-required="{{ ($cashReceivedRequired ?? false) ? '1' : '0' }}"
 >
     <div data-lines>

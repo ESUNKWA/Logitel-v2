@@ -30,6 +30,17 @@ class PaymentFormLayoutTest extends TestCase
             ->assertSeeInOrder(['Règlement', 'data-booking-preview', 'Acompte', 'data-add-line', 'name="discount_value"', 'data-received-shared'], false);
     }
 
+    public function test_the_booking_deposit_is_prefilled_with_the_total_but_stays_optional(): void
+    {
+        Room::factory()->create(['room_type_id' => RoomType::factory()->create()->id]);
+
+        // admin.js fills the cash line with the total until the cashier edits it (client request, 2026-11-09).
+        $this->actingAs(User::factory()->create())->get(route('admin.reservations.create'))->assertOk()
+            ->assertSee('data-required="0"', false)
+            ->assertSee('data-full="0"', false)
+            ->assertSee('data-prefill="1"', false);
+    }
+
     public function test_the_cash_received_posted_through_the_hidden_field_is_recorded(): void
     {
         $this->travelTo('2026-10-11 10:00:00');

@@ -19,7 +19,8 @@ use Illuminate\Validation\Validator;
 
 /**
  * A réservation: a stay booked ahead, in any of the four pricing modes (arrival + duration;
- * a nuitée arrival is a date — the night starts at 22:00). Arrivals now or in the past are
+ * the form sends the arrival as arrival_date + arrival_time, rebuilt into check_in; a legacy
+ * date-only nuitée check_in starts at 22:00). Arrivals now or in the past are
  * affectations, made from the room board, not réservations. An optional deposit ("acompte")
  * can be taken when booking. The legacy date-based shape (check_in → check_out, as nuitées)
  * is still accepted: the duration is then inferred. The rate is the room type's (not editable),
@@ -38,6 +39,22 @@ class ReservationRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->normalizePaymentLines();
+
+        // The form sends the arrival as a date + a time (two mandatory fields, client request
+        // 2026-11-10): check_in is rebuilt from them, whatever the hidden field says.
+        if ($this->sendsArrivalFields()) {
+            $date = is_string($d = $this->input('arrival_date')) ? trim($d) : '';
+            $time = is_string($t = $this->input('arrival_time')) ? trim($t) : '';
+            $this->merge(['check_in' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) && preg_match('/^\d{2}:\d{2}$/', $time) ? $date.' '.$time : null]);
+        }
+    }
+
+    /**
+     * The form's shape (arrival_date + arrival_time); without them, the legacy check_in.
+     */
+    private function sendsArrivalFields(): bool
+    {
+        return $this->has('arrival_date') || $this->has('arrival_time');
     }
 
     /**
@@ -58,7 +75,9 @@ class ReservationRequest extends FormRequest
             'new_tax_id' => ['nullable', 'string', 'max:100'],
             'new_phone' => ['required_without:guest_id', 'nullable', 'string', 'max:50'],
             'pricing_mode' => ['nullable', new Enum(PricingMode::class)],
-            'check_in' => ['required', 'date'],
+            'arrival_date' => $this->sendsArrivalFields() ? ['required', 'date_format:Y-m-d'] : ['exclude'],
+            'arrival_time' => $this->sendsArrivalFields() ? ['required', 'date_format:H:i'] : ['exclude'],
+            'check_in' => $this->sendsArrivalFields() ? ['nullable', 'date'] : ['required', 'date'],
             'duration' => ['required_without:check_out', 'nullable', 'integer', 'min:1', 'max:365'],
             'check_out' => ['required_without:duration', 'nullable', 'date', 'after:check_in'],
             'adults' => ['required', 'integer', 'min:1'],
@@ -80,7 +99,7 @@ class ReservationRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
-                if ($validator->errors()->hasAny(['check_in', 'duration', 'check_out', 'room_id', 'pricing_mode'])) {
+                if ($validator->errors()->hasAny(['arrival_date', 'arrival_time', 'check_in', 'duration', 'check_out', 'room_id', 'pricing_mode']) || blank($this->input('check_in'))) {
                     return;
                 }
 
@@ -173,7 +192,7 @@ class ReservationRequest extends FormRequest
         [$start, , $duration] = $this->period();
 
         $data = collect($this->validated())->except([
-            'check_out', 'payments', 'booking_request_id', 'discount_type', 'discount_value', 'discount_reason',
+            'check_out', 'payments', 'booking_request_id', 'discount_type', 'discount_value', 'discount_reason', 'arrival_date', 'arrival_time',
             'new_client_type', 'new_first_name', 'new_last_name', 'new_company_name', 'new_tax_id', 'new_phone',
         ])->all();
 
@@ -206,7 +225,9 @@ class ReservationRequest extends FormRequest
     {
         return [
             ...$this->paymentLineMessages(),
-            'new_phone.required_without' => 'Choisissez un client existant ou saisissez au moins le téléphone du nouveau client.',
+            'new_phone.required_without' => 'Saisissez au moins le téléphone du client.',
+            'arrival_date.required' => "La date d'arrivée est obligatoire.",
+            'arrival_time.required' => "L'heure d'arrivée est obligatoire.",
         ];
     }
 
@@ -221,6 +242,8 @@ class ReservationRequest extends FormRequest
             'duration' => 'durée',
             'unit_rate' => 'tarif',
             'check_in' => 'arrivée',
+            'arrival_date' => "date d'arrivée",
+            'arrival_time' => "heure d'arrivée",
             'new_phone' => 'téléphone du client',
             'new_company_name' => 'raison sociale',
             'new_tax_id' => 'n° RCCM / NCC',

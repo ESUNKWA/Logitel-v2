@@ -169,7 +169,9 @@ class AffectationReservationSplitTest extends TestCase
 
         $user = User::factory()->create();
         $this->actingAs($user)->get('/admin/affectations')->assertSee('N°AR-1')->assertSee('sur réservation');
-        $this->actingAs($user)->get('/admin/reservations')->assertSee('Honorée (client arrivé)');
+        // Assigned: out of the default « À affecter » tab, in « Déjà affectées ».
+        $this->actingAs($user)->get('/admin/reservations')->assertDontSee('Honorée (client arrivé)');
+        $this->actingAs($user)->get('/admin/reservations?onglet=affectees')->assertSee('Honorée (client arrivé)');
         $this->actingAs($user)->get("/admin/reservations/{$booking->id}/edit")->assertRedirect(route('admin.affectations.show', $booking));
     }
 

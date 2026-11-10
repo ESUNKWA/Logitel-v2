@@ -106,10 +106,12 @@ class ClientTypeTest extends TestCase
         $this->assertSame('ONG Espoir', $booking->fresh()->guest->fullName());
     }
 
-    public function test_the_reservation_form_offers_the_client_picker(): void
+    public function test_the_reservation_form_offers_the_new_client_fields_only(): void
     {
+        // No search of existing clients any more (client request, 2026-11-10).
         $this->actingAs($this->staff)->get('/admin/reservations/create')->assertOk()
-            ->assertSee('data-guest-search', false)->assertSee('name="new_phone"', false)
+            ->assertDontSee('data-guest-search', false)->assertDontSee('Client existant')->assertDontSee('name="guest_id"', false)
+            ->assertSee('name="new_phone"', false)
             ->assertSee('name="new_client_type"', false)->assertSee('Entreprise')->assertDontSee('<select class="form-select" id="guest_id"', false);
     }
 

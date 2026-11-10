@@ -3,12 +3,16 @@
     <input type="hidden" name="booking_request_id" value="{{ $bookingRequest->id }}">
 @endif
 
-{{-- A réservation in any of the four modes (public/js/admin.js, [data-booking-form]): the arrival
-     is a date for a nuitée (night of …, from 22:00) and a date + time otherwise. --}}
+{{-- A réservation in any of the four modes (public/js/admin.js, [data-booking-form]). The arrival
+     is typed as a date + a time (client request, 2026-11-10: two separate, mandatory fields, empty
+     on a new booking); admin.js keeps the hidden check_in (= date + time) for the room list and
+     the preview, and ReservationRequest rebuilds it from the two fields. --}}
 @php
     $mode = \App\Enums\PricingMode::tryFrom((string) old('pricing_mode', $reservation->pricing_mode?->value)) ?? \App\Enums\PricingMode::Nuitee;
     $isNight = $mode === \App\Enums\PricingMode::Nuitee;
-    $checkIn = old('check_in', $reservation->check_in ? ($isNight ? $reservation->check_in->toDateString() : $reservation->check_in->format('Y-m-d\TH:i')) : ($isNight ? today()->addDay()->toDateString() : now()->addDay()->setTime(10, 0)->format('Y-m-d\TH:i')));
+    $arrivalDate = (string) old('arrival_date', $reservation->check_in?->toDateString() ?? '');
+    $arrivalTime = (string) old('arrival_time', $reservation->check_in?->format('H:i') ?? '');
+    $checkIn = $arrivalDate !== '' && $arrivalTime !== '' ? $arrivalDate.'T'.$arrivalTime : '';
 @endphp
 
 <div
@@ -19,50 +23,57 @@
     data-day-hours="{{ config('hotel.day_hours') }}"
     data-stay-hours="{{ config('hotel.stay_min_hours') }}"
 >
-    {{-- Client: search an existing one, or enter a new one (only the phone is required),
-         natural person or company. --}}
+    {{-- Client: no search of existing clients any more (client request, 2026-11-10) — a new client
+         is entered here (only the phone is required), natural person or company. A booking that
+         already has one (editing, or an online request matched by phone) keeps it unless « Remplacer
+         par un nouveau client » is ticked (admin.js then stops sending guest_id). --}}
     @php
-        $currentGuest = $reservation->guest;
-        $guestLabel = old('guest_label', $currentGuest ? $currentGuest->fullName().($currentGuest->phone ? ' — '.$currentGuest->phone : '') : '');
+        $currentGuest = filled(old('guest_id')) ? \App\Models\Guest::find(old('guest_id')) : $reservation->guest;
+        $replacing = $currentGuest && old('replace_client');
         $newType = old('new_client_type', \App\Models\Guest::TYPE_PERSON);
     @endphp
     <div class="col-12">
         <div class="booking-client" data-client-form>
-            <label class="form-label" for="booking-guest-search">Client existant</label>
-            <div class="position-relative">
-                <input type="text" class="form-control" id="booking-guest-search" name="guest_label" autocomplete="off"
-                    placeholder="Rechercher par nom, entreprise ou téléphone…" value="{{ $guestLabel }}"
-                    data-guest-search data-guest-search-url="{{ route('admin.guests.search') }}" data-guest-id-target="#booking-guest-id">
-                <div class="list-group position-absolute w-100" style="z-index: 1080;" data-guest-search-results></div>
-                <input type="hidden" id="booking-guest-id" name="guest_id" value="{{ old('guest_id', $reservation->guest_id) }}">
-            </div>
+            <label class="form-label d-block">Client</label>
+            @if ($currentGuest)
+                <div class="booking-current-client mb-2" data-current-client>
+                    <div><i class="far fa-user me-1"></i> <strong>{{ $currentGuest->fullName() }}</strong>@if ($currentGuest->phone) — {{ $currentGuest->phone }}@endif</div>
+                    <input type="hidden" name="guest_id" value="{{ $currentGuest->id }}" data-current-client-id @disabled($replacing)>
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" name="replace_client" value="1" id="replace-client" data-replace-client @checked($replacing)>
+                        <label class="form-check-label" for="replace-client">Remplacer par un nouveau client</label>
+                    </div>
+                </div>
+            @endif
 
-            <p class="text-muted small mt-3 mb-2">Ou nouveau client <span class="fw-semibold">(seul le téléphone est obligatoire)</span> :</p>
-            <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Type de client">
-                <input type="radio" class="btn-check" name="new_client_type" id="new-type-physique" value="physique" data-client-type @checked($newType !== 'morale')>
-                <label class="btn btn-outline-primary" for="new-type-physique"><i class="far fa-user me-1"></i> Particulier</label>
-                <input type="radio" class="btn-check" name="new_client_type" id="new-type-morale" value="morale" data-client-type @checked($newType === 'morale')>
-                <label class="btn btn-outline-primary" for="new-type-morale"><i class="far fa-building me-1"></i> Entreprise</label>
+            <div data-new-client @if ($currentGuest && ! $replacing) hidden @endif>
+                <p class="text-muted small mb-2">Nouveau client <span class="fw-semibold">(seul le téléphone est obligatoire)</span> :</p>
+                <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Type de client">
+                    <input type="radio" class="btn-check" name="new_client_type" id="new-type-physique" value="physique" data-client-type @checked($newType !== 'morale')>
+                    <label class="btn btn-outline-primary" for="new-type-physique"><i class="far fa-user me-1"></i> Particulier</label>
+                    <input type="radio" class="btn-check" name="new_client_type" id="new-type-morale" value="morale" data-client-type @checked($newType === 'morale')>
+                    <label class="btn btn-outline-primary" for="new-type-morale"><i class="far fa-building me-1"></i> Entreprise</label>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input type="tel" class="form-control @error('new_phone') is-invalid @enderror" name="new_phone" value="{{ old('new_phone', $prefillClient['phone'] ?? '') }}" placeholder="Téléphone *" aria-label="Téléphone du nouveau client" data-new-client-phone @if (! $currentGuest || $replacing) required @endif>
+                        @error('new_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="col-md-4" data-client-only="morale">
+                        <input type="text" class="form-control" name="new_company_name" value="{{ old('new_company_name') }}" placeholder="Raison sociale" aria-label="Raison sociale">
+                    </div>
+                    <div class="col-md-4" data-client-only="morale">
+                        <input type="text" class="form-control" name="new_tax_id" value="{{ old('new_tax_id') }}" placeholder="N° RCCM / NCC" aria-label="N° RCCM / NCC">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="new_first_name" value="{{ old('new_first_name', $prefillClient['first_name'] ?? '') }}" placeholder="Prénom" aria-label="Prénom">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="new_last_name" value="{{ old('new_last_name', $prefillClient['last_name'] ?? '') }}" placeholder="Nom" aria-label="Nom">
+                    </div>
+                </div>
+                <div class="form-text" data-client-only="morale">Pour une entreprise, prénom et nom sont ceux de la personne à contacter.</div>
             </div>
-            <div class="row g-2">
-                <div class="col-md-4">
-                    <input type="tel" class="form-control @error('new_phone') is-invalid @enderror" name="new_phone" value="{{ old('new_phone', $prefillClient['phone'] ?? '') }}" placeholder="Téléphone *" aria-label="Téléphone du nouveau client">
-                    @error('new_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4" data-client-only="morale">
-                    <input type="text" class="form-control" name="new_company_name" value="{{ old('new_company_name') }}" placeholder="Raison sociale" aria-label="Raison sociale">
-                </div>
-                <div class="col-md-4" data-client-only="morale">
-                    <input type="text" class="form-control" name="new_tax_id" value="{{ old('new_tax_id') }}" placeholder="N° RCCM / NCC" aria-label="N° RCCM / NCC">
-                </div>
-                <div class="col-md-4">
-                    <input type="text" class="form-control" name="new_first_name" value="{{ old('new_first_name', $prefillClient['first_name'] ?? '') }}" placeholder="Prénom" aria-label="Prénom">
-                </div>
-                <div class="col-md-4">
-                    <input type="text" class="form-control" name="new_last_name" value="{{ old('new_last_name', $prefillClient['last_name'] ?? '') }}" placeholder="Nom" aria-label="Nom">
-                </div>
-            </div>
-            <div class="form-text" data-client-only="morale">Pour une entreprise, prénom et nom sont ceux de la personne à contacter.</div>
         </div>
     </div>
     <div class="col-md-6">
@@ -105,15 +116,23 @@
         <div class="perks-hint mt-2" data-perks-hint hidden></div>
     </div>
 
-    <div class="col-md-4">
-        <label class="form-label" for="check_in" data-check-in-label>{{ $isNight ? 'Nuit du' : 'Arrivée le' }}</label>
-        <input type="{{ $isNight ? 'date' : 'datetime-local' }}" class="form-control" id="check_in" name="check_in" value="{{ $checkIn }}" data-check-in-input data-availability-trigger required>
+    <div class="col-6 col-md-3">
+        <label class="form-label" for="arrival_date">Date d'arrivée</label>
+        <input type="date" class="form-control @error('arrival_date') is-invalid @enderror" id="arrival_date" name="arrival_date" value="{{ $arrivalDate }}" data-arrival-date data-availability-trigger required>
+        @error('arrival_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
-    <div class="col-md-4">
+    <div class="col-6 col-md-3">
+        <label class="form-label" for="arrival_time">Heure d'arrivée</label>
+        <input type="time" class="form-control @error('arrival_time') is-invalid @enderror" id="arrival_time" name="arrival_time" value="{{ $arrivalTime }}" data-arrival-time data-availability-trigger required>
+        @error('arrival_time')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <div class="form-text" data-night-hint @unless ($isNight) hidden @endunless>Nuitée : de {{ str_replace(':', 'h', config('hotel.night.from')) }} à {{ str_replace(':', 'h', config('hotel.night.until')) }} le lendemain.</div>
+        <input type="hidden" name="check_in" value="{{ $checkIn }}" data-check-in-input>
+    </div>
+    <div class="col-md-3">
         <label class="form-label" for="duration" data-booking-duration-label>Nombre de {{ $mode->unitPlural() }}</label>
         <input type="number" min="1" max="365" class="form-control" id="duration" name="duration" value="{{ old('duration', $reservation->duration ?? 1) }}" data-booking-duration data-availability-trigger required>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label" for="room_id">Chambre</label>
         <select
             class="form-select"
@@ -164,7 +183,7 @@
             @if ($withDeposit)
                 {{-- Deposit lines, then — right under « Ajouter un mode » — the discount and the cash received. --}}
                 <div class="assign-pay__label">Acompte <span class="text-muted fw-normal">— facultatif : tout, une partie ou rien pour l'instant</span></div>
-                @include('admin.payments._lines', ['due' => null, 'required' => false, 'cashReceivedRequired' => true,
+                @include('admin.payments._lines', ['due' => null, 'required' => false, 'prefill' => true, 'cashReceivedRequired' => true,
                     'sharedReceived' => true, 'idPrefix' => 'booking', 'afterActions' => $discountFields])
             @else
                 {!! $discountFields !!}

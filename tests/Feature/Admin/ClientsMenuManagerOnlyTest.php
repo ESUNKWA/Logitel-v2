@@ -42,7 +42,7 @@ class ClientsMenuManagerOnlyTest extends TestCase
 
         $this->actingAs($reception)->getJson('/admin/guests/search?q=Kouassi')->assertOk()->assertJsonPath('0.id', $guest->id);
         $this->actingAs($reception)->get('/admin/recherche?q=Kouassi')->assertOk()->assertSee(route('admin.guests.edit', $guest), false);
-        $this->actingAs($reception)->get('/admin/reservations/create')->assertOk()->assertSee('data-guest-search', false);
+        $this->actingAs($reception)->get('/admin/reservations/create')->assertOk()->assertSee('name="new_phone"', false);
 
         // Editing stays on the client's file (no 403 on a list it can't open), Annuler → the search.
         $this->actingAs($reception)->get(route('admin.guests.edit', $guest))->assertOk()

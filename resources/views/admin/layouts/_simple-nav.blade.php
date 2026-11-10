@@ -35,6 +35,10 @@
     @can('guests.list')
         <a href="{{ route('admin.guests.index') }}" class="{{ $isActive('admin.guests.*') }}"><i class="far fa-users"></i> Clients</a>
     @endcan
+    @can('payments.create')
+        {{-- Top link (client request, 2026-11-09); phones reach it through « Plus ». --}}
+        <a href="{{ route('admin.revenue.index') }}" class="{{ $isActive('admin.revenue.*') }}"><i class="far fa-cash-register"></i> Recettes</a>
+    @endcan
 </nav>
 
 @if ($pendingRequests !== null)
@@ -58,6 +62,8 @@
             @endcan
         @endif
         @can('affectations.view')
+            {{-- Phones only: the tab bar shows « Recettes » instead (client request, 2026-11-09). --}}
+            <li class="simple-nav__phone-only"><a class="dropdown-item" href="{{ route('admin.affectations.index') }}"><i class="far fa-key"></i> Affectations</a></li>
             <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.stay-requests.index') }}"><i class="far fa-mobile-alt"></i> Demandes clients</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.stay-requests.qr') }}"><i class="far fa-qrcode"></i> QR code client</a></li>
         @endcan
@@ -69,7 +75,8 @@
             <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.front-desk.collect') }}"><i class="far fa-coins"></i> À encaisser</a></li>
         @endcan
         @can('payments.create')
-            <li><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
+            {{-- Not on phones: the tab bar has it (client request, 2026-11-09). --}}
+            <li class="simple-nav__wide-only"><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
         @endcan
         @can('duty.manage')
             <li><a class="dropdown-item" href="{{ route('admin.duty.index') }}"><i class="far fa-user-clock"></i> Prises de service</a></li>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PricingMode;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\User;
@@ -52,7 +53,7 @@ class RevenueController extends Controller
                 ->orderBy('paid_at')->orderBy('id')->paginate(100)->withQueryString(),
             'summary' => $this->summary($all),
             'byKind' => [Payment::KIND_STAY => $this->summary($stay), Payment::KIND_BOOKING => $this->summary($booking)],
-            'staff' => $this->isManager($request) ? FinanceStats::cashByUser($filters['start'], $filters['end'], $filters['kind']) : [],
+            'staff' => $this->isManager($request) ? FinanceStats::cashByUser($filters['start'], $filters['end'], $filters['kind'], $filters['formula']) : [],
             'staffOptions' => $this->isManager($request) ? User::query()->whereIn('id', Payment::query()->whereNotNull('attributed_to')->distinct()->pluck('attributed_to'))->orderBy('name')->get(['id', 'name']) : collect(),
         ]);
     }
@@ -75,13 +76,13 @@ class RevenueController extends Controller
         return response()->streamDownload(function () use ($payments, $cell) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Date', 'Heure', 'Type', 'Dossier', 'Chambre', 'Client', 'Facture', 'Mode', 'Montant', 'Reçu', 'Rendu', 'Encaissé par', 'Affecté par', 'Saisi par'], ';');
+            fputcsv($out, ['Date', 'Heure', 'Type', 'Dossier', 'Formule', 'Chambre', 'Client', 'Facture', 'Mode', 'Montant', 'Reçu', 'Rendu', 'Encaissé par', 'Affecté par', 'Saisi par'], ';');
             $payments->chunk(500, function ($chunk) use ($out, $cell) {
                 foreach ($chunk as $p) {
                     $file = $p->invoice?->reservation;
                     fputcsv($out, array_map($cell, [
                         $p->paid_at->format('d/m/Y'), $p->paid_at->format('H:i'), $p->isBookingPayment() ? 'Réservation' : 'Affectation',
-                        $file?->reference() ?? '', $file?->room?->number ?? '',
+                        $file?->reference() ?? '', $file?->pricing_mode?->getLabel() ?? '', $file?->room?->number ?? '',
                         $file?->guest?->fullName() ?? '', $p->invoice?->number ?? '', $p->method->getLabel(), (int) round((float) $p->amount),
                         $p->amount_received !== null ? (int) round((float) $p->amount_received) : '', $p->change_given !== null ? (int) round((float) $p->change_given) : '',
                         $p->attributedTo?->name ?? 'Non attribué', $file?->assignedBy()?->name ?? '', $p->creator?->name ?? '',
@@ -125,16 +126,18 @@ class RevenueController extends Controller
             ->when($staff === 'aucun', fn (Builder $q) => $q->whereNull('attributed_to'))
             ->when(ctype_digit($staff), fn (Builder $q) => $q->where('attributed_to', (int) $staff))
             ->when($filters['method'], fn (Builder $q, PaymentMethod $m) => $q->where('method', $m))
-            ->ofKind($filters['kind']);
+            ->ofKind($filters['kind'])
+            ->ofPricingMode($filters['formula']);
     }
 
     /**
      * Sanitised filters: a shortcut, one day (?jour=) or a custom range (?du=&au=), in business
      * days (future dates are brought back to today, a range is capped at 366 days); staff
-     * (?par=ID|aucun, manager only), payment method (?mode=) and kind (?dossier=affectation|
-     * reservation, option B). Unknown values are ignored.
+     * (?par=ID|aucun, manager only), payment method (?mode=), kind (?dossier=affectation|
+     * reservation, option B) and the file's formula (?formule=heure|journee|nuitee|sejour).
+     * Unknown values are ignored.
      *
-     * @return array{period: string, from: Carbon, to: Carbon, start: Carbon, end: Carbon, staff: string, method: PaymentMethod|null, kind: string|null, single: bool}
+     * @return array{period: string, from: Carbon, to: Carbon, start: Carbon, end: Carbon, staff: string, method: PaymentMethod|null, kind: string|null, formula: PricingMode|null, single: bool}
      */
     private function filters(Request $request): array
     {
@@ -184,6 +187,8 @@ class RevenueController extends Controller
             'method' => PaymentMethod::tryFrom($text('mode')),
             // ?dossier=affectation|reservation (whitelist; anything else = both).
             'kind' => in_array($text('dossier'), [Payment::KIND_STAY, Payment::KIND_BOOKING], true) ? $text('dossier') : null,
+            // ?formule= : the file's pricing mode (« mode d'affectation »), not the payment method (?mode=).
+            'formula' => PricingMode::tryFrom($text('formule')),
             'single' => $from->isSameDay($to),
             'isToday' => $to->isSameDay($today),
         ];

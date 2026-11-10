@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Models\Guest;
 use App\Models\Reservation;
@@ -57,6 +58,7 @@ class ReceiptTest extends TestCase
 
         $this->actingAs($user)->get("/admin/recus/{$stay->id}")->assertOk()
             ->assertDontSee('REÇU')->assertDontSee('class="title"', false) // no "REÇU / Affectation" heading (client request)
+            ->assertDontSee('RÉSERVATION</div>', false)->assertDontSee('Tél. client') // an affectation's ticket: no title, no client phone
             ->assertSee($stay->invoice->number)
             ->assertDontSee('Awa Koné')->assertDontSee('0711223344')->assertDontSee('<span>Client</span>', false)->assertDontSee('Tél.') // no client part (client request, 2026-10-19)
             ->assertSee('N°RC-1')
@@ -81,7 +83,7 @@ class ReceiptTest extends TestCase
     {
         $user = User::factory()->create();
         $this->actingAs($user)->post('/admin/reservations', [
-            'guest_id' => Guest::factory()->create(['first_name' => 'Jean', 'last_name' => 'Yao'])->id,
+            'guest_id' => Guest::factory()->create(['first_name' => 'Jean', 'last_name' => 'Yao', 'phone' => '0102030405'])->id,
             'room_id' => $this->room->id, 'pricing_mode' => 'heure', 'check_in' => '2026-10-10T14:00', 'duration' => 2,
             'unit_rate' => 5000, 'adults' => 1, 'children' => 0, 'status' => 'confirmee',
             'payments' => [['method' => 'orange_money', 'amount' => 4000]],
@@ -90,6 +92,9 @@ class ReceiptTest extends TestCase
 
         $this->actingAs($user)->get('/admin/reservations')->assertSee('id="receiptModal"', false);
         $this->actingAs($user)->get("/admin/recus/{$booking->id}")->assertOk()
+            // « RÉSERVATION » on top and the client's phone (client request, 2026-11-10); still no name.
+            ->assertSeeInOrder(['<div class="doc-title">RÉSERVATION</div>', 'Reçu N°', '<div class="row"><span>Tél. client</span><span class="strong">0102030405</span></div>', 'N°RC-1'], false)
+            ->assertDontSee('Jean Yao')
             ->assertSee('Arrivée prévue')->assertSee('10/10/2026 14h00')
             ->assertSee('<span>Montant payé</span><span>4 000 FCFA</span>', false)->assertDontSee('Orange Money')
             // Mobile money: received = the amount, no change.
@@ -97,6 +102,24 @@ class ReceiptTest extends TestCase
             ->assertSee('<span>Monnaie rendue</span><span>0 FCFA</span>', false)
             ->assertSee("À PAYER À L'ARRIVÉE")->assertSee('6 000 FCFA')
             ->assertDontSee('SOLDÉ');
+    }
+
+    public function test_the_reservation_title_and_phone_only_while_it_is_a_booking(): void
+    {
+        $user = User::factory()->create();
+        $booking = Reservation::factory()->create(['guest_id' => Guest::factory()->create(['phone' => '0505050505'])->id, 'room_id' => $this->room->id,
+            'pricing_mode' => 'heure', 'unit_rate' => 5000, 'duration' => 2, 'check_in' => '2026-10-10 14:00', 'status' => 'confirmee', 'origin' => Reservation::ORIGIN_RESERVATION]);
+        $noPhone = Reservation::factory()->create(['guest_id' => Guest::factory()->create(['phone' => ''])->id, 'room_id' => Room::factory()->create(['room_type_id' => $this->room->room_type_id])->id,
+            'pricing_mode' => 'heure', 'unit_rate' => 5000, 'duration' => 2, 'check_in' => '2026-10-11 14:00', 'status' => 'confirmee', 'origin' => Reservation::ORIGIN_RESERVATION]);
+
+        $this->actingAs($user)->get("/admin/recus/{$noPhone->id}")->assertOk()
+            ->assertSee('<div class="doc-title">RÉSERVATION</div>', false)->assertDontSee('Tél. client');
+
+        // Once the guest has arrived the file is an affectation: its ticket has neither.
+        $this->travelTo('2026-10-10 14:05:00');
+        $booking->update(['status' => ReservationStatus::Enregistree]);
+        $this->get("/admin/recus/{$booking->id}")->assertOk()
+            ->assertDontSee('RÉSERVATION</div>', false)->assertDontSee('Tél. client')->assertDontSee('0505050505');
     }
 
     public function test_the_receipt_can_be_reprinted_from_the_files(): void

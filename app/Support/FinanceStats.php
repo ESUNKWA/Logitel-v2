@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -19,12 +20,13 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class FinanceStats
 {
-    private static function payments(CarbonInterface $from, CarbonInterface $to, ?int $byUser, ?string $kind = null): Builder
+    private static function payments(CarbonInterface $from, CarbonInterface $to, ?int $byUser, ?string $kind = null, ?PricingMode $mode = null): Builder
     {
         return Payment::query()->where('paid_at', '>=', $from)->where('paid_at', '<', $to)
             // Attributed sales (« prise de service »: the receptionist of the day), not who typed them.
             ->when($byUser !== null, fn (Builder $q) => $q->where('attributed_to', $byUser))
-            ->ofKind($kind);
+            ->ofKind($kind)
+            ->ofPricingMode($mode);
     }
 
     /**
@@ -71,20 +73,20 @@ class FinanceStats
      *
      * @return list<array{user_id: int|null, name: string, total: float, count: int, booking: float, byMethod: array<string, float>}>
      */
-    public static function cashByUser(CarbonInterface $from, CarbonInterface $to, ?string $kind = null): array
+    public static function cashByUser(CarbonInterface $from, CarbonInterface $to, ?string $kind = null, ?PricingMode $mode = null): array
     {
-        $amounts = self::payments($from, $to, null, $kind)
+        $amounts = self::payments($from, $to, null, $kind, $mode)
             ->selectRaw('attributed_to, method, sum(amount) as amount')
             ->groupBy('attributed_to', 'method')
             ->toBase()->get();
         // One "encaissement" may be several lines (mixed payment): count settlements, not rows.
-        $counts = self::payments($from, $to, null, $kind)
+        $counts = self::payments($from, $to, null, $kind, $mode)
             ->selectRaw('attributed_to, count(distinct coalesce(cast(settlement as varchar(40)), cast(id as varchar(40)))) as n')
             ->groupBy('attributed_to')
             ->toBase()->pluck('n', 'attributed_to');
         $names = User::query()->whereIn('id', $amounts->pluck('attributed_to')->filter()->unique())->pluck('name', 'id');
         // Each one's réservation payments (option B), for the « dont réservations » column.
-        $bookings = self::payments($from, $to, null, $kind)->bookingPayments()
+        $bookings = self::payments($from, $to, null, $kind, $mode)->bookingPayments()
             ->selectRaw('attributed_to, sum(amount) as amount')
             ->groupBy('attributed_to')
             ->toBase()->pluck('amount', 'attributed_to');

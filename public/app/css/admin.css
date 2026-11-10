@@ -2637,7 +2637,7 @@ a.home-tile:focus-visible { outline: 3px solid rgba(var(--tile-rgb), .4); outlin
 
 /* Mode simple: keep the topbar on one line on mid-size screens */
 .admin-topbar .btn { white-space: nowrap; }
-@media (max-width: 1366px) {
+@media (max-width: 1700px) {
     .ui-simple .ui-mode-switch__label, .ui-simple .admin-topbar__logout-label { display: none; }
 }
 
@@ -3013,6 +3013,10 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
     /* Hide a secondary column on phones */
     .table-cards .cell-hide-sm { display: none; }
 }
+/* The other way round: a column shown only on phones (e.g. « Téléphone » on the réservations, the
+   Formule / « Détails » columns of Recettes) — PC tables and printouts keep their own columns. */
+@media (min-width: 768px) { .cell-show-sm { display: none; } }
+@media print { .cell-show-sm { display: none !important; } }
 
 /* Room board, « Libres » tab: one block per room type */
 .room-type-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--ek-border); font-family: var(--ek-font); font-size: 1rem; }
@@ -3240,16 +3244,45 @@ form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total 
 
 /* Recettes: affectations vs réservations (option B) — two clickable totals that filter the page. */
 .revenue-kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.revenue-kind { display: block; color: inherit; text-decoration: none; border-left: 4px solid var(--kind-color); transition: box-shadow .15s ease, background .15s ease; }
-.revenue-kind:hover { color: inherit; box-shadow: var(--ek-shadow-lg); }
+.revenue-kind { position: relative; border-left: 4px solid var(--kind-color); transition: box-shadow .15s ease, background .15s ease; }
+.revenue-kind:hover { box-shadow: var(--ek-shadow-lg); }
 .revenue-kind.is-active { background: rgba(var(--kind-rgb), .07); box-shadow: 0 0 0 2px rgba(var(--kind-rgb), .55); }
 .revenue-kind--affectation { --kind-color: var(--ek-stay); --kind-rgb: var(--ek-stay-rgb); }
 .revenue-kind--reservation { --kind-color: var(--ek-booking); --kind-rgb: var(--ek-booking-rgb); }
+.revenue-kind__link { display: flex; flex-direction: column; color: inherit; text-decoration: none; }
+.revenue-kind__link:hover { color: inherit; }
 .revenue-kind__label { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--kind-color); }
+.revenue-kind__total { font-size: 1.5rem; font-weight: 700; white-space: nowrap; }
+.revenue-kind__total small { font-size: 1rem; font-weight: 400; color: var(--ek-muted); }
+.revenue-kind__count { font-size: .875rem; color: var(--ek-muted); white-space: nowrap; }
+.revenue-kind__count-short { display: none; }
 .revenue-kind__methods { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .8rem; color: var(--ek-text); }
+.revenue-kind__info { display: none; }
+/* Phones only (client request, 2026-11-09): a compact band — label, total, count on one line —
+   and ⓘ opens the per-method detail in a popup. */
+@media (max-width: 767.98px) {
+    .revenue-kinds { grid-template-columns: 1fr; gap: 10px; }
+    .revenue-kind { display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 14px; }
+    .revenue-kind__link { flex: 1; min-width: 0; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+    .revenue-kind__label { display: inline-flex; }
+    .revenue-kind__total { font-size: 1.15rem; }
+    .revenue-kind__total small { font-size: .75rem; font-weight: 600; }
+    .revenue-kind__count { font-size: .8rem; }
+    .revenue-kind__count-long, .revenue-kind__methods { display: none; }
+    .revenue-kind__count-short { display: inline; }
+    .revenue-kind__info { flex-shrink: 0; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--kind-color); font-size: 1.05rem; }
+    .revenue-kind__info:hover, .revenue-kind__info:focus-visible { background: rgba(var(--kind-rgb), .12); }
+}
 .revenue-line-kind { color: var(--ek-booking); font-weight: 600; }
+.revenue-line-btn { white-space: nowrap; }
+.revenue-detail__list { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; }
+.revenue-detail__list dt { font-weight: 600; color: var(--ek-muted); }
+.revenue-detail__list dd { margin: 0; }
 @media (max-width: 575.98px) { .revenue-kinds { grid-template-columns: 1fr; } }
-@media print { .revenue-kind { border: 1px solid #000; box-shadow: none !important; } }
+@media print {
+    .revenue-kind { border: 1px solid #000; box-shadow: none !important; }
+    .revenue-kind__info { display: none !important; }
+}
 
 /* « dont réservations » (option B) on the home figures, dashboard tiles and tills. */
 .home-stat__booking, .dash-tile__booking { display: block; margin-top: 4px; font-size: .8rem; color: var(--ek-booking); }
@@ -3292,6 +3325,14 @@ a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb)
 @media (max-width: 1700px) {
     .ui-simple .simple-nav__brand-name,
     .ui-simple .admin-topbar__username { display: none; }
+}
+/* Tighter daily links so the sixth link (« Recettes », 2026-11-09) is never cut on computers. */
+@media (min-width: 860px) {
+    .ui-simple .simple-nav { gap: 2px; }
+    .ui-simple .simple-nav a { padding: 9px 10px; gap: 6px; }
+}
+@media (min-width: 860px) and (max-width: 1365.98px) {
+    .ui-simple .simple-nav a > i { display: none; } /* small laptops: the words alone */
 }
 /* Safety net: if it still doesn't fit, only the daily links shrink and scroll sideways inside the
    bar — never the page (the « Plus » dropdown sits outside them, so it is never clipped). */

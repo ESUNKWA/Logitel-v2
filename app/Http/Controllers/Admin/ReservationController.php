@@ -12,6 +12,7 @@ use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Support\BusinessDay;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -28,31 +29,61 @@ use Illuminate\View\View;
 class ReservationController extends Controller
 {
     /**
-     * Filter value => statuses.
+     * List tabs (client request, 2026-11-10: bookings still to assign apart from those already
+     * assigned, to make arrivals easier): key => label, statuses, order of the arrival date.
+     */
+    public const TABS = [
+        'a-affecter' => ['label' => 'À affecter', 'statuses' => [ReservationStatus::EnAttente, ReservationStatus::Confirmee], 'order' => 'asc'],
+        'affectees' => ['label' => 'Déjà affectées', 'statuses' => [ReservationStatus::Enregistree, ReservationStatus::Terminee], 'order' => 'desc'],
+        'annulees' => ['label' => 'Annulées', 'statuses' => [ReservationStatus::Annulee], 'order' => 'desc'],
+    ];
+
+    /**
+     * Status filter inside the « À affecter » tab.
      */
     private const FILTERS = [
         'en_attente' => [ReservationStatus::EnAttente],
         'confirmee' => [ReservationStatus::Confirmee],
-        'honoree' => [ReservationStatus::Enregistree, ReservationStatus::Terminee],
-        'annulee' => [ReservationStatus::Annulee],
     ];
 
     public function index(Request $request): View
     {
-        $filter = $request->string('status')->toString();
+        $text = fn (string $key): string => is_string($value = $request->query($key)) ? $value : '';
+        $status = $text('status');
+        // Older links (?status=honoree|annulee) open the matching tab.
+        $tab = $text('onglet');
+        if (! array_key_exists($tab, self::TABS)) {
+            $tab = match ($status) {
+                'honoree' => 'affectees',
+                'annulee' => 'annulees',
+                default => 'a-affecter',
+            };
+        }
+        $status = $tab === 'a-affecter' && array_key_exists($status, self::FILTERS) ? $status : '';
+        $room = $text('room');
 
-        $reservations = Reservation::query()
+        $base = Reservation::query()
             ->bookings()
+            ->when($room !== '', fn ($query) => $query->whereHas('room', fn ($q) => $q->where('number', $room)));
+
+        $reservations = (clone $base)
             ->with(['guest', 'room', 'invoice', 'creator'])
-            ->when(self::FILTERS[$filter] ?? null, fn ($query, $statuses) => $query->whereIn('status', $statuses))
-            ->when($request->string('room')->toString(), fn ($query, $number) => $query->whereHas('room', fn ($q) => $q->where('number', $number)))
-            ->orderByDesc('check_in')
+            ->whereIn('status', self::FILTERS[$status] ?? self::TABS[$tab]['statuses'])
+            // To assign: the nearest arrival first; the others: the latest first.
+            ->orderBy('check_in', self::TABS[$tab]['order'])
+            ->orderBy('id', self::TABS[$tab]['order'])
             ->paginate(15)
             ->withQueryString();
 
         return view('admin.reservations.index', [
             'reservations' => $reservations,
-            'filters' => ['en_attente' => 'En attente', 'confirmee' => 'Confirmée', 'honoree' => 'Honorée (client arrivé)', 'annulee' => 'Annulée'],
+            'tab' => $tab,
+            'tabs' => collect(self::TABS)->map(fn (array $t) => $t['label']),
+            'counts' => collect(self::TABS)->map(fn (array $t) => (clone $base)->whereIn('status', $t['statuses'])->count()),
+            'status' => $status,
+            'room' => $room,
+            'filters' => ['en_attente' => 'En attente', 'confirmee' => 'Confirmée'],
+            'todayEnd' => BusinessDay::current()[1],
         ]);
     }
 

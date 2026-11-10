@@ -88,6 +88,19 @@ class SimpleModeTest extends TestCase
         $this->actingAs($user)->get('/admin/tableau-de-bord')->assertOk()->assertViewIs('admin.dashboard');
     }
 
+    public function test_the_phone_tab_bar_shows_recettes_instead_of_affectations(): void
+    {
+        $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
+        $tabbar = substr($html, strpos($html, '<nav class="simple-tabbar"'));
+        $tabbar = substr($tabbar, 0, strpos($tabbar, '</nav>'));
+
+        $this->assertStringContainsString('<a href="'.route('admin.revenue.index').'" class=""><i class="far fa-cash-register"></i><span>Recettes</span></a>', $tabbar);
+        $this->assertStringNotContainsString(route('admin.affectations.index'), $tabbar);
+        $this->assertStringNotContainsString('Affect.', $tabbar);
+        // Affectations stay reachable on phones from « Plus ».
+        $this->assertStringContainsString('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.affectations.index').'"><i class="far fa-key"></i> Affectations</a></li>', $html);
+    }
+
     public function test_the_phone_tab_bar_has_no_clients_entry_but_the_plus_menu_does(): void
     {
         $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
@@ -127,9 +140,9 @@ class SimpleModeTest extends TestCase
         $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.stay-requests.index', 'fa-mobile-alt', 'Demandes clients'), $html);
         $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.invoices.index', 'fa-file-invoice-dollar', 'Factures'), $html);
         $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.front-desk.collect', 'fa-coins', 'À encaisser'), $html);
-        $this->assertStringNotContainsString('simple-nav__phone-only', $html); // no phone « Clients » entry
+        $this->assertStringNotContainsString('<li class="simple-nav__phone-only"><a class="dropdown-item" href="'.route('admin.guests.index').'"', $html); // no phone « Clients » entry
         $this->assertStringContainsString('<li><a class="dropdown-item" href="'.route('admin.stay-requests.qr').'"><i class="far fa-qrcode"></i> QR code client</a></li>', $html);
-        $this->assertStringContainsString('<li><a class="dropdown-item" href="'.route('admin.revenue.index').'"><i class="far fa-cash-register"></i> Recettes</a></li>', $html);
+        $this->assertStringContainsString($item('simple-nav__wide-only', 'admin.revenue.index', 'fa-cash-register', 'Recettes'), $html); // phones: in the tab bar
         $this->assertStringContainsString('<li><a class="dropdown-item" href="'.route('admin.stats').'"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>', $html);
         $this->assertStringContainsString(route('admin.booking-requests.index'), $html);
         $this->assertStringContainsString(route('admin.special-rates.index'), $html);
@@ -140,7 +153,9 @@ class SimpleModeTest extends TestCase
 
         // Réception: desk screens everywhere, and no clients list (the Gérant's only).
         $html = $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()->getContent();
-        $this->assertStringNotContainsString('simple-nav__wide-only', $html);
+        foreach (['admin.stay-requests.index', 'admin.invoices.index', 'admin.front-desk.collect'] as $route) {
+            $this->assertStringNotContainsString('<li class="simple-nav__wide-only"><a class="dropdown-item" href="'.route($route).'"', $html);
+        }
         $this->assertStringNotContainsString(route('admin.guests.index'), $html);
     }
 

@@ -61,8 +61,15 @@ class RevenueTest extends TestCase
         $stay = $this->stay($this->awa, $this->koffi, 20000, '2026-10-14 08:00', 'especes', 'Moussa');
 
         $this->actingAs($this->manager)->get(route('admin.revenue.index'))->assertOk()
-            ->assertSeeInOrder(['Encaissé par', 'Affecté par'])
+            // PC: every column, as before.
+            ->assertSeeInOrder(['<th>Date</th>', 'Dossier', 'Client', 'Mode', 'Montant', 'Reçu / rendu', 'Encaissé par', 'Affecté par'], false)
             ->assertSeeInOrder([$stay->reference(), 'Moussa Test', 'Espèces', '20 000 F', 'Koffi Réception', 'Awa Réception'])
+            // Phones: those columns are dropped (cell-hide-sm), Formule + « Détails » (cell-show-sm) open the popup's detail.
+            ->assertSee('<th class="cell-hide-sm">Client</th>', false)
+            ->assertSee('<th class="cell-show-sm">Formule</th>', false)
+            ->assertSeeInOrder(['data-line-detail', 'Détails', 'Dossier', $stay->reference(), 'Chambre', 'Paiement', 'Espèces',
+                'Client', 'Moussa Test', 'Reçu / rendu', 'Encaissé par', 'Koffi Réception', 'Affecté par', 'Awa Réception'])
+            ->assertSee('id="revenueLineModal"', false)
             ->assertSeeInOrder(['Total encaissé', '20 000']);
     }
 
@@ -153,11 +160,103 @@ class RevenueTest extends TestCase
         $this->assertStringContainsString(';Espèces;20000;20000;0;"Koffi Réception";"Awa Réception"', $csv);
     }
 
+    public function test_filter_by_the_file_s_formula(): void
+    {
+        $hourly = $this->stay($this->awa, $this->koffi, 20000, '2026-10-14 08:00', 'especes', 'Moussa');
+        $this->actingAs($this->awa);
+        $room = Room::factory()->create(['room_type_id' => $this->type->id, 'status' => RoomStatus::Disponible]);
+        $night = Reservation::factory()->create(['room_id' => $room->id, 'pricing_mode' => 'nuitee', 'unit_rate' => 75000,
+            'check_in' => '2026-10-16 22:00', 'duration' => 1, 'status' => 'confirmee', 'origin' => Reservation::ORIGIN_RESERVATION]);
+        $night->invoice->settle([['method' => 'wave', 'amount' => 25000]], now(), 'Acompte');
+
+        $this->actingAs($this->manager)->get(route('admin.revenue.index'))->assertOk()
+            ->assertSee('<label class="form-label small mb-1" for="formule">Formule</label>', false)
+            ->assertSee($hourly->reference())->assertSee($night->reference())
+            ->assertSeeInOrder(['Total encaissé', '45 000']);
+
+        // Nuitée only: lines, total, per-staff table, kind cards and links keep the filter.
+        $page = $this->get(route('admin.revenue.index', ['formule' => 'nuitee']))->assertOk()
+            ->assertSee('<option value="nuitee" selected>Nuitée</option>', false)
+            ->assertSee($night->reference())->assertDontSee($hourly->reference())
+            ->assertSeeInOrder(['Total encaissé — nuitée', '25 000'])
+            ->assertSee('Awa Réception');
+        // Per-staff table (the « Réceptionniste » list still names everyone): Koffi's hourly sale is out.
+        $this->assertMatchesRegularExpression('#par='.$this->awa->id.'\\b#', $page->getContent());
+        $this->assertDoesNotMatchRegularExpression('#par='.$this->koffi->id.'\\b#', $page->getContent());
+        $this->assertStringContainsString('formule=nuitee', $page->getContent());
+
+        $this->get(route('admin.revenue.index', ['formule' => 'heure']))->assertOk()
+            ->assertSee($hourly->reference())->assertDontSee($night->reference())->assertSeeInOrder(["Total encaissé — à l'heure", '20 000']);
+
+        // Export: same filter, plus the formula column.
+        $csv = $this->get(route('admin.revenue.export', ['formule' => 'nuitee']))->assertOk()->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBFDate;Heure;Type;Dossier;Formule;Chambre", $csv);
+        $this->assertStringContainsString(';Nuitée;', $csv);
+        $this->assertStringNotContainsString($hourly->reference(), $csv);
+
+        // Unknown or forged values are ignored (everything shown).
+        foreach (['formule=xyz', 'formule[]=nuitee'] as $query) {
+            $this->get(route('admin.revenue.index').'?'.$query)->assertOk()->assertSee($hourly->reference())->assertSee($night->reference());
+        }
+    }
+
+    public function test_kind_bands_are_compact_with_the_detail_in_a_popup(): void
+    {
+        $this->stay($this->awa, $this->koffi, 20000, '2026-10-14 08:00', 'especes');
+
+        $this->actingAs($this->manager)->get(route('admin.revenue.index'))->assertOk()
+            // Card (PC: full count + per method) / band (phones: short count) + the ⓘ button opening the popup.
+            ->assertSeeInOrder(['revenue-kind--affectation', 'Affectations', '20 000', '1 encaissement(s)', '1 enc.', 'Espèces 20 000', 'data-bs-target="#revenueKind-affectation"'], false)
+            // Popup: total, settlements, per method, link filtering the page.
+            ->assertSeeInOrder(['id="revenueKind-affectation"', '20 000', '1 encaissement(s)', 'Espèces', '20 000 F', 'Orange Money', 'Wave',
+                'dossier=affectation', 'Voir ces encaissements'], false)
+            ->assertSee('id="revenueKind-reservation"', false);
+    }
+
+    public function test_the_manager_s_staff_and_kind_filters_are_hidden_on_phones_unless_in_use(): void
+    {
+        $this->actingAs($this->manager);
+        $this->get(route('admin.revenue.index'))->assertOk()
+            ->assertSee('<div class="col-12 col-md-auto phone-hidden">
+                    <label class="form-label small mb-1" for="par">Réceptionniste</label>', false)
+            ->assertSee('<div class="col-12 col-md-auto phone-hidden">
+                <label class="form-label small mb-1" for="dossier">Dossier</label>', false)
+            ->assertSee('<label class="form-label small mb-1" for="mode">Mode de paiement</label>', false);
+
+        // In use: shown, so a filtered list always says why.
+        $this->get(route('admin.revenue.index', ['par' => $this->awa->id, 'dossier' => 'reservation']))->assertOk()
+            ->assertDontSee('phone-hidden">
+                    <label class="form-label small mb-1" for="par">', false)
+            ->assertDontSee('phone-hidden">
+                <label class="form-label small mb-1" for="dossier">', false);
+
+        // Receptionists keep « Dossier » on phones.
+        $this->actingAs($this->awa)->get(route('admin.revenue.index'))->assertOk()
+            ->assertSee('<label class="form-label small mb-1" for="dossier">Dossier</label>', false)
+            ->assertDontSee('phone-hidden">
+                <label class="form-label small mb-1" for="dossier">', false);
+    }
+
     public function test_access_and_menu(): void
     {
         $this->actingAs(User::factory()->withoutRole()->create())->get(route('admin.revenue.index'))->assertForbidden();
         $this->get(route('admin.revenue.export'))->assertForbidden();
 
         $this->actingAs($this->awa)->get(route('admin.dashboard'))->assertOk()->assertSee(route('admin.revenue.index'), false);
+    }
+
+    public function test_the_simple_layout_has_a_recettes_top_link(): void
+    {
+        $topLink = '<a href="'.route('admin.revenue.index').'" class=""><i class="far fa-cash-register"></i> Recettes</a>';
+
+        foreach ([User::factory()->simpleUi()->create(), $this->awa->forceFill(['ui_mode' => 'simple'])] as $user) {
+            $this->actingAs($user)->get(route('admin.dashboard'))->assertOk()->assertSee($topLink, false);
+        }
+
+        // Full layout: one sidebar entry, no duplicate.
+        $html = $this->actingAs(User::factory()->create())->get(route('admin.dashboard'))->assertOk()->getContent();
+        $this->assertSame(1, substr_count($html, '<i class="far fa-cash-register"></i> Recettes'));
+
+        $this->actingAs(User::factory()->withoutRole()->create()->forceFill(['ui_mode' => 'simple']))->get(route('admin.dashboard'))->assertOk()->assertDontSee($topLink, false);
     }
 }

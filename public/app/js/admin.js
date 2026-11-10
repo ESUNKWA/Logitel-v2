@@ -975,7 +975,9 @@
         var required = box.dataset.required === '1';
         var mustPayFull = box.dataset.full === '1';
         var receivedRequired = box.dataset.receivedRequired === '1';
-        var amountTouched = false; // in "full" mode the first line follows the due amount until edited
+        // Réservation deposit: same pre-fill, but the cashier may lower it or empty it (no deposit).
+        var prefillDue = mustPayFull || box.dataset.prefill === '1';
+        var amountTouched = false; // in "full"/"prefill" mode the first line follows the due amount until edited
         var methodCount = template.content.querySelectorAll('option').length;
         // One shared « Montant reçu » field (at the desk) instead of one per line: methods are
         // distinct, so it belongs to the single cash line, whose hidden "received" it fills.
@@ -1138,6 +1140,10 @@
         };
 
         lines().forEach(bindLine);
+        // After a failed submission the typed deposit comes back: keep it, don't overwrite it.
+        if (!mustPayFull && prefillDue && (lines().length > 1 || lines()[0].querySelector('[data-field="amount"]').value !== '')) {
+            amountTouched = true;
+        }
         if (sharedInput) {
             // After a failed submission, the cash line's posted value comes back in its hidden input.
             var restoredCash = cashLine();
@@ -1161,8 +1167,8 @@
         box.paymentLines = {
             setDue: function (value) {
                 box.dataset.due = String(value);
-                // Affectation: pre-fill the single line with the total until the cashier edits it.
-                if (mustPayFull && !amountTouched && lines().length === 1) {
+                // Affectation (and réservation deposit): pre-fill the single line with the total until the cashier edits it.
+                if (prefillDue && !amountTouched && lines().length === 1) {
                     setMoney(lines()[0].querySelector('[data-field="amount"]'), value > 0 ? value : '');
                 }
                 update();
@@ -1340,8 +1346,9 @@
     }
 
     // --- Réservation form: four pricing modes ([data-booking-form], reservations/_form) ---
-    // The arrival is a date for a nuitée (night of …) and a date + time otherwise; the preview
-    // mirrors PricingMode (the server recomputes everything) and drives the deposit's "due".
+    // The arrival is typed as a date + a time (two mandatory fields, empty on a new booking); the
+    // hidden check_in (date + time) feeds the room list and the preview, which mirrors
+    // PricingMode (the server recomputes everything) and drives the deposit's "due".
     var bookingForm = document.querySelector('[data-booking-form]');
 
     if (bookingForm) {
@@ -1352,6 +1359,21 @@
             stayHours: parseInt(bookingForm.dataset.stayHours, 10),
         };
         var bookingCheckIn = bookingForm.querySelector('[data-check-in-input]');
+        var arrivalDate = bookingForm.querySelector('[data-arrival-date]');
+        var arrivalTime = bookingForm.querySelector('[data-arrival-time]');
+        var syncCheckIn = function () {
+            bookingCheckIn.value = arrivalDate.value && arrivalTime.value ? arrivalDate.value + 'T' + arrivalTime.value : '';
+        };
+        // Capture phase: check_in is up to date before the room list ([data-availability-trigger])
+        // and the preview read it.
+        ['input', 'change'].forEach(function (type) {
+            bookingForm.addEventListener(type, function (event) {
+                if (event.target === arrivalDate || event.target === arrivalTime) {
+                    syncCheckIn();
+                }
+            }, true);
+        });
+        syncCheckIn();
         var bookingDuration = bookingForm.querySelector('[data-booking-duration]');
         var bookingRate = bookingForm.querySelector('[data-booking-rate]');
         var bookingPreview = bookingForm.querySelector('[data-booking-preview]');
@@ -1372,15 +1394,10 @@
         };
 
         var switchArrivalInput = function (mode) {
-            var value = bookingCheckIn.value;
-            if (mode === 'nuitee' && bookingCheckIn.type !== 'date') {
-                bookingCheckIn.type = 'date';
-                bookingCheckIn.value = value.slice(0, 10);
-            } else if (mode !== 'nuitee' && bookingCheckIn.type !== 'datetime-local') {
-                bookingCheckIn.type = 'datetime-local';
-                bookingCheckIn.value = value ? value.slice(0, 10) + 'T10:00' : '';
+            var nightHint = bookingForm.querySelector('[data-night-hint]');
+            if (nightHint) {
+                nightHint.hidden = mode !== 'nuitee';
             }
-            bookingForm.querySelector('[data-check-in-label]').textContent = mode === 'nuitee' ? 'Nuit du' : 'Arrivée le';
         };
 
         var refreshBooking = function () {
@@ -1396,12 +1413,12 @@
             var total = subtotal - discount;
 
             if (bookingCheckIn.value) {
-                var start = new Date(mode === 'nuitee' ? bookingCheckIn.value + 'T' + bookingConfig.nightFrom : bookingCheckIn.value);
+                var start = new Date(bookingCheckIn.value);
                 renderTotal(bookingPreview, 'Arrivée : ' + formatDateTime(start)
                     + ' — Départ prévu : ' + formatDateTime(departureFor(mode, start, duration, bookingConfig))
                     + ' — ', subtotal, discount, tooHigh);
             } else {
-                bookingPreview.textContent = "Renseignez l'arrivée.";
+                bookingPreview.textContent = "Renseignez la date et l'heure d'arrivée.";
             }
 
             if (bookingDeposit && bookingDeposit.paymentLines) {
@@ -1466,7 +1483,7 @@
         }
         bindDiscount(bookingForm, refreshBooking);
 
-        [bookingCheckIn, bookingDuration, bookingRate].forEach(function (input) {
+        [arrivalDate, arrivalTime, bookingDuration, bookingRate].forEach(function (input) {
             input.addEventListener('input', refreshBooking);
             input.addEventListener('change', refreshBooking);
         });
@@ -2062,5 +2079,49 @@
         if (!document.hidden) {
             refresh();
         }
+    });
+})();
+
+// « Recettes » lines: « Détails » copies the line's hidden, server-rendered detail into the shared
+// #revenueLineModal (delegated: DataTables may redraw the rows). Nodes are cloned, never re-parsed.
+(function () {
+    var modal = document.getElementById('revenueLineModal');
+    if (!modal || !window.bootstrap) {
+        return;
+    }
+    var title = modal.querySelector('[data-line-title]');
+    var body = modal.querySelector('[data-line-body]');
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-line-detail]');
+        if (!button) {
+            return;
+        }
+        var detail = button.parentElement.querySelector('.revenue-detail');
+        if (!detail) {
+            return;
+        }
+        title.textContent = button.dataset.title || 'Encaissement';
+        body.replaceChildren.apply(body, Array.prototype.map.call(detail.childNodes, function (node) { return node.cloneNode(true); }));
+        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+})();
+
+// Réservation form: « Remplacer par un nouveau client » (reservations/_form, [data-replace-client])
+// — the booking's current client is no longer sent (guest_id disabled) and the new-client fields
+// show, the phone becoming mandatory.
+(function () {
+    document.querySelectorAll('[data-replace-client]').forEach(function (box) {
+        var form = box.closest('[data-client-form]');
+        var guestId = form.querySelector('[data-current-client-id]');
+        var fields = form.querySelector('[data-new-client]');
+        var phone = form.querySelector('[data-new-client-phone]');
+        var apply = function () {
+            guestId.disabled = box.checked;
+            fields.hidden = !box.checked;
+            phone.required = box.checked;
+        };
+        box.addEventListener('change', apply);
+        apply();
     });
 })();

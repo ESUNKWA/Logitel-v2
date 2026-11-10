@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Models\Concerns\RecordsCreator;
 use Illuminate\Database\Eloquent\Builder;
@@ -75,6 +76,14 @@ class Payment extends Model
             self::KIND_STAY => $query->stayPayments(),
             default => $query,
         };
+    }
+
+    /**
+     * Payments of files billed in one formula (heure / journée / nuitée / séjour); null = all.
+     */
+    public function scopeOfPricingMode(Builder $query, ?PricingMode $mode): Builder
+    {
+        return $mode === null ? $query : $query->whereHas('invoice.reservation', fn (Builder $file) => $file->where('pricing_mode', $mode->value));
     }
 
     private static function constrainToBooking(Builder $file): void
