@@ -269,7 +269,8 @@
         <script src="{{ asset('vendor/datatables/dataTables.bootstrap5.min.js') }}"></script>
         <script src="{{ asset('vendor/datatables/dataTables.rowGroup.min.js') }}"></script>
         {{-- Section "sweetalert-confirm" loads SweetAlert for the data-confirm forms only (messages keep their boxes). --}}
-        @if (($useSweetAlert ?? false) || \Illuminate\Support\Facades\View::hasSection('sweetalert-confirm'))
+        {{-- …and so does the end-of-stay alarm, whose « Valider la sortie » confirms through it. --}}
+        @if (($useSweetAlert ?? false) || \Illuminate\Support\Facades\View::hasSection('sweetalert-confirm') || auth()->user()?->receivesCheckoutAlarm())
             <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @endif
         <script src="{{ \App\Support\Asset::url('app/js/admin.js') }}"></script>

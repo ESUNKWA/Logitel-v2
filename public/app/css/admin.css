@@ -3065,6 +3065,7 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
 /* End-of-stay alarm: actions, paused card, sound unlock */
 .checkout-alert__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .checkout-alert__actions .btn { flex: 1 1 auto; }
+.checkout-alert__actions form { display: flex; flex: 1 1 auto; margin: 0; } /* « Valider la sortie » (a form since 2026-11-10) */
 .checkout-alert__snoozed { font-size: .82rem; font-weight: 700; color: var(--ek-muted); margin: -4px 0 10px; }
 .checkout-alert.is-snoozed { animation: none; border-left-color: #9aa6b8; border-color: var(--ek-border); }
 .checkout-alert.is-snoozed .checkout-alert__title { color: var(--ek-ink); }
@@ -3376,3 +3377,7 @@ a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb)
 .vendor-footer a:hover { color: var(--ek-primary); }
 .vendor-footer--auth { margin-top: 20px; }
 @media print { .vendor-footer { display: none !important; } }
+
+/* SweetAlert above the end-of-stay alarm cards (1090) and the other floating layers (≤ 1100):
+   « Valider la sortie » confirms from a card (2026-11-10). */
+body .swal2-container { z-index: 1110; }

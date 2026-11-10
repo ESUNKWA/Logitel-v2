@@ -21,7 +21,7 @@ class CheckoutAlertController extends Controller
 
         $alerts = Reservation::query()
             ->overdueCheckouts()
-            ->with(['room.roomType', 'guest'])
+            ->with(['room.roomType', 'guest', 'invoice.payments'])
             ->orderBy('check_out')
             ->get()
             ->map(fn (Reservation $stay) => [
@@ -37,6 +37,10 @@ class CheckoutAlertController extends Controller
                 'overdue_minutes' => (int) $stay->check_out->diffInMinutes(now()),
                 'snoozed_until' => $stay->alarmSnoozedUntil()?->format('H\\hi'),
                 'checkout_url' => $canHandle ? route('admin.affectations.show', $stay).'#check-out' : null,
+                // « Valider la sortie » posts here straight from the card, after a confirmation pop-up
+                // (client request, 2026-11-10); the check-out sends the user back to the page they're on.
+                'checkout_action' => $canHandle ? route('admin.affectations.check-out', $stay) : null,
+                'remaining' => ($due = (float) ($stay->invoice?->remainingAmount() ?? 0)) > 0 ? number_format($due, 0, ',', ' ') : null,
                 'extend_url' => $canHandle ? route('admin.affectations.show', $stay).'#prolonger' : null,
                 'snooze_url' => route('admin.alerts.checkouts.snooze', $stay),
             ]);

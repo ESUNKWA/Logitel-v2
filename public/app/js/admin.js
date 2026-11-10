@@ -732,10 +732,40 @@
                 }
 
                 var actions = el('div', 'checkout-alert__actions');
-                if (alert.checkout_url) {
-                    var checkout = el('a', 'btn btn-sm btn-danger', 'Valider la sortie');
-                    checkout.href = alert.checkout_url;
-                    actions.appendChild(checkout);
+                if (alert.checkout_action) {
+                    // A real form, confirmed through the same pop-up as the affectation page's « Sortie »
+                    // (data-confirm, see the SweetAlert block); the check-out comes back to this page.
+                    var checkoutForm = el('form');
+                    checkoutForm.method = 'POST';
+                    checkoutForm.action = alert.checkout_action;
+                    checkoutForm.dataset.confirmTitle = 'Sortie — chambre N°' + alert.room;
+                    checkoutForm.dataset.confirm = (alert.remaining ? 'Attention : il reste ' + alert.remaining + ' FCFA à encaisser. ' : '')
+                        + 'Confirmer le départ du client ? La chambre redeviendra libre.';
+                    checkoutForm.dataset.confirmButton = 'Oui, valider la sortie';
+                    if (alert.remaining) {
+                        checkoutForm.setAttribute('data-confirm-danger', '');
+                    }
+                    var token = el('input');
+                    token.type = 'hidden';
+                    token.name = '_token';
+                    token.value = alertsBox.dataset.csrf;
+                    var checkout = el('button', 'btn btn-sm btn-danger', 'Valider la sortie');
+                    checkout.type = 'submit';
+                    checkoutForm.append(token, checkout);
+                    if (window.ekBindConfirm) {
+                        window.ekBindConfirm(checkoutForm);
+                    } else {
+                        checkoutForm.addEventListener('submit', function (event) {
+                            if (!window.confirm(checkoutForm.dataset.confirm)) {
+                                event.preventDefault();
+                            }
+                        });
+                    }
+                    actions.appendChild(checkoutForm);
+                } else if (alert.checkout_url) {
+                    var checkoutLink = el('a', 'btn btn-sm btn-danger', 'Valider la sortie');
+                    checkoutLink.href = alert.checkout_url;
+                    actions.appendChild(checkoutLink);
                 }
                 if (alert.extend_url) {
                     var extend = el('a', 'btn btn-sm btn-outline-primary', 'Prolonger');
@@ -1981,7 +2011,7 @@
         }
     }
 
-    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+    var bindConfirm = function (form) {
         form.addEventListener('submit', function (event) {
             if (form.dataset.confirmed === '1') {
                 return;
@@ -1989,7 +2019,12 @@
             event.preventDefault();
             var proceed = function () {
                 form.dataset.confirmed = '1';
-                if (typeof form.requestSubmit === 'function') {
+                if (!form.isConnected) {
+                    // Re-rendered meanwhile (e.g. the alarm cards refresh every 15 s): send it anyway.
+                    form.hidden = true;
+                    document.body.appendChild(form);
+                    form.submit();
+                } else if (typeof form.requestSubmit === 'function') {
                     form.requestSubmit(event.submitter || undefined);
                 } else {
                     form.submit();
@@ -2017,7 +2052,11 @@
                 }
             });
         });
-    });
+    };
+
+    document.querySelectorAll('form[data-confirm]').forEach(bindConfirm);
+    // For forms built later in the page (the end-of-stay alarm cards).
+    window.ekBindConfirm = bindConfirm;
 })();
 
 

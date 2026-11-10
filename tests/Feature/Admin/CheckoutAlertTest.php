@@ -133,6 +133,37 @@ class CheckoutAlertTest extends TestCase
             ->getJson('/admin/alertes/departs')
             ->assertOk()
             ->assertJsonPath('0.checkout_url', null)
+            ->assertJsonPath('0.checkout_action', null)
             ->assertJsonPath('0.extend_url', null);
+    }
+
+    public function test_valider_la_sortie_confirms_on_the_spot_and_stays_on_the_current_page(): void
+    {
+        // Client request, 2026-11-10: the card's button opens the confirmation pop-up right away
+        // (a real form posting to the check-out), then the user stays where they were.
+        $this->travelTo('2026-10-07 14:10:00');
+        $stay = $this->stay('2026-10-07 12:00', 2); // 10 000 FCFA, nothing paid
+        $reception = User::factory()->reception()->create();
+
+        $this->actingAs($reception)->getJson('/admin/alertes/departs')
+            ->assertJsonPath('0.checkout_action', route('admin.affectations.check-out', $stay))
+            ->assertJsonPath('0.remaining', '10 000');
+
+        $stay->invoice->settle([['method' => 'wave', 'amount' => 10000]], now());
+        $this->getJson('/admin/alertes/departs')->assertJsonPath('0.remaining', null);
+
+        // SweetAlert is loaded wherever the alarm can ring (any page), the confirmation helper exposed.
+        $this->get(route('admin.rooms.board'))->assertOk()
+            ->assertSee('id="checkoutAlerts"', false)->assertSee('sweetalert2.all.min.js', false);
+        $js = file_get_contents(public_path('app/js/admin.js'));
+        $this->assertStringContainsString('window.ekBindConfirm = bindConfirm;', $js);
+        $this->assertStringContainsString("checkoutForm.dataset.confirmButton = 'Oui, valider la sortie';", $js);
+
+        // Confirmed from the board: back on the board, room free, alarm silent.
+        $this->from(route('admin.rooms.board'))->post(route('admin.affectations.check-out', $stay))
+            ->assertRedirect(route('admin.rooms.board'))
+            ->assertSessionHas('status', "Séjour terminé (sortie validée) : la chambre N°{$stay->room->number} est de nouveau libre.");
+        $this->assertSame(ReservationStatus::Terminee, $stay->fresh()->status);
+        $this->getJson('/admin/alertes/departs')->assertJsonCount(0);
     }
 }
