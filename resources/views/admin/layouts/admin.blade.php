@@ -66,6 +66,11 @@
                             <i class="far fa-key"></i> Affectations
                         </a>
                     @endcan
+                    @can('affectations.delete')
+                        <a href="{{ route('admin.trash.index') }}" class="{{ request()->routeIs('admin.trash.*') ? 'active' : '' }}">
+                            <i class="far fa-trash-alt"></i> Corbeille
+                        </a>
+                    @endcan
                     @can('reservations.view')
                         <a href="{{ route('admin.reservations.index') }}" class="{{ request()->routeIs('admin.reservations.*') ? 'active' : '' }}">
                             <i class="far fa-calendar-alt"></i> Réservations

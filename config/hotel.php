@@ -38,6 +38,10 @@ return [
     // this many minutes; past that, if the réception hasn't handled it, the room is released.
     'request_expiry_minutes' => 30,
 
+    // Affectations deleted by the Gérant wait this many days in the « Corbeille » (restorable),
+    // then are erased for good automatically (the deletion log stays).
+    'trash_retention_days' => 30,
+
     // Hotel identity & contact details (Configuration → Hôtel), read through App\Support\HotelInfo:
     // receipt, back-office, guest request pages and the public site's contact blocks.
     // Empty values are simply not displayed.

@@ -3381,3 +3381,36 @@ a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb)
 /* SweetAlert above the end-of-stay alarm cards (1090) and the other floating layers (≤ 1100):
    « Valider la sortie » confirms from a card (2026-11-10). */
 body .swal2-container { z-index: 1110; }
+
+/* ── Ticked lines → one action (affectations « Supprimer la sélection », corbeille) ── */
+.bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem 1rem;
+    margin-bottom: .75rem;
+    padding: .6rem .9rem;
+    background: var(--ek-surface, #fff);
+    border: 1px solid var(--ek-border);
+    border-radius: 12px;
+}
+.bulk-bar.is-active { border-color: rgba(var(--bs-danger-rgb), .45); box-shadow: 0 6px 18px rgba(15, 27, 45, .08); }
+.bulk-bar__count { color: var(--ek-muted, #6b7280); font-size: .9rem; }
+.bulk-check { width: 1.15rem; height: 1.15rem; margin: 0 .55rem 0 0; vertical-align: -.2em; cursor: pointer; }
+tr.is-selected > td { background-color: rgba(var(--bs-danger-rgb), .06) !important; }
+.bulk-list { max-height: 40vh; overflow: auto; padding-left: 1.1rem; font-size: .92rem; }
+.bulk-list li { margin-bottom: .2rem; overflow-wrap: anywhere; }
+
+@media (max-width: 860px) {
+    /* Phones: once a line is ticked the bar stays reachable above the bottom tab bar. */
+    .bulk-bar.is-active {
+        position: sticky;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        z-index: 1020;
+    }
+    .bulk-bar .btn { min-height: 40px; }
+    .bulk-check { width: 1.4rem; height: 1.4rem; }
+}
+@media print {
+    .bulk-bar, .bulk-check { display: none !important; }
+}

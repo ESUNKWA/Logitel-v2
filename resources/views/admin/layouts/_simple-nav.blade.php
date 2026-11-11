@@ -69,6 +69,9 @@
         @can('duty.manage')
             <li><a class="dropdown-item" href="{{ route('admin.duty.index') }}"><i class="far fa-user-clock"></i> Prises de service</a></li>
         @endcan
+        @can('affectations.delete')
+            <li><a class="dropdown-item" href="{{ route('admin.trash.index') }}"><i class="far fa-trash-alt"></i> Corbeille des affectations</a></li>
+        @endcan
         <li><a class="dropdown-item" href="{{ route('admin.stats') }}"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>
         @canany(['site.manage', 'site.stats'])
             <li><hr class="dropdown-divider"></li>

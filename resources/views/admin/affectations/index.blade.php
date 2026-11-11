@@ -16,9 +16,14 @@
             <h1><x-admin::kind-icon kind="affectation" />Affectations</h1>
             <div class="dash-subtitle">Séjours en cours et passés. Pour installer un client, cliquez sur une chambre libre du tableau des chambres.</div>
         </div>
-        @can('rooms.view')
-            <a href="{{ route('admin.rooms.board') }}#disponible" class="btn btn-primary"><i class="far fa-hotel"></i> Affecter une chambre</a>
-        @endcan
+        <div class="d-flex flex-wrap gap-2">
+            @can('affectations.delete')
+                <a href="{{ route('admin.trash.index') }}" class="btn btn-outline-danger"><i class="far fa-trash-alt"></i> Corbeille @if ($trashCount)<span class="badge bg-danger">{{ $trashCount }}</span>@endif</a>
+            @endcan
+            @can('rooms.view')
+                <a href="{{ route('admin.rooms.board') }}#disponible" class="btn btn-primary"><i class="far fa-hotel"></i> Affecter une chambre</a>
+            @endcan
+        </div>
     </div>
 
     <ul class="nav nav-pills mb-3">
@@ -132,6 +137,24 @@
         <div><span>Reste dû</span><strong class="{{ $totals['due'] > 0 ? 'text-danger' : '' }}">{{ $fcfa($totals['due']) }} <small>FCFA</small></strong></div>
     </div>
 
+    @can('affectations.delete')
+        {{-- Gérant only: tick lines (or one line's « Supprimer ») → confirmation → corbeille.
+             The checkboxes sit in the table with form="affectationDeleteForm", so the table keeps
+             its DataTables / phone-card behaviour (tables inside a form are left alone). --}}
+        <form id="affectationDeleteForm" method="POST" action="{{ route('admin.affectations.destroy-many') }}" class="bulk-bar" data-bulk-form>
+            @csrf
+            @method('DELETE')
+            <label class="form-check mb-0 bulk-bar__all">
+                <input type="checkbox" class="form-check-input" data-bulk-all aria-label="Tout cocher sur cette page">
+                <span class="form-check-label">Tout cocher</span>
+            </label>
+            <span class="bulk-bar__count" data-bulk-status aria-live="polite">Aucune ligne cochée</span>
+            <button type="button" class="btn btn-danger btn-sm ms-auto" data-bulk-open="#deleteAffectationsModal" disabled>
+                <i class="far fa-trash-alt"></i> Supprimer la sélection (<span data-bulk-n>0</span>)
+            </button>
+        </form>
+    @endcan
+
     <div class="admin-card">
         <table class="table align-middle affectation-table">
             <thead>
@@ -155,7 +178,7 @@
                         $overdue = $stay->status === \App\Enums\ReservationStatus::Enregistree && $stay->check_out->isPast();
                     @endphp
                     <tr>
-                        <td><strong>N°{{ $stay->room?->number }}</strong><div class="small text-muted">{{ $stay->room?->roomType?->name }}</div><a href="{{ route('admin.affectations.show', $stay) }}" class="file-ref">{{ $stay->reference() }}</a></td>
+                        <td>@can('affectations.delete')<input type="checkbox" class="form-check-input bulk-check" name="ids[]" value="{{ $stay->id }}" form="affectationDeleteForm" data-bulk-item data-label="{{ $stay->reference() }} — chambre N°{{ $stay->room?->number }} — {{ $stay->guest?->fullName() }} — {{ $stay->check_in->format('d/m/Y H\hi') }}" data-amount="{{ $paidAmount }}" aria-label="Sélectionner {{ $stay->reference() }}">@endcan<strong>N°{{ $stay->room?->number }}</strong><div class="small text-muted">{{ $stay->room?->roomType?->name }}</div><a href="{{ route('admin.affectations.show', $stay) }}" class="file-ref">{{ $stay->reference() }}</a></td>
                         <td data-search="{{ $stay->guest?->fullName() }} {{ \App\Support\PhoneFormat::searchText($stay->guest?->phone) }}">{{ $stay->guest?->fullName() }}<div class="small text-muted">{{ \App\Support\PhoneFormat::display($stay->guest?->phone) }}</div></td>
                         <td><x-admin::mode-badge :mode="$stay->pricing_mode" /><div class="small text-muted">{{ $stay->billingLabel() }}</div></td>
                         <td class="text-nowrap">{{ $stay->check_in->format('d/m/Y') }}<div class="small text-muted">{{ $stay->check_in->format('H\hi') }}</div></td>
@@ -190,6 +213,9 @@
                                     <a href="{{ route('admin.affectations.show', $stay) }}#prolonger" class="btn btn-sm btn-outline-secondary"><i class="far fa-clock"></i> Prolonger</a>
                                 @endcan
                             @endif
+                            @can('affectations.delete')
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bulk-row="{{ $stay->id }}" data-bulk-form-id="affectationDeleteForm" data-bulk-open="#deleteAffectationsModal"><i class="far fa-trash-alt"></i> Supprimer</button>
+                            @endcan
                         </td>
                     </tr>
                 @empty
@@ -204,4 +230,31 @@
     </div>
 
     {{ $affectations->links() }}
+
+    @can('affectations.delete')
+        <div class="modal fade" id="deleteAffectationsModal" tabindex="-1" aria-labelledby="deleteAffectationsTitle" aria-hidden="true" data-bulk-modal data-bulk-form-id="affectationDeleteForm">
+            <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger-subtle">
+                        <h2 class="modal-title fs-5" id="deleteAffectationsTitle"><i class="far fa-trash-alt"></i> Supprimer <span data-bulk-n>0</span> affectation(s)</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-2">Ces dossiers seront retirés de l'application, avec la réservation d'origine, la facture et <strong>tous les paiements</strong> :</p>
+                        <ul class="bulk-list" data-bulk-list></ul>
+                        <div class="alert alert-danger py-2">
+                            <strong data-bulk-total>0 FCFA</strong> encaissé(s) sortiront des recettes, des caisses et des tableaux de bord.
+                        </div>
+                        <p class="small text-muted">Ils restent <strong>{{ \App\Models\TrashedFile::retentionDays() }} jours</strong> dans la corbeille, d'où vous pouvez les restaurer, puis sont supprimés définitivement.</p>
+                        <label class="form-label" for="delete-reason">Motif (facultatif)</label>
+                        <textarea class="form-control" id="delete-reason" name="reason" form="affectationDeleteForm" rows="2" maxlength="500" placeholder="Ex. : essai de la réceptionniste">{{ old('reason') }}</textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-danger" form="affectationDeleteForm"><i class="far fa-trash-alt"></i> Mettre à la corbeille</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
 @endsection

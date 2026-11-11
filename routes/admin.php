@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\Site\ServiceController;
 use App\Http\Controllers\Admin\Site\SiteStatsController;
 use App\Http\Controllers\Admin\SpecialRateController;
 use App\Http\Controllers\Admin\StayRequestController;
+use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\Admin\UiModeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Middleware\EnsureDutyTaken;
@@ -126,6 +127,11 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
 
         // Affectations (stays in progress / past): created from the room board (rooms.assign).
         Route::get('/affectations', [AffectationController::class, 'index'])->middleware('can:affectations.view')->name('affectations.index');
+        // Gérant only (system role): delete affectations typed by mistake → « Corbeille » (restore / erase for good).
+        Route::delete('/affectations', [AffectationController::class, 'destroyMany'])->middleware('can:affectations.delete')->name('affectations.destroy-many');
+        Route::get('/corbeille', [TrashController::class, 'index'])->middleware('can:affectations.delete')->name('trash.index');
+        Route::post('/corbeille/restaurer', [TrashController::class, 'restore'])->middleware('can:affectations.delete')->name('trash.restore');
+        Route::post('/corbeille/supprimer', [TrashController::class, 'purge'])->middleware('can:affectations.delete')->name('trash.purge');
         Route::get('/affectations/{affectation}', [AffectationController::class, 'show'])->middleware('can:affectations.view')->name('affectations.show');
         Route::put('/affectations/{affectation}', [AffectationController::class, 'update'])->middleware('can:affectations.manage')->name('affectations.update');
         // Extend at the guest's request, any time: + N units of the same formula, supplement cashed or left due.

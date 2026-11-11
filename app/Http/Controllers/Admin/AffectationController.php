@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AffectationDeletionRequest;
 use App\Http\Requests\Admin\AffectationExtensionRequest;
 use App\Http\Requests\Admin\AffectationRequest;
 use App\Models\Payment;
@@ -13,7 +14,9 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\SpecialRate;
+use App\Models\TrashedFile;
 use App\Support\BusinessDay;
+use App\Support\FileTrash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -81,6 +84,7 @@ class AffectationController extends Controller
             'totals' => ['count' => $ids->count(), 'billed' => $billed, 'paid' => $paid, 'due' => max(0, $billed - $paid)],
             'rooms' => Room::query()->orderBy('number')->get(['id', 'number']),
             'roomTypes' => RoomType::query()->orderBy('name')->get(['id', 'name']),
+            'trashCount' => $request->user()->can('affectations.delete') ? TrashedFile::query()->inTrash()->count() : null,
             'hasFilters' => collect($filters)->except(['onglet', 'tri'])->filter(fn ($v) => filled($v) && $v !== false)->isNotEmpty(),
         ]);
     }
@@ -289,6 +293,25 @@ class AffectationController extends Controller
         $affectation->update(['status' => ReservationStatus::Terminee]);
 
         return back()->with('status', "Séjour terminé (sortie validée) : la chambre N°{$affectation->room?->number} est de nouveau libre.");
+    }
+
+    /**
+     * Gérant only: puts the ticked affectations in the « Corbeille » (FileTrash) — stay,
+     * réservation it came from, invoice, payments, and a client with no other file — so every
+     * figure drops them. Restorable for config('hotel.trash_retention_days') days.
+     */
+    public function destroyMany(AffectationDeletionRequest $request): RedirectResponse
+    {
+        $entries = FileTrash::trash($request->ids(), $request->reason());
+        FileTrash::purgeExpired();
+
+        $count = $entries->count();
+        $paid = (float) $entries->sum('paid_amount');
+
+        return back()->with('status', ($count > 1 ? "{$count} affectations mises" : 'Affectation mise').' à la corbeille ('
+            .$entries->pluck('reference')->implode(', ').').'
+            .($paid > 0 ? ' '.number_format($paid, 0, ',', ' ').' FCFA retirés des recettes.' : '')
+            .($count > 1 ? ' Restaurables' : ' Restaurable').' pendant '.TrashedFile::retentionDays().' jours depuis la corbeille.');
     }
 
     public function cancel(Reservation $affectation): RedirectResponse

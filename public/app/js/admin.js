@@ -2234,3 +2234,110 @@
         show(start > 0 ? Math.floor(start / perPage) : 0, false);
     });
 })();
+
+// Ticked lines + one action for many (Gérant: « Supprimer la sélection » on the affectations list;
+// corbeille « Restaurer » / « Supprimer définitivement »). `form[data-bulk-form]` is the form the
+// checkboxes post with (`input[data-bulk-item][form=…]`, kept in the table so DataTables and the
+// phone cards still apply); `[data-bulk-open="#modal"]` opens a confirmation modal listing the
+// ticked lines (data-label, via textContent) and their total (data-amount); a line's own button
+// (`[data-bulk-row]`) ticks only that line first. The server re-checks everything.
+(function () {
+    document.querySelectorAll('form[data-bulk-form]').forEach(function (form) {
+        var id = form.id;
+        var items = function () {
+            return Array.prototype.slice.call(document.querySelectorAll('input[data-bulk-item][form="' + id + '"]'));
+        };
+        var checked = function () {
+            return items().filter(function (input) { return input.checked; });
+        };
+        var all = form.querySelector('[data-bulk-all]');
+        var status = form.querySelector('[data-bulk-status]');
+        var fcfa = function (n) {
+            return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' FCFA';
+        };
+
+        var refresh = function () {
+            var list = items();
+            var n = checked().length;
+            form.querySelectorAll('[data-bulk-open]').forEach(function (button) { button.disabled = n === 0; });
+            form.querySelectorAll('[data-bulk-n]').forEach(function (el) { el.textContent = String(n); });
+            if (status) {
+                status.textContent = n === 0 ? 'Aucune ligne cochée' : (n === 1 ? '1 ligne cochée' : n + ' lignes cochées');
+            }
+            if (all) {
+                all.checked = list.length > 0 && n === list.length;
+                all.indeterminate = n > 0 && n < list.length;
+            }
+            form.classList.toggle('is-active', n > 0);
+            list.forEach(function (input) {
+                var row = input.closest('tr');
+                if (row) {
+                    row.classList.toggle('is-selected', input.checked);
+                }
+            });
+        };
+
+        var openModal = function (selector) {
+            var modal = selector ? document.querySelector(selector) : null;
+            if (!modal || !window.bootstrap) {
+                return;
+            }
+            var lines = checked();
+            var total = lines.reduce(function (sum, input) { return sum + (parseFloat(input.dataset.amount) || 0); }, 0);
+            modal.querySelectorAll('[data-bulk-n]').forEach(function (el) { el.textContent = String(lines.length); });
+            modal.querySelectorAll('[data-bulk-total]').forEach(function (el) { el.textContent = fcfa(total); });
+            modal.querySelectorAll('[data-bulk-list]').forEach(function (ul) {
+                ul.textContent = '';
+                lines.forEach(function (input) {
+                    var li = document.createElement('li');
+                    li.textContent = input.dataset.label || input.value;
+                    ul.appendChild(li);
+                });
+            });
+            window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        };
+
+        document.addEventListener('change', function (event) {
+            var target = event.target;
+            if (target === all) {
+                items().forEach(function (input) { input.checked = all.checked; });
+                refresh();
+            } else if (target.matches && target.matches('input[data-bulk-item]') && target.getAttribute('form') === id) {
+                refresh();
+            }
+        });
+
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest ? event.target.closest('[data-bulk-open]') : null;
+            if (!button) {
+                return;
+            }
+            var rowId = button.getAttribute('data-bulk-row');
+            if (rowId !== null) {
+                if (button.getAttribute('data-bulk-form-id') !== id) {
+                    return;
+                }
+                items().forEach(function (input) { input.checked = input.value === rowId; });
+                refresh();
+            } else if (!form.contains(button)) {
+                return;
+            }
+            if (checked().length > 0) {
+                openModal(button.getAttribute('data-bulk-open'));
+            }
+        });
+
+        // Never submit an empty selection (e.g. Enter in the reason field with nothing ticked).
+        form.addEventListener('submit', function (event) {
+            if (checked().length === 0) {
+                event.preventDefault();
+            }
+        });
+
+        // DataTables may redraw rows (sorting, search): keep the counter right.
+        if (window.jQuery) {
+            window.jQuery(document).on('draw.dt', refresh);
+        }
+        refresh();
+    });
+})();

@@ -42,7 +42,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Deny by default: an ability only passes if the user's role explicitly grants it.
         foreach (Permission::cases() as $permission) {
-            Gate::define($permission->value, fn (User $user) => $user->hasPermission($permission));
+            Gate::define($permission->value, fn (User $user) => $permission->isSystemOnly()
+                ? $user->is_active && $user->role?->is_system === true
+                : $user->hasPermission($permission));
         }
 
         // Client request: at least 4 characters, no other constraint.

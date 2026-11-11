@@ -23,6 +23,7 @@ enum Permission: string
     case AffectationsView = 'affectations.view';
     case AffectationsManage = 'affectations.manage';
     case AffectationsCancel = 'affectations.cancel';
+    case AffectationsDelete = 'affectations.delete';
     case InvoicesView = 'invoices.view';
     case PaymentsCreate = 'payments.create';
     case PaymentsDelete = 'payments.delete';
@@ -52,6 +53,7 @@ enum Permission: string
             self::AffectationsView => 'Voir les affectations (séjours en cours et passés)',
             self::AffectationsManage => 'Affecter une chambre, prolonger un séjour, valider une sortie',
             self::AffectationsCancel => 'Annuler une affectation',
+            self::AffectationsDelete => 'Supprimer des affectations saisies par erreur, corbeille (restaurer, supprimer définitivement) — Gérant uniquement',
             self::InvoicesView => 'Voir les factures',
             self::PaymentsCreate => 'Enregistrer un paiement',
             self::PaymentsDelete => 'Supprimer un paiement',
@@ -72,7 +74,7 @@ enum Permission: string
         return match ($this) {
             self::RoomsView, self::RoomsEdit, self::RoomsManage => 'Chambres',
             self::GuestsList, self::GuestsView, self::GuestsManage, self::GuestsDelete => 'Clients',
-            self::AffectationsView, self::AffectationsManage, self::AffectationsCancel => 'Affectations',
+            self::AffectationsView, self::AffectationsManage, self::AffectationsCancel, self::AffectationsDelete => 'Affectations',
             self::ReservationsView, self::ReservationsManage, self::ReservationsCancel => 'Réservations',
             self::InvoicesView, self::PaymentsCreate, self::PaymentsDelete => 'Factures et paiements',
             self::DashboardRevenue => 'Tableau de bord',
@@ -84,6 +86,26 @@ enum Permission: string
     }
 
     /**
+     * Held by the Gérant's system role only — never grantable to another role (client request,
+     * 2026-11-11: « seul le profil gérant peut supprimer »). Not offered in the role form, and
+     * the Gate ignores any role row that would list it.
+     */
+    public function isSystemOnly(): bool
+    {
+        return $this === self::AffectationsDelete;
+    }
+
+    /**
+     * Permissions a role may be given (the role form): every one but the system-only ones.
+     *
+     * @return list<string>
+     */
+    public static function grantableValues(): array
+    {
+        return array_values(array_map(fn (self $p) => $p->value, array_filter(self::cases(), fn (self $p) => ! $p->isSystemOnly())));
+    }
+
+    /**
      * @return array<string, list<self>>
      */
     public static function grouped(): array
@@ -91,6 +113,9 @@ enum Permission: string
         $groups = [];
 
         foreach (self::cases() as $permission) {
+            if ($permission->isSystemOnly()) {
+                continue;
+            }
             $groups[$permission->getGroup()][] = $permission;
         }
 
