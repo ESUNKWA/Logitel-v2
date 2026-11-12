@@ -19,7 +19,11 @@ class RoomIsAvailableForDates implements DataAwareRule, ValidationRule
     /** @var array<string, mixed> */
     protected array $data = [];
 
-    public function __construct(protected ?int $excludeReservationId = null) {}
+    /**
+     * @param  bool|Closure(): bool  $bookingsBlock  every pending booking blocks, paid or not
+     *                                               (réservations, see Room::constrainToConflicts())
+     */
+    public function __construct(protected ?int $excludeReservationId = null, protected bool|Closure $bookingsBlock = false) {}
 
     public function setData(array $data): static
     {
@@ -43,7 +47,8 @@ class RoomIsAvailableForDates implements DataAwareRule, ValidationRule
 
         [$start, $end] = $mode->resolve(Carbon::parse($checkIn), $duration, $checkOut ? Carbon::parse($checkOut) : null);
 
-        $error = Room::find($value)?->availabilityError($start, $end, $this->excludeReservationId);
+        $bookingsBlock = $this->bookingsBlock instanceof Closure ? (bool) ($this->bookingsBlock)() : $this->bookingsBlock;
+        $error = Room::find($value)?->availabilityError($start, $end, $this->excludeReservationId, null, $bookingsBlock);
 
         if ($error) {
             $fail($error);

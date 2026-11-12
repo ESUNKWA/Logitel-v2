@@ -204,41 +204,55 @@ class RoomController extends Controller
     }
 
     /**
-     * JSON list of rooms available for a stay, used by the reservation form's dynamic room
-     * <select> (public/js/admin.js). The stay is pricing_mode (default nuitée) + check_in +
-     * duration, or check_out for date-based nuitées. `rate` is the room type's rate for that mode.
+     * JSON list of rooms for the réservation form's dynamic room <select> (public/app/js/admin.js).
+     *
+     * - With an arrival (check_in + duration, or check_out for date-based nuitées): the rooms free
+     *   over that stay — and, réservations being this endpoint's only user, every pending booking
+     *   blocks, paid or not (client decision A, 2026-11-11). `checked` = true.
+     * - Without an arrival but with a room type (client request, 2026-11-11: the rooms show as soon
+     *   as the type is chosen): that type's rooms that aren't hors service, availability not
+     *   checked yet (`checked` = false); the form asks for the arrival to keep only free ones.
+     *
+     * `rate` is the room type's rate for the mode (default nuitée).
      */
     public function available(Request $request): JsonResponse
     {
+        $withArrival = $request->filled('check_in');
+
         $request->validate([
             'pricing_mode' => ['nullable', new Enum(PricingMode::class)],
-            'check_in' => ['required', 'date'],
-            'check_out' => ['required_without:duration', 'nullable', 'date', 'after:check_in'],
-            'duration' => ['required_without:check_out', 'nullable', 'integer', 'min:1', 'max:365'],
+            'check_in' => ['nullable', 'date'],
+            'check_out' => $withArrival ? ['required_without:duration', 'nullable', 'date', 'after:check_in'] : ['nullable'],
+            'duration' => $withArrival ? ['required_without:check_out', 'nullable', 'integer', 'min:1', 'max:365'] : ['nullable'],
             'exclude_reservation_id' => ['nullable', 'integer'],
-            'room_type_id' => ['nullable', 'integer'],
+            'room_type_id' => $withArrival ? ['nullable', 'integer'] : ['required', 'integer'],
         ]);
 
         $mode = PricingMode::tryFrom($request->string('pricing_mode')->toString()) ?? PricingMode::Nuitee;
 
-        [$start, $end] = $mode->resolve(
-            Carbon::parse($request->string('check_in')->toString()),
-            $request->integer('duration') ?: null,
-            $request->filled('check_out') ? Carbon::parse($request->string('check_out')->toString()) : null,
-        );
-
-        $rooms = Room::query()
+        $query = Room::query()
             ->with('roomType')
             ->where('status', '!=', RoomStatus::HorsService)
-            ->when($request->integer('room_type_id'), fn ($query, $typeId) => $query->where('room_type_id', $typeId))
-            ->availableBetween($start, $end, $request->integer('exclude_reservation_id') ?: null)
-            ->orderBy('number')
-            ->get()
+            ->when($request->integer('room_type_id'), fn ($query, $typeId) => $query->where('room_type_id', $typeId));
+
+        if ($withArrival) {
+            [$start, $end] = $mode->resolve(
+                Carbon::parse($request->string('check_in')->toString()),
+                $request->integer('duration') ?: null,
+                $request->filled('check_out') ? Carbon::parse($request->string('check_out')->toString()) : null,
+            );
+            $query->availableBetween($start, $end, $request->integer('exclude_reservation_id') ?: null, null, bookingsBlock: true);
+        }
+
+        $rooms = $query->get()
+            ->sortBy('number', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
             ->map(fn (Room $room) => [
                 'id' => $room->id,
                 'label' => "N°{$room->number} — {$room->roomType?->name}",
                 'room_type_id' => $room->room_type_id,
                 'rate' => $mode->rateFor($room->roomType),
+                'checked' => $withArrival,
             ]);
 
         return response()->json($rooms);

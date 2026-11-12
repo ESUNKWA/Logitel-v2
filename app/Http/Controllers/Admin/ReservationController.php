@@ -134,7 +134,7 @@ class ReservationController extends Controller
         $reservation = DB::transaction(function () use ($request) {
             // Serialise concurrent bookings of this room: lock it and re-check before writing.
             [$start, $end] = $request->period();
-            Room::lockAvailable((int) $request->validated('room_id'), $start, $end, null, 'room_id');
+            Room::lockAvailable((int) $request->validated('room_id'), $start, $end, null, 'room_id', null, bookingsBlock: true);
 
             // Created from an online booking request: it's handled once (locked), in this transaction.
             $bookingRequest = null;
@@ -220,7 +220,7 @@ class ReservationController extends Controller
 
         DB::transaction(function () use ($request, $reservation) {
             [$start, $end] = $request->period();
-            Room::lockAvailable((int) $request->validated('room_id'), $start, $end, $reservation->id, 'room_id');
+            Room::lockAvailable((int) $request->validated('room_id'), $start, $end, $reservation->id, 'room_id', null, $request->bookingsBlock());
 
             $reservation->update([...$request->reservationAttributes(), 'guest_id' => $request->resolveGuestId()]);
         });

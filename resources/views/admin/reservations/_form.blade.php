@@ -76,15 +76,6 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <label class="form-label" for="status">Statut</label>
-        <select class="form-select" id="status" name="status" required>
-            @foreach ($statuses as $status)
-                <option value="{{ $status->value }}" @selected(old('status', $reservation->status?->value ?? 'confirmee') === $status->value)>{{ $status->getLabel() }}</option>
-            @endforeach
-        </select>
-    </div>
-
     {{-- The room type comes first, then only its modes (client request, 2026-10-19: modes the
          type doesn't offer are hidden, not greyed); the room list is limited to that type. --}}
     @php
@@ -94,7 +85,8 @@
         $offers = fn ($case) => ! $selectedType || $case->rateFor($selectedType) !== null;
         $perkMenus = \App\Models\Perk::menusFor($roomTypes); // « Inclus : … » under the modes
     @endphp
-    <div class="col-md-6">
+    {{-- Type and room on the same row, on computers and phones (client request, 2026-11-11). --}}
+    <div class="col-6">
         <label class="form-label" for="booking_room_type">Type de chambre</label>
         <select class="form-select @error('room_type_id') is-invalid @enderror" id="booking_room_type" name="room_type_id" data-booking-type required>
             <option value="">Choisissez un type de chambre…</option>
@@ -102,6 +94,27 @@
                 <option value="{{ $type->id }}" @selected((string) $type->id === $selectedTypeId)@foreach (\App\Enums\PricingMode::cases() as $case) data-{{ $case->value }}="{{ $case->rateFor($type) !== null ? '1' : '' }}"@endforeach data-perks="{{ json_encode((object) ($perkMenus[$type->id] ?? [])) }}">{{ $type->name }}</option>
             @endforeach
         </select>
+    </div>
+    <div class="col-6">
+        <label class="form-label" for="room_id">Chambre</label>
+        <select
+            class="form-select"
+            id="room_id"
+            name="room_id"
+            data-room-select
+            data-availability-url="{{ route('admin.rooms.available') }}"
+            data-exclude-reservation-id="{{ $reservation->id }}"
+            @if ($bookingRequest ?? null) data-refresh-on-load data-preferred-type="{{ $bookingRequest->room_type_id }}" @endif
+            @if (! ($currentRoomOption ?? null) && is_scalar(old('room_id'))) data-old-room="{{ old('room_id') }}" @endif
+            required
+        >
+            @if ($currentRoomOption ?? null)
+                <option value="{{ $currentRoomOption['id'] }}" data-rate="{{ $currentRoomOption['rate'] }}" selected>{{ $currentRoomOption['label'] }}</option>
+            @else
+                <option value="">Choisissez le type de chambre et l'arrivée</option>
+            @endif
+        </select>
+        <div class="form-text" data-room-hint hidden></div>
     </div>
 
     <div class="col-12">
@@ -132,36 +145,26 @@
         <label class="form-label" for="duration" data-booking-duration-label>Nombre de {{ $mode->unitPlural() }}</label>
         <input type="number" min="1" max="365" class="form-control" id="duration" name="duration" value="{{ old('duration', $reservation->duration ?? 1) }}" data-booking-duration data-availability-trigger required>
     </div>
+
+    {{-- Statut sits with the rate and occupants, so type and room share their own row. --}}
     <div class="col-md-3">
-        <label class="form-label" for="room_id">Chambre</label>
-        <select
-            class="form-select"
-            id="room_id"
-            name="room_id"
-            data-room-select
-            data-availability-url="{{ route('admin.rooms.available') }}"
-            data-exclude-reservation-id="{{ $reservation->id }}"
-            @if ($bookingRequest ?? null) data-refresh-on-load data-preferred-type="{{ $bookingRequest->room_type_id }}" @endif
-            required
-        >
-            @if ($currentRoomOption ?? null)
-                <option value="{{ $currentRoomOption['id'] }}" data-rate="{{ $currentRoomOption['rate'] }}" selected>{{ $currentRoomOption['label'] }}</option>
-            @else
-                <option value="">Choisissez le type de chambre et l'arrivée</option>
-            @endif
+        <label class="form-label" for="status">Statut</label>
+        <select class="form-select" id="status" name="status" required>
+            @foreach ($statuses as $status)
+                <option value="{{ $status->value }}" @selected(old('status', $reservation->status?->value ?? 'confirmee') === $status->value)>{{ $status->getLabel() }}</option>
+            @endforeach
         </select>
     </div>
-
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label" for="unit_rate">Tarif <span data-booking-rate-unit>{{ $mode->rateUnit() }}</span> (FCFA)</label>
         <input type="text" class="form-control rate-locked" id="unit_rate" value="{{ $reservation->unit_rate !== null ? number_format((float) $reservation->unit_rate, 0, ',', ' ') : '' }}" data-money data-rate-target data-booking-rate readonly tabindex="-1">
         <div class="form-text">Tarif du type de chambre (non modifiable).</div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label" for="adults">Adultes</label>
         <input type="number" min="1" class="form-control" id="adults" name="adults" value="{{ old('adults', $reservation->adults ?? 2) }}" required>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label" for="children">Enfants</label>
         <input type="number" min="0" class="form-control" id="children" name="children" value="{{ old('children', $reservation->children ?? 0) }}" required>
     </div>

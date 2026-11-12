@@ -355,11 +355,11 @@ class Room extends Model
      * "Y-m-d H:i:s", the format the datetime cast stores on both SQLite and PostgreSQL),
      * never against raw input strings in another format.
      */
-    public function scopeAvailableBetween(Builder $query, CarbonInterface|string $start, CarbonInterface|string $end, ?int $excludeReservationId = null, ?int $excludeRequestId = null): Builder
+    public function scopeAvailableBetween(Builder $query, CarbonInterface|string $start, CarbonInterface|string $end, ?int $excludeReservationId = null, ?int $excludeRequestId = null, bool $bookingsBlock = false): Builder
     {
         return $query
             ->whereDoesntHave('reservations', fn (Builder $reservations) => self::constrainToConflicts(
-                $reservations, Carbon::parse($start), Carbon::parse($end), $excludeReservationId,
+                $reservations, Carbon::parse($start), Carbon::parse($end), $excludeReservationId, $bookingsBlock,
             ))
             ->whereDoesntHave('stayRequests', fn (Builder $requests) => StayRequest::constrainToConflicts(
                 $requests, Carbon::parse($start), Carbon::parse($end), $excludeRequestId,
@@ -375,8 +375,12 @@ class Room extends Model
      *   the requested period is widened by it on both sides;
      * - a stay in progress whose departure time has passed still holds the room until its real
      *   check-out (the guest is still inside), so it blocks every later period too.
+     *
+     * $bookingsBlock (réservations only — client decision A, 2026-11-11): every pending booking
+     * (en attente / confirmée) blocks, paid or not, so two réservations never share a room at the
+     * same time. Affectations at the desk keep the rule above (they may take an unpaid booking's slot).
      */
-    public static function constrainToConflicts(Builder $reservations, CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId = null): Builder
+    public static function constrainToConflicts(Builder $reservations, CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId = null, bool $bookingsBlock = false): Builder
     {
         $buffer = (int) config('hotel.cleaning_buffer_minutes', 0);
 
@@ -385,7 +389,7 @@ class Room extends Model
                 ->where('status', ReservationStatus::Enregistree)
                 ->orWhere(fn (Builder $booking) => $booking
                     ->whereIn('status', [ReservationStatus::EnAttente, ReservationStatus::Confirmee])
-                    ->where('is_guaranteed', true)))
+                    ->when(! $bookingsBlock, fn (Builder $b) => $b->where('is_guaranteed', true))))
             ->where('check_in', '<', Carbon::instance($end)->addMinutes($buffer))
             ->where(fn (Builder $q) => $q
                 ->where('check_out', '>', Carbon::instance($start)->subMinutes($buffer))
@@ -398,9 +402,9 @@ class Room extends Model
     /**
      * The first stay/booking holding this room over [start, end), if any.
      */
-    public function conflictingReservation(CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId = null): ?Reservation
+    public function conflictingReservation(CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId = null, bool $bookingsBlock = false): ?Reservation
     {
-        return self::constrainToConflicts($this->reservations()->getQuery(), $start, $end, $excludeReservationId)
+        return self::constrainToConflicts($this->reservations()->getQuery(), $start, $end, $excludeReservationId, $bookingsBlock)
             ->orderBy('check_in')
             ->first();
     }
@@ -419,9 +423,9 @@ class Room extends Model
      * Why the room can't be taken over [start, end) — a stay/booking or a guest request holding
      * it — or null when it's free. The one check every write path goes through.
      */
-    public function availabilityError(CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId = null, ?int $excludeRequestId = null): ?string
+    public function availabilityError(CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId = null, ?int $excludeRequestId = null, bool $bookingsBlock = false): ?string
     {
-        if ($conflict = $this->conflictingReservation($start, $end, $excludeReservationId)) {
+        if ($conflict = $this->conflictingReservation($start, $end, $excludeReservationId, $bookingsBlock)) {
             return static::conflictMessage($conflict, $start, $end);
         }
 
@@ -459,7 +463,11 @@ class Room extends Model
 
         return "La chambre N°{$room} est déjà prise du ".$at($conflict->check_in)
             .' au '.$at($conflict->check_out)
-            .($conflict->status === ReservationStatus::Enregistree ? ' (séjour en cours).' : ' (réservation soldée).');
+            .match (true) {
+                $conflict->status === ReservationStatus::Enregistree => ' (séjour en cours).',
+                (bool) $conflict->is_guaranteed => ' (réservation '.$conflict->reference().', soldée).',
+                default => ' (réservation '.$conflict->reference().', non soldée).',
+            };
     }
 
     /**
@@ -469,11 +477,11 @@ class Room extends Model
      *
      * @throws ValidationException
      */
-    public static function lockAvailable(int $roomId, CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId, string $errorKey, ?int $excludeRequestId = null): self
+    public static function lockAvailable(int $roomId, CarbonInterface $start, CarbonInterface $end, ?int $excludeReservationId, string $errorKey, ?int $excludeRequestId = null, bool $bookingsBlock = false): self
     {
         $room = static::query()->lockForUpdate()->findOrFail($roomId);
 
-        if ($error = $room->availabilityError($start, $end, $excludeReservationId, $excludeRequestId)) {
+        if ($error = $room->availabilityError($start, $end, $excludeReservationId, $excludeRequestId, $bookingsBlock)) {
             throw ValidationException::withMessages([$errorKey => $error]);
         }
 

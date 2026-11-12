@@ -14,8 +14,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * A booking only holds its room once paid in full ("garantie"); stays are separated by a
- * mandatory cleaning time.
+ * A booking only holds its room against affectations once paid in full ("garantie"), but blocks
+ * other réservations from the start, paid or not (client decision A, 2026-11-11); stays are
+ * separated by a mandatory cleaning time.
  */
 class GuaranteeAndCleaningTest extends TestCase
 {
@@ -47,13 +48,51 @@ class GuaranteeAndCleaningTest extends TestCase
         ]);
     }
 
-    public function test_an_unpaid_or_partly_paid_booking_does_not_hold_the_room(): void
+    public function test_an_unpaid_or_partly_paid_booking_is_not_guaranteed_but_blocks_other_reservations(): void
     {
         $this->book()->assertSessionHasNoErrors();
-        $this->book(extra: ['payments' => [['method' => 'wave', 'amount' => 4000]]])->assertSessionHasNoErrors(); // same slot, deposit only
+        $first = Reservation::firstOrFail();
+
+        // Same slot, overlapping, or within the cleaning time: refused, paid or not (decision A).
+        $this->book(extra: ['payments' => [['method' => 'wave', 'amount' => 4000]]])
+            ->assertSessionHasErrors(['room_id' => "La chambre N°GA-1 est déjà prise du 10/10/2026 à 14h00 au 10/10/2026 à 16h00 (réservation {$first->reference()}, non soldée)."]);
+        $this->book('2026-10-10T15:00')->assertSessionHasErrors('room_id');
+        $this->book('2026-10-10T16:15')->assertSessionHasErrors('room_id'); // cleaning gap (30 min) missing
+        $this->book('2026-10-10T16:30')->assertSessionHasNoErrors();        // right after the cleaning
 
         $this->assertSame(2, Reservation::count());
         $this->assertSame(0, Reservation::where('is_guaranteed', true)->count());
+        // Not guaranteed: for affectations the room is still free over that slot.
+        $this->assertNull($this->room->conflictingReservation($first->check_in, $first->check_out));
+    }
+
+    public function test_a_cancelled_booking_frees_the_slot_for_other_reservations(): void
+    {
+        $this->book()->assertSessionHasNoErrors();
+        Reservation::firstOrFail()->update(['status' => ReservationStatus::Annulee]);
+
+        $this->book()->assertSessionHasNoErrors();
+    }
+
+    public function test_editing_a_booking_keeps_the_rule_but_not_against_an_overlap_that_predates_it(): void
+    {
+        $this->book()->assertSessionHasNoErrors();
+        $this->book('2026-10-11T14:00')->assertSessionHasNoErrors();
+        [$first, $second] = Reservation::orderBy('id')->get()->all();
+        $edit = fn (Reservation $r, string $checkIn, array $extra = []) => $this->actingAs(User::factory()->create())->put("/admin/reservations/{$r->id}", [
+            'guest_id' => $r->guest_id, 'room_id' => $this->room->id, 'pricing_mode' => 'heure',
+            'check_in' => $checkIn, 'duration' => 2, 'adults' => 1, 'children' => 0, 'status' => 'confirmee', ...$extra,
+        ]);
+
+        // Moving the second onto the first: refused.
+        $edit($second, '2026-10-10T15:00')->assertSessionHasErrors('room_id');
+        $this->assertSame('2026-10-11 14:00', $second->fresh()->check_in->format('Y-m-d H:i'));
+
+        // An overlap made before the rule (legacy data): editing notes only, same room and period, still works.
+        $legacy = Reservation::factory()->create(['room_id' => $this->room->id, 'pricing_mode' => 'heure', 'unit_rate' => 5000,
+            'check_in' => '2026-10-10 15:00', 'duration' => 2, 'status' => 'confirmee', 'origin' => Reservation::ORIGIN_RESERVATION]);
+        $edit($legacy, '2026-10-10T15:00', ['notes' => 'Rappeler le client'])->assertSessionHasNoErrors();
+        $this->assertSame('Rappeler le client', $legacy->fresh()->notes);
     }
 
     public function test_paying_in_full_guarantees_the_room_and_removing_a_payment_loses_it(): void
@@ -66,12 +105,13 @@ class GuaranteeAndCleaningTest extends TestCase
 
         $this->pay($booking, 6000)->assertSessionHasNoErrors();
         $this->assertTrue($booking->fresh()->is_guaranteed);
-        $this->book()->assertSessionHasErrors('room_id'); // now the slot is held
+        $this->assertNotNull($this->room->conflictingReservation($booking->check_in, $booking->check_out)); // now the slot is held
 
         $payment = $booking->invoice->payments()->latest('id')->first();
         $this->actingAs(User::factory()->create())->delete("/admin/invoices/{$booking->invoice->id}/payments/{$payment->id}");
         $this->assertFalse($booking->fresh()->is_guaranteed);
-        $this->book()->assertSessionHasNoErrors();
+        $this->assertNull($this->room->conflictingReservation($booking->check_in, $booking->check_out));
+        $this->book()->assertSessionHasErrors('room_id'); // still blocks other réservations (decision A)
     }
 
     public function test_a_booking_paid_in_full_when_made_is_guaranteed_at_once(): void
@@ -85,7 +125,9 @@ class GuaranteeAndCleaningTest extends TestCase
     public function test_the_first_booking_paid_in_full_wins(): void
     {
         $this->book()->assertSessionHasNoErrors();
-        $this->book('2026-10-10T15:00')->assertSessionHasNoErrors(); // overlaps the first, both unpaid
+        // Two unpaid bookings overlapping: only possible in data made before decision A (2026-11-11).
+        Reservation::factory()->create(['room_id' => $this->room->id, 'pricing_mode' => 'heure', 'unit_rate' => 5000,
+            'check_in' => '2026-10-10 15:00', 'duration' => 2, 'status' => 'confirmee', 'origin' => Reservation::ORIGIN_RESERVATION]);
         [$first, $second] = Reservation::orderBy('id')->get()->all();
 
         $this->pay($first, 10000)->assertSessionHasNoErrors();

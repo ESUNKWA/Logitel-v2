@@ -503,50 +503,105 @@
             return el ? el.value : '';
         };
 
+        // A single explanatory option: the list always says what it's waiting for, instead of
+        // staying silently empty.
+        var roomsMessage = function (text) {
+            roomSelect.innerHTML = '';
+            var option = document.createElement('option');
+            option.value = '';
+            option.textContent = text;
+            roomSelect.appendChild(option);
+        };
+        // Line under the list (réservation form): what the list shows / why a room went away.
+        var roomHint = form.querySelector('[data-room-hint]');
+        var hint = function (text, warning) {
+            if (!roomHint) {
+                return;
+            }
+            roomHint.textContent = text || '';
+            roomHint.hidden = !text;
+            roomHint.classList.toggle('text-danger', !!warning);
+        };
+        var requestSeq = 0;
+
         var refreshRooms = function () {
             var params = new URLSearchParams({
                 pricing_mode: field('pricing_mode'),
-                check_in: field('check_in'),
                 exclude_reservation_id: excludeId,
             });
-            if (field('check_out')) {
-                params.set('check_out', field('check_out'));
-            } else if (field('duration')) {
-                params.set('duration', field('duration'));
-            } else {
+            // Réservation form: the room type is chosen first and limits the list to its rooms;
+            // they show at once (client request, 2026-11-11), the arrival then keeps the free ones.
+            var byType = !!form.querySelector('[name="room_type_id"]');
+            if (byType && !field('room_type_id')) {
+                roomsMessage('Choisissez d\'abord le type de chambre');
+                hint('');
                 return;
             }
-            if (!field('check_in')) {
-                return;
-            }
-            // Réservation form: the room type is chosen first and limits the list to its rooms.
-            if (form.querySelector('[name="room_type_id"]')) {
-                if (!field('room_type_id')) {
-                    roomSelect.innerHTML = '<option value="">Choisissez d\'abord le type de chambre</option>';
-                    return;
+            var withArrival = !!field('check_in') && !!(field('check_out') || field('duration'));
+            if (withArrival) {
+                params.set('check_in', field('check_in'));
+                if (field('check_out')) {
+                    params.set('check_out', field('check_out'));
+                } else {
+                    params.set('duration', field('duration'));
                 }
+            } else if (!byType) {
+                return;
+            }
+            if (byType) {
                 params.set('room_type_id', field('room_type_id'));
             }
 
+            var seq = ++requestSeq;
             fetch(url + '?' + params.toString(), { headers: { Accept: 'application/json' } })
-                .then(function (response) { return response.ok ? response.json() : []; })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .catch(function () {
+                    if (seq === requestSeq) {
+                        roomsMessage('Impossible de charger les chambres');
+                        hint('Vérifiez l\'arrivée et la durée, puis réessayez.', true);
+                    }
+                    return null;
+                })
                 .then(function (rooms) {
-                    var currentValue = roomSelect.value;
-                    roomSelect.innerHTML = '';
+                    // Only the latest request fills the list (an older, slower answer is ignored).
+                    if (rooms === null || seq !== requestSeq) {
+                        return;
+                    }
+                    // A form sent back with errors: the room it had (once, on the first load).
+                    var oldRoom = roomSelect.dataset.oldRoom || '';
+                    delete roomSelect.dataset.oldRoom;
+                    var currentValue = roomSelect.value || oldRoom;
+                    var currentLabel = roomSelect.value && roomSelect.selectedIndex >= 0 ? roomSelect.options[roomSelect.selectedIndex].textContent : 'choisie';
 
                     if (rooms.length === 0) {
-                        var empty = document.createElement('option');
-                        empty.value = '';
-                        empty.textContent = 'Aucune chambre disponible pour ces dates';
-                        roomSelect.appendChild(empty);
+                        roomsMessage(withArrival ? 'Aucune chambre disponible pour ces dates' : 'Aucune chambre de ce type');
+                        hint(withArrival && currentValue ? 'La chambre ' + currentLabel + ' n\'est pas libre pour cette arrivée.' : '', true);
+                        roomSelect.dispatchEvent(new CustomEvent('rooms:refreshed'));
                         return;
                     }
 
                     // From an online booking request: pre-select a room of the requested type.
                     var preferredType = roomSelect.dataset.preferredType || '';
-                    var preferred = !currentValue && preferredType
+                    var preferred = !currentValue && preferredType && withArrival
                         ? rooms.find(function (room) { return String(room.room_type_id) === preferredType; })
                         : null;
+                    var keeps = rooms.some(function (room) { return String(room.id) === currentValue; });
+                    var lost = withArrival && currentValue && !keeps;
+
+                    roomSelect.innerHTML = '';
+                    // Before the arrival (availability unknown) or when the chosen room was taken:
+                    // nothing is picked for the user.
+                    if (!withArrival || lost) {
+                        var placeholder = document.createElement('option');
+                        placeholder.value = '';
+                        placeholder.textContent = withArrival ? 'Choisissez une chambre libre' : 'Choisissez une chambre';
+                        roomSelect.appendChild(placeholder);
+                    }
                     rooms.forEach(function (room) {
                         var option = document.createElement('option');
                         option.value = room.id;
@@ -557,6 +612,15 @@
                         }
                         roomSelect.appendChild(option);
                     });
+
+                    if (lost) {
+                        hint('La chambre ' + currentLabel + ' n\'est pas libre pour cette arrivée : choisissez-en une autre.', true);
+                    } else if (!withArrival) {
+                        hint('Saisissez la date et l\'heure d\'arrivée : seules les chambres libres resteront dans la liste.');
+                    } else {
+                        hint(rooms.length + (rooms.length > 1 ? ' chambres libres' : ' chambre libre') + ' pour cette arrivée.');
+                    }
+
                     roomSelect.dispatchEvent(new CustomEvent('rooms:refreshed'));
                     if (preferred) {
                         roomSelect.dispatchEvent(new Event('change', { bubbles: true }));
@@ -567,7 +631,9 @@
         triggers.forEach(function (trigger) {
             trigger.addEventListener('change', refreshRooms);
         });
-        if (roomSelect.hasAttribute('data-refresh-on-load')) {
+        // Also on load when a type is already chosen but no room yet (single type, form sent back).
+        if (roomSelect.hasAttribute('data-refresh-on-load')
+            || (form.querySelector('[name="room_type_id"]') && field('room_type_id') && !roomSelect.value)) {
             refreshRooms();
         }
 

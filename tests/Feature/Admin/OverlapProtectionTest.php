@@ -52,9 +52,9 @@ class OverlapProtectionTest extends TestCase
 
     public function test_overlapping_periods_are_refused_and_stays_need_the_cleaning_gap(): void
     {
-        $this->existing('2026-10-10 14:00', PricingMode::Heure, 3); // 14:00 → 17:00, 30-min cleaning on each side
+        $existing = $this->existing('2026-10-10 14:00', PricingMode::Heure, 3); // 14:00 → 17:00, 30-min cleaning on each side
 
-        $this->book('heure', '2026-10-10T14:00', 3)->assertSessionHasErrors(['room_id' => 'La chambre N°OV-1 est déjà prise du 10/10/2026 à 14h00 au 10/10/2026 à 17h00 (réservation soldée).']);
+        $this->book('heure', '2026-10-10T14:00', 3)->assertSessionHasErrors(['room_id' => "La chambre N°OV-1 est déjà prise du 10/10/2026 à 14h00 au 10/10/2026 à 17h00 (réservation {$existing->reference()}, soldée)."]);
         $this->book('heure', '2026-10-10T16:59', 1)->assertSessionHasErrors('room_id'); // ends inside
         $this->book('heure', '2026-10-10T13:00', 2)->assertSessionHasErrors('room_id'); // starts before, ends inside
         $this->book('heure', '2026-10-10T15:00', 1)->assertSessionHasErrors('room_id'); // contained
@@ -152,9 +152,9 @@ class OverlapProtectionTest extends TestCase
     {
         $stay = $this->existing('2026-10-08 09:00', PricingMode::Heure, 2);
         $stay->update(['status' => ReservationStatus::Enregistree]);
-        $this->existing('2026-10-08 12:00', PricingMode::Heure, 2);
+        $booking = $this->existing('2026-10-08 12:00', PricingMode::Heure, 2);
 
         $this->actingAs(User::factory()->create())->put("/admin/affectations/{$stay->id}", ['duration' => 4, 'unit_rate' => 5000, 'adults' => 1, 'children' => 0])
-            ->assertSessionHasErrors(['duration' => "Impossible de prolonger jusqu'au 08/10/2026 à 13h00 : la chambre N°OV-1 est déjà prise du 08/10/2026 à 12h00 au 08/10/2026 à 14h00 (réservation soldée)."]);
+            ->assertSessionHasErrors(['duration' => "Impossible de prolonger jusqu'au 08/10/2026 à 13h00 : la chambre N°OV-1 est déjà prise du 08/10/2026 à 12h00 au 08/10/2026 à 14h00 (réservation {$booking->reference()}, soldée)."]);
     }
 }

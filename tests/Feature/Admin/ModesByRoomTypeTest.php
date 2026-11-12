@@ -38,7 +38,7 @@ class ModesByRoomTypeTest extends TestCase
         $this->type(['name' => 'Sans tarif']);
 
         $html = $this->get(route('admin.reservations.create'))->assertOk()
-            ->assertSeeInOrder(['Type de chambre', 'Choisissez un type de chambre…', '>Chambre 2<', '>Chambre 10<', '>Suite<', 'Mode', 'Chambre'], false)
+            ->assertSeeInOrder(['Type de chambre', 'Choisissez un type de chambre…', '>Chambre 2<', '>Chambre 10<', '>Suite<', 'for="room_id">Chambre<', 'Mode'], false)
             ->assertSee("Choisissez d'abord le type de chambre : seuls ses modes s'affichent.", false)
             ->assertDontSee('>Fermée<', false)->assertDontSee('>Sans tarif<', false)
             ->getContent();

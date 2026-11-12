@@ -85,7 +85,7 @@ class ReservationRequest extends FormRequest
             'status' => ['required', Rule::in([ReservationStatus::EnAttente->value, ReservationStatus::Confirmee->value])],
             // The form's first choice (display aid): when sent, the room must be of that type.
             'room_type_id' => ['nullable', 'integer'],
-            'room_id' => ['required', 'exists:rooms,id', new RoomIsAvailableForDates($reservation?->id)],
+            'room_id' => ['required', 'exists:rooms,id', new RoomIsAvailableForDates($reservation?->id, fn () => $this->bookingsBlock())],
             'notes' => ['nullable', 'string'],
             // Created from an online booking request (« Demandes en ligne »), marked handled on save.
             'booking_request_id' => ['nullable', 'integer', 'exists:booking_requests,id'],
@@ -172,6 +172,26 @@ class ReservationRequest extends FormRequest
     /**
      * @return array{0: Carbon, 1: Carbon, 2: int} [start, end, duration]
      */
+    /**
+     * Two réservations never share a room at the same time, paid or not (client decision A,
+     * 2026-11-11): every new booking is checked against the other pending bookings, and so is an
+     * existing one moved to another room or period. An edit that keeps its room and period (notes,
+     * client, status…) isn't blocked by an overlap that predates the rule.
+     */
+    public function bookingsBlock(): bool
+    {
+        $reservation = $this->route('reservation');
+        if (! $reservation instanceof Reservation) {
+            return true;
+        }
+
+        [$start, $end] = $this->period();
+
+        return (int) $this->input('room_id') !== (int) $reservation->room_id
+            || ! $start->equalTo($reservation->check_in)
+            || ! $end->equalTo($reservation->check_out);
+    }
+
     public function period(): array
     {
         return $this->pricingMode()->resolve(
