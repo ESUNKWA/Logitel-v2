@@ -48,7 +48,7 @@
                             @foreach ($types as $type)
                                 @php($lowest = collect($rates[$type->id])->filter()->min())
                                 <label class="site-booking__choice">
-                                    <input type="radio" name="room_type_id" value="{{ $type->id }}" data-type @checked((int) $selectedType === $type->id)>
+                                    <input type="radio" name="room_type_id" value="{{ $type->id }}" data-type data-stay-until="{{ \App\Enums\PricingMode::stayUntilFor($type) }}" @checked((int) $selectedType === $type->id)>
                                     <span class="site-booking__choice-body">
                                         <strong>{{ $type->name }}</strong>
                                         <small>Jusqu'à {{ $type->capacity_adults }} adulte{{ $type->capacity_adults > 1 ? 's' : '' }}@if ($type->capacity_children) et {{ $type->capacity_children }} enfant{{ $type->capacity_children > 1 ? 's' : '' }}@endif</small>
@@ -62,7 +62,7 @@
                         {{-- One fixed formula: the radio stays (checked, hidden) for reservation.js's estimate. --}}
                         <div class="site-booking__modes site-booking__modes--single">
                             <label class="site-booking__mode">
-                                <input type="radio" name="pricing_mode" value="{{ $mode->value }}" data-mode data-unit="{{ $mode->rateUnit() }}" data-units="{{ $mode->unitPlural() }}" checked class="visually-hidden">
+                                <input type="radio" name="pricing_mode" value="{{ $mode->value }}" data-mode data-unit="{{ $mode->rateUnit() }}" data-units="{{ $mode->unitPlural() }}" data-label="{{ $mode->getLabel() }}" checked class="visually-hidden">
                                 <span>{{ $mode->getLabel() }}<small data-mode-price></small></span>
                             </label>
                         </div>

@@ -93,7 +93,7 @@
                         {{-- data-search on every cell (DataTables reads it from the first row): the digits too. --}}
                         <td class="text-nowrap" data-search="{{ \App\Support\PhoneFormat::searchText($reservation->guest?->phone) }}">@if ($reservation->guest?->phone)<a href="tel:{{ preg_replace('/[^0-9+]/', '', $reservation->guest->phone) }}"><i class="far fa-phone-alt"></i> {{ \App\Support\PhoneFormat::display($reservation->guest->phone) }}</a>@else — @endif</td>
                         <td>N°{{ $reservation->room?->number }}</td>
-                        <td><x-admin::mode-badge :mode="$reservation->pricing_mode" /><div class="small text-muted">{{ $reservation->pricing_mode->durationLabel($reservation->duration) }}</div></td>
+                        <td><x-admin::mode-badge :mode="$reservation->pricing_mode" :until="$reservation->stay_until" /><div class="small text-muted">{{ $reservation->pricing_mode->durationLabel($reservation->duration, $reservation->stay_until) }}</div></td>
                         <td>
                             {{ $reservation->check_in->format('d/m/Y H\hi') }}
                             @if (in_array($reservation->status->value, ['en_attente', 'confirmee']) && $reservation->check_in->isPast())

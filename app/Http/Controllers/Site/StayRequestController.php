@@ -55,7 +55,9 @@ class StayRequestController extends Controller
     public function store(StayRequestRequest $request, Room $room): RedirectResponse
     {
         $mode = $request->pricingMode();
-        [$start, $end, $duration] = $mode->resolve($request->arrival(), (int) $request->validated('duration'));
+        $room->loadMissing('roomType');
+        $stayUntil = $mode === PricingMode::Sejour ? PricingMode::stayUntilFor($room->roomType) : null;
+        [$start, $end, $duration] = $mode->resolve($request->arrival(), (int) $request->validated('duration'), null, $stayUntil);
 
         try {
             $stayRequest = DB::transaction(function () use ($request, $room, $mode, $start, $end, $duration) {
@@ -145,10 +147,10 @@ class StayRequestController extends Controller
             ->filter(fn (PricingMode $mode) => $mode->rateFor($room->roomType) !== null && $mode->canStartAt($now))
             ->map(fn (PricingMode $mode) => [
                 'value' => $mode->value,
-                'label' => $mode->getLabel(),
+                'label' => $mode->getLabel(PricingMode::stayUntilFor($room->roomType)),
                 'rate' => (float) $mode->rateFor($room->roomType),
-                'unit' => $mode->rateUnit(),
-                'units' => $mode->unitPlural(),
+                'unit' => $mode->rateUnit(PricingMode::stayUntilFor($room->roomType)),
+                'units' => $mode->unitPlural(PricingMode::stayUntilFor($room->roomType)),
             ])
             ->values()
             ->all();

@@ -254,7 +254,7 @@
                             <td class="cell-hide-sm">
                                 @if ($file)
                                     <x-admin::file-badge :file="$file" :reference="true" :link="true" />
-                                    <x-admin::mode-badge :mode="$file->pricing_mode" class="ms-1" />
+                                    <x-admin::mode-badge :mode="$file->pricing_mode" :until="$file->stay_until" class="ms-1" />
                                     @if ($payment->isBookingPayment())
                                         <div class="small revenue-line-kind">Encaissé sur réservation (avant l'arrivée)</div>
                                     @elseif ($file->origin === \App\Models\Reservation::ORIGIN_RESERVATION)
@@ -275,7 +275,7 @@
                                     —
                                 @endif
                             </td>
-                            <td class="cell-show-sm">@if ($file)<x-admin::mode-badge :mode="$file->pricing_mode" />@else — @endif</td>
+                            <td class="cell-show-sm">@if ($file)<x-admin::mode-badge :mode="$file->pricing_mode" :until="$file->stay_until" />@else — @endif</td>
                             <td class="cell-hide-sm">{{ $file?->guest?->fullName() ?? '—' }}</td>
                             <td class="text-nowrap cell-hide-sm"><i class="fas {{ $payment->method->icon() }}"></i> {{ $payment->method->getLabel() }}</td>
                             <td class="text-end fw-semibold text-nowrap">{{ $fcfa($payment->amount) }} F</td>

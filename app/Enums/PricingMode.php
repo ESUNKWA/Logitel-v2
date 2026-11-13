@@ -25,20 +25,40 @@ enum PricingMode: string
      */
     public const WEBSITE = self::Sejour;
 
-    public function getLabel(): string
+    /**
+     * $stayUntil (« 12:00 », séjour of a room type ending the next day at a fixed time — see
+     * stayUntilFor() / Reservation::$stay_until): « Séjour (jusqu'à 12h00) » instead of « Séjour (24 h) ».
+     */
+    public function getLabel(?string $stayUntil = null): string
     {
         return match ($this) {
             self::Heure => "À l'heure",
             self::Journee => 'Journée ('.self::dayHours().' h)',
             self::Nuitee => 'Nuitée',
-            self::Sejour => 'Séjour (24 h)',
+            self::Sejour => $stayUntil ? "Séjour (jusqu'à ".self::clock($stayUntil).')' : 'Séjour ('.self::stayHours().' h)',
         };
+    }
+
+    /**
+     * The fixed departure time of a séjour for this room type (« 12:00 », the hotel setting
+     * hotel.stay_checkout_time) when the type is ticked « fin le lendemain à heure fixe », else
+     * null (periods of 24 h). Files snapshot it (`stay_until`) so later changes never move them.
+     */
+    public static function stayUntilFor(?RoomType $roomType): ?string
+    {
+        return $roomType?->stay_fixed_checkout ? (string) config('hotel.stay_checkout_time', '12:00') : null;
+    }
+
+    /** « 12:00 » → « 12h00 ». */
+    public static function clock(string $time): string
+    {
+        return str_replace(':', 'h', substr($time, 0, 5));
     }
 
     /**
      * "3 heures", "1 journée", "1 nuit", "2 périodes de 24 h".
      */
-    public function durationLabel(int $duration): string
+    public function durationLabel(int $duration, ?string $stayUntil = null): string
     {
         $plural = $duration > 1;
 
@@ -46,20 +66,22 @@ enum PricingMode: string
             self::Heure => $plural ? 'heures' : 'heure',
             self::Journee => $plural ? 'journées' : 'journée',
             self::Nuitee => $plural ? 'nuits' : 'nuit',
-            self::Sejour => ($plural ? 'périodes' : 'période').' de '.self::stayHours().' h',
+            self::Sejour => $stayUntil
+                ? ($plural ? 'séjours' : 'séjour').' (sortie à '.self::clock($stayUntil).')'
+                : ($plural ? 'périodes' : 'période').' de '.self::stayHours().' h',
         };
     }
 
     /**
      * Name of the duration unit, for form labels: "heures", "journées (6 h)", "nuits", "périodes de 24 h".
      */
-    public function unitPlural(): string
+    public function unitPlural(?string $stayUntil = null): string
     {
         return match ($this) {
             self::Heure => 'heures',
             self::Journee => 'journées ('.self::dayHours().' h)',
             self::Nuitee => 'nuits',
-            self::Sejour => 'périodes de '.self::stayHours().' h',
+            self::Sejour => $stayUntil ? 'séjours (sortie à '.self::clock($stayUntil).')' : 'périodes de '.self::stayHours().' h',
         };
     }
 
@@ -80,13 +102,13 @@ enum PricingMode: string
     /**
      * Unit shown next to a rate: "/ heure", "/ journée", "/ nuit", "/ 24 h".
      */
-    public function rateUnit(): string
+    public function rateUnit(?string $stayUntil = null): string
     {
         return match ($this) {
             self::Heure => '/ heure',
             self::Journee => '/ journée',
             self::Nuitee => '/ nuit',
-            self::Sejour => '/ '.self::stayHours().' h',
+            self::Sejour => $stayUntil ? '/ séjour' : '/ '.self::stayHours().' h',
         };
     }
 
@@ -129,14 +151,21 @@ enum PricingMode: string
         return $arrival;
     }
 
-    public function end(CarbonInterface $start, int $duration): Carbon
+    /**
+     * Departure. A séjour with $stayUntil (« 12:00 ») ends that time N days after the arrival's
+     * date, whatever the arrival time (client decision, 2026-11-13: 08:00 or 02:00 on Tuesday →
+     * Wednesday 12:00 for 1 séjour); without it, after N periods of stay_min_hours.
+     */
+    public function end(CarbonInterface $start, int $duration, ?string $stayUntil = null): Carbon
     {
         $start = Carbon::instance($start);
 
         return match ($this) {
             self::Heure => $start->copy()->addHours($duration),
             self::Journee => $start->copy()->addHours($duration * self::dayHours()),
-            self::Sejour => $start->copy()->addHours($duration * self::stayHours()),
+            self::Sejour => $stayUntil
+                ? $start->copy()->startOfDay()->addDays($duration)->setTimeFromTimeString($stayUntil)
+                : $start->copy()->addHours($duration * self::stayHours()),
             self::Nuitee => self::nightOf($start)->addDays($duration)->setTimeFromTimeString(config('hotel.night.until')),
         };
     }
@@ -145,7 +174,7 @@ enum PricingMode: string
      * Inverse of end(): the duration (in units of this mode) covering start → end.
      * Used when a stay is created from an explicit departure (date-based reservations form).
      */
-    public function durationBetween(CarbonInterface $start, CarbonInterface $end): int
+    public function durationBetween(CarbonInterface $start, CarbonInterface $end, ?string $stayUntil = null): int
     {
         $start = Carbon::instance($start);
         $end = Carbon::instance($end);
@@ -153,7 +182,9 @@ enum PricingMode: string
         $duration = match ($this) {
             self::Heure => (int) ceil($start->diffInMinutes($end) / 60),
             self::Journee => (int) ceil($start->diffInMinutes($end) / (60 * self::dayHours())),
-            self::Sejour => (int) ceil($start->diffInMinutes($end) / (60 * self::stayHours())),
+            self::Sejour => $stayUntil
+                ? (int) $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay()) + ($end->format('H:i') > substr($stayUntil, 0, 5) ? 1 : 0)
+                : (int) ceil($start->diffInMinutes($end) / (60 * self::stayHours())),
             self::Nuitee => (int) self::nightOf($start)->diffInDays($end->copy()->startOfDay()),
         };
 
@@ -166,17 +197,18 @@ enum PricingMode: string
      *
      * @return array{0: Carbon, 1: Carbon, 2: int} [start, end, duration]
      */
-    public function resolve(CarbonInterface $arrival, ?int $duration, ?CarbonInterface $departure = null): array
+    public function resolve(CarbonInterface $arrival, ?int $duration, ?CarbonInterface $departure = null, ?string $stayUntil = null): array
     {
         $start = $this->start($arrival);
+        $stayUntil = $this === self::Sejour ? $stayUntil : null;
 
         if (! $duration && $departure) {
-            $duration = $this->durationBetween($start, $departure);
+            $duration = $this->durationBetween($start, $departure, $stayUntil);
         }
 
         $duration = max(1, (int) $duration);
 
-        return [$start, $this->end($start, $duration), $duration];
+        return [$start, $this->end($start, $duration, $stayUntil), $duration];
     }
 
     /**

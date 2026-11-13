@@ -47,7 +47,7 @@ class AffectationRequest extends FormRequest
                     return;
                 }
 
-                [, $end] = $stay->pricing_mode->resolve($stay->check_in, (int) $this->input('duration'));
+                [, $end] = $stay->pricing_mode->resolve($stay->check_in, (int) $this->input('duration'), null, $stay->stay_until);
 
                 $error = Room::find($stay->room_id)?->availabilityError($stay->check_in, $end, $stay->id);
                 if ($error) {

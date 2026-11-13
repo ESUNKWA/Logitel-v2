@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PricingMode;
 use App\Enums\RoomStatus;
 use App\Enums\StayRequestStatus;
 use App\Http\Controllers\Controller;
@@ -64,7 +65,9 @@ class StayRequestController extends Controller
         // What would block a validation right now (the stay starts when it's validated).
         $roomProblem = null;
         if ($stayRequest->isPending() && $room = $stayRequest->room) {
-            [$start, $end] = $stayRequest->pricing_mode->resolve(now()->second(0), $stayRequest->duration);
+            // Validating creates the stay now, with the room type's current séjour rule.
+            $stayUntil = $stayRequest->pricing_mode === PricingMode::Sejour ? PricingMode::stayUntilFor($room->roomType) : null;
+            [$start, $end] = $stayRequest->pricing_mode->resolve(now()->second(0), $stayRequest->duration, null, $stayUntil);
             $roomProblem = $room->status !== RoomStatus::Disponible
                 ? "La chambre N°{$room->number} est « {$room->status->getLabel()} »."
                 : $room->availabilityError($start, $end, null, $stayRequest->id);

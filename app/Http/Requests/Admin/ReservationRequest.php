@@ -198,7 +198,26 @@ class ReservationRequest extends FormRequest
             Carbon::parse($this->input('check_in')),
             filled($this->input('duration')) ? (int) $this->input('duration') : null,
             filled($this->input('check_out')) ? Carbon::parse($this->input('check_out')) : null,
+            $this->stayUntil(),
         );
+    }
+
+    /**
+     * Séjour ending the next day at a fixed time (« 12:00 »), else null — same rule as the model:
+     * a booking keeping its room and formula keeps its own rule, otherwise the room type's current one.
+     */
+    public function stayUntil(): ?string
+    {
+        if ($this->pricingMode() !== PricingMode::Sejour) {
+            return null;
+        }
+
+        $existing = $this->route('reservation');
+        if ($existing instanceof Reservation && (int) $existing->room_id === (int) $this->input('room_id') && $existing->pricing_mode === PricingMode::Sejour) {
+            return $existing->stay_until;
+        }
+
+        return PricingMode::stayUntilFor(Room::query()->with('roomType')->find((int) $this->input('room_id'))?->roomType);
     }
 
     /**

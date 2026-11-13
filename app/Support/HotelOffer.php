@@ -33,9 +33,14 @@ class HotelOffer
         $formulas = [];
         // The website shows the séjour only (PricingMode::WEBSITE, client decision 2026-10-19).
         foreach ([PricingMode::WEBSITE] as $mode) {
-            $rates = $types->map(fn (RoomType $type) => $mode->rateFor($type))->filter(fn ($rate) => $rate !== null)->map(fn ($rate) => (float) $rate);
+            $offering = $types->filter(fn (RoomType $type) => $mode->rateFor($type) !== null);
+            $rates = $offering->map(fn (RoomType $type) => (float) $mode->rateFor($type));
             if ($rates->isNotEmpty()) {
-                $formulas[] = ['mode' => $mode, 'from' => $rates->min(), 'window' => self::window($mode)];
+                // Séjour ending the next day at a fixed time: said when every type offering it does.
+                $fixed = $offering->filter(fn (RoomType $type) => PricingMode::stayUntilFor($type) !== null)->count();
+                $until = $mode === PricingMode::Sejour && $fixed === $offering->count() ? (string) config('hotel.stay_checkout_time') : null;
+                $mixed = $mode === PricingMode::Sejour && $fixed > 0 && $fixed < $offering->count();
+                $formulas[] = ['mode' => $mode, 'from' => $rates->min(), 'until' => $until, 'window' => self::window($mode, $until, $mixed)];
             }
         }
 
@@ -57,8 +62,16 @@ class HotelOffer
      * When the formula runs: « 22h00 → 12h00 » for the nuitée, the block length otherwise
      * (the hotel's settings, config/hotel.php / Paramètres).
      */
-    public static function window(PricingMode $mode): string
+    public static function window(PricingMode $mode, ?string $stayUntil = null, bool $mixed = false): string
     {
+        if ($mode === PricingMode::Sejour && ($stayUntil || $mixed)) {
+            $at = PricingMode::clock($stayUntil ?? (string) config('hotel.stay_checkout_time'));
+
+            return $mixed
+                ? 'Par période de '.config('hotel.stay_min_hours')." h ou jusqu'au lendemain à ".$at.' selon la chambre'
+                : "Jusqu'au lendemain à ".$at;
+        }
+
         $hour = fn (string $time) => str_replace(':', 'h', $time);
 
         return match ($mode) {

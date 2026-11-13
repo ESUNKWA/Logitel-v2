@@ -60,7 +60,7 @@
                     <dt class="col-5">Client</dt>
                     <dd class="col-7">{{ $affectation->guest?->fullName() }}@if ($affectation->guest?->phone) — {{ \App\Support\PhoneFormat::display($affectation->guest->phone) }}@endif</dd>
                     <dt class="col-5">Formule</dt>
-                    <dd class="col-7"><x-admin::mode-badge :mode="$affectation->pricing_mode" /> : {{ $affectation->billingLabel() }}</dd>
+                    <dd class="col-7"><x-admin::mode-badge :mode="$affectation->pricing_mode" :until="$affectation->stay_until" /> : {{ $affectation->billingLabel() }}</dd>
                     @if ($affectation->hasDiscount())
                         <dt class="col-5">Remise</dt>
                         <dd class="col-7"><span class="text-success fw-semibold">− {{ number_format((float) $affectation->discount_amount, 0, ',', ' ') }} FCFA</span> <span class="small text-muted">({{ $affectation->discountLabel() }}@if ($affectation->discountedBy) · par {{ $affectation->discountedBy->name }}@endif)</span></dd>
@@ -126,7 +126,7 @@
                          of the same formula; the supplement is cashed now or left due. --}}
                     <div class="admin-card" id="prolonger">
                         <h5><i class="far fa-clock text-muted me-1"></i> Prolonger le séjour</h5>
-                        <p class="text-muted small">À la demande du client, même avant l'heure de sortie. La formule reste <x-admin::mode-badge :mode="$affectation->pricing_mode" /> ; le supplément peut être encaissé maintenant ou rester dû.</p>
+                        <p class="text-muted small">À la demande du client, même avant l'heure de sortie. La formule reste <x-admin::mode-badge :mode="$affectation->pricing_mode" :until="$affectation->stay_until" /> ; le supplément peut être encaissé maintenant ou rester dû.</p>
                         <form method="POST" action="{{ route('admin.affectations.extend', $affectation) }}"
                             data-extend-form
                             data-quotes="{{ json_encode((object) $extensionQuotes) }}"
@@ -134,7 +134,7 @@
                             @csrf
                             <div class="row g-3 align-items-end">
                                 <div class="col-sm-5">
-                                    <label class="form-label" for="extend-extra">Ajouter ({{ $affectation->pricing_mode->unitPlural() }})</label>
+                                    <label class="form-label" for="extend-extra">Ajouter ({{ $affectation->pricing_mode->unitPlural($affectation->stay_until) }})</label>
                                     <input type="number" min="1" max="{{ max(1, 365 - $affectation->duration) }}" step="1" class="form-control @error('extra') is-invalid @enderror" id="extend-extra" name="extra" value="{{ old('extra', 1) }}" data-extend-extra required>
                                     @error('extra')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
@@ -144,7 +144,7 @@
                                 @if ($forfaits !== [])
                                     <div class="col-12 form-text mt-1">
                                         <i class="far fa-tags"></i> Forfaits (jour d'entrée) :
-                                        {{ collect($forfaits)->map(fn ($price, $units) => $affectation->pricing_mode->durationLabel((int) $units).' = '.number_format((float) $price, 0, ',', ' ').' FCFA')->implode(' · ') }}
+                                        {{ collect($forfaits)->map(fn ($price, $units) => $affectation->pricing_mode->durationLabel((int) $units, $affectation->stay_until).' = '.number_format((float) $price, 0, ',', ' ').' FCFA')->implode(' · ') }}
                                         — appliqué automatiquement si la durée totale correspond.
                                     </div>
                                 @endif

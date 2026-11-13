@@ -136,7 +136,10 @@ class BookingRequestRequest extends FormRequest
             $arrival = $arrival->startOfDay();
         }
 
-        return $this->pricingMode()->resolve($arrival, (int) $this->input('duration'));
+        // Séjour of a type ending the next day at a fixed time (« 12:00 »), else periods of 24 h.
+        $stayUntil = $this->pricingMode() === PricingMode::Sejour ? PricingMode::stayUntilFor($this->roomType()) : null;
+
+        return $this->pricingMode()->resolve($arrival, (int) $this->input('duration'), null, $stayUntil);
     }
 
     /**

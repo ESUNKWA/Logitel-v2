@@ -22,6 +22,7 @@ class RoomType extends Model
         'capacity_adults',
         'capacity_children',
         'is_active',
+        'stay_fixed_checkout',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class RoomType extends Model
             'night_rate' => 'decimal:2',
             'stay_rate' => 'decimal:2',
             'is_active' => 'boolean',
+            'stay_fixed_checkout' => 'boolean',
         ];
     }
 

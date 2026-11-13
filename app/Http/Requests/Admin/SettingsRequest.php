@@ -23,6 +23,8 @@ class SettingsRequest extends FormRequest
             'night_until' => ['required', 'date_format:H:i'],
             'day_hours' => ['required', 'integer', 'min:1', 'max:23'],
             'stay_min_hours' => ['required', 'integer', 'min:1', 'max:168'],
+            // Absent from older forms/tests = left unchanged.
+            'stay_checkout_time' => ['sometimes', 'required', 'date_format:H:i'],
             'cleaning_buffer_minutes' => ['required', 'integer', 'min:0', 'max:240'],
             'request_expiry_minutes' => ['sometimes', 'required', 'integer', 'min:5', 'max:240'],
             // Customer receipt (absent from older forms/tests = left unchanged)
@@ -57,6 +59,7 @@ class SettingsRequest extends FormRequest
             'night_until' => 'fin de la nuitée',
             'day_hours' => 'durée de la journée',
             'stay_min_hours' => 'durée du séjour',
+            'stay_checkout_time' => 'heure de fin du séjour',
             'cleaning_buffer_minutes' => 'délai de ménage',
             'request_expiry_minutes' => 'délai de traitement des demandes',
             'receipt_width' => 'largeur du rouleau',

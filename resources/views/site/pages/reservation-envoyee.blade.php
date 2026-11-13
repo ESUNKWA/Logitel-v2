@@ -29,7 +29,7 @@
 
             <dl class="site-booking__recap">
                 <dt>Chambre</dt><dd>{{ $booking->roomType?->name ?? '—' }}</dd>
-                <dt>Formule</dt><dd>{{ $booking->pricing_mode->getLabel() }} — {{ $booking->pricing_mode->durationLabel($booking->duration) }}</dd>
+                <dt>Formule</dt><dd>{{ $booking->pricing_mode->getLabel($booking->stay_until) }} — {{ $booking->pricing_mode->durationLabel($booking->duration, $booking->stay_until) }}</dd>
                 <dt>Arrivée</dt><dd>{{ $booking->check_in->translatedFormat('l j F Y \à H\hi') }}</dd>
                 <dt>Départ prévu</dt><dd>{{ $booking->check_out->translatedFormat('l j F Y \à H\hi') }}</dd>
                 <dt>Personnes</dt><dd>{{ $booking->adults }} adulte{{ $booking->adults > 1 ? 's' : '' }}@if ($booking->children), {{ $booking->children }} enfant{{ $booking->children > 1 ? 's' : '' }}@endif</dd>

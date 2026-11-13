@@ -57,6 +57,11 @@
                     <input type="number" min="1" max="168" class="form-control" id="stay_min_hours" name="stay_min_hours" value="{{ old('stay_min_hours', $settings['stay_min_hours']) }}" required>
                     <div class="form-text">Durée facturée par période de séjour.</div>
                 </div>
+                <div class="col-md-6 col-xl-3">
+                    <label class="form-label" for="stay_checkout_time">Séjour à heure fixe : sortie à</label>
+                    <input type="time" class="form-control" id="stay_checkout_time" name="stay_checkout_time" value="{{ old('stay_checkout_time', $settings['stay_checkout_time']) }}" required>
+                    <div class="form-text">Pour les types de chambre cochés « Séjour jusqu'au lendemain à heure fixe » : sortie le lendemain à cette heure, quelle que soit l'heure d'arrivée.</div>
+                </div>
             </div>
         </div>
 

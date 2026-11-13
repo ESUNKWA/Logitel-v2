@@ -8,6 +8,7 @@ use App\Exceptions\DeletionBlocked;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RoomRequest;
 use App\Models\Perk;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomImage;
 use App\Models\RoomType;
@@ -235,16 +236,25 @@ class RoomController extends Controller
             ->where('status', '!=', RoomStatus::HorsService)
             ->when($request->integer('room_type_id'), fn ($query, $typeId) => $query->where('room_type_id', $typeId));
 
+        $rooms = $query->get();
+
         if ($withArrival) {
-            [$start, $end] = $mode->resolve(
-                Carbon::parse($request->string('check_in')->toString()),
-                $request->integer('duration') ?: null,
-                $request->filled('check_out') ? Carbon::parse($request->string('check_out')->toString()) : null,
-            );
-            $query->availableBetween($start, $end, $request->integer('exclude_reservation_id') ?: null, null, bookingsBlock: true);
+            // The stay's period depends on the room type when it's a séjour (fixed next-day time
+            // or periods of 24 h), so the free rooms are looked up type by type.
+            $arrival = Carbon::parse($request->string('check_in')->toString());
+            $departure = $request->filled('check_out') ? Carbon::parse($request->string('check_out')->toString()) : null;
+            $excludeId = $request->integer('exclude_reservation_id') ?: null;
+            $free = [];
+            foreach ($rooms->groupBy('room_type_id') as $typeRooms) {
+                $stayUntil = $mode === PricingMode::Sejour ? $this->stayUntilForList($typeRooms->first(), $excludeId) : null;
+                [$start, $end] = $mode->resolve($arrival, $request->integer('duration') ?: null, $departure, $stayUntil);
+                array_push($free, ...Room::query()->whereKey($typeRooms->modelKeys())
+                    ->availableBetween($start, $end, $excludeId, null, bookingsBlock: true)->pluck('id')->all());
+            }
+            $rooms = $rooms->whereIn('id', $free);
         }
 
-        $rooms = $query->get()
+        $rooms = $rooms
             ->sortBy('number', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->map(fn (Room $room) => [
@@ -256,5 +266,19 @@ class RoomController extends Controller
             ]);
 
         return response()->json($rooms);
+    }
+
+    /**
+     * The séjour rule for a room of the list: the booking being edited keeps its own while it
+     * stays in that room (Reservation's saving event), else the room type's current one.
+     */
+    private function stayUntilForList(Room $room, ?int $excludeReservationId): ?string
+    {
+        $existing = $excludeReservationId ? Reservation::query()->find($excludeReservationId) : null;
+        if ($existing && $existing->room?->room_type_id === $room->room_type_id && $existing->pricing_mode === PricingMode::Sejour) {
+            return $existing->stay_until;
+        }
+
+        return PricingMode::stayUntilFor($room->roomType);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Rules;
 
 use App\Enums\PricingMode;
+use App\Models\Reservation;
 use App\Models\Room;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
@@ -45,10 +46,22 @@ class RoomIsAvailableForDates implements DataAwareRule, ValidationRule
             return;
         }
 
-        [$start, $end] = $mode->resolve(Carbon::parse($checkIn), $duration, $checkOut ? Carbon::parse($checkOut) : null);
+        $room = Room::query()->with('roomType')->find($value);
+
+        // Séjour at a fixed time: the booking being edited keeps its own rule while it keeps its
+        // room and formula (like Reservation's saving event), else the room type's current one.
+        $stayUntil = null;
+        if ($mode === PricingMode::Sejour) {
+            $existing = $this->excludeReservationId ? Reservation::query()->find($this->excludeReservationId) : null;
+            $stayUntil = $existing && (int) $existing->room_id === (int) $value && $existing->pricing_mode === PricingMode::Sejour
+                ? $existing->stay_until
+                : PricingMode::stayUntilFor($room?->roomType);
+        }
+
+        [$start, $end] = $mode->resolve(Carbon::parse($checkIn), $duration, $checkOut ? Carbon::parse($checkOut) : null, $stayUntil);
 
         $bookingsBlock = $this->bookingsBlock instanceof Closure ? (bool) ($this->bookingsBlock)() : $this->bookingsBlock;
-        $error = Room::find($value)?->availabilityError($start, $end, $this->excludeReservationId, null, $bookingsBlock);
+        $error = $room?->availabilityError($start, $end, $this->excludeReservationId, null, $bookingsBlock);
 
         if ($error) {
             $fail($error);

@@ -53,7 +53,7 @@
                             <td>{{ $item->created_at->format('d/m H\hi') }}</td>
                             <td data-search="{{ $item->fullName() }} {{ \App\Support\PhoneFormat::searchText($item->phone) }}">{{ $item->fullName() }}<div class="small text-muted">{{ \App\Support\PhoneFormat::display($item->phone) }}</div></td>
                             <td>N°{{ $item->room?->number }}<div class="small text-muted">{{ $item->room?->roomType?->name }}</div></td>
-                            <td><x-admin::mode-badge :mode="$item->pricing_mode" /><div class="small text-muted">{{ $item->billingLabel() }}</div></td>
+                            <td><x-admin::mode-badge :mode="$item->pricing_mode" :until="$item->stay_until" /><div class="small text-muted">{{ $item->billingLabel() }}</div></td>
                             <td class="text-end">{{ $fcfa($item->total_amount) }} FCFA</td>
                             <td>
                                 <span class="badge bg-{{ $statusColor }}">{{ $statusLabel }}</span>

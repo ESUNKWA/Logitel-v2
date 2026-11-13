@@ -99,10 +99,11 @@
                                     <tbody>
                                         @foreach ($rates as $rate)
                                             <tr>
-                                                <th>{{ $rate['mode']->getLabel() }}</th>
+                                                @php($stayUntil = \App\Enums\PricingMode::stayUntilFor($room->roomType))
+                                                <th>{{ $rate['mode']->getLabel($stayUntil) }}</th>
                                                 {{-- The séjour only (Room::publicRates(), PricingMode::WEBSITE). --}}
-                                                <td>par période de {{ config('hotel.stay_min_hours') }} heures</td>
-                                                <td class="text-end"><strong>{{ $fcfa($rate['rate']) }} FCFA</strong> <small>{{ $rate['mode']->rateUnit() }}</small></td>
+                                                <td>{{ $stayUntil ? "jusqu'au lendemain à ".\App\Enums\PricingMode::clock($stayUntil) : 'par période de '.config('hotel.stay_min_hours').' heures' }}</td>
+                                                <td class="text-end"><strong>{{ $fcfa($rate['rate']) }} FCFA</strong> <small>{{ $rate['mode']->rateUnit($stayUntil) }}</small></td>
                                             </tr>
                                         @endforeach
                                     </tbody>

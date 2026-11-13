@@ -22,7 +22,7 @@
                 <span class="room-type-label">{{ $room->roomType->name }}</span>
                 <h4><a href="{{ $room->publicUrl() }}">{{ $room->displayName() }}</a></h4>
                 @if ($lowest)
-                    <div class="price"><small>à partir de</small> {{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA<span class="time">{{ $lowest['mode']->rateUnit() }}</span></div>
+                    <div class="price"><small>à partir de</small> {{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA<span class="time">{{ $lowest['mode']->rateUnit(\App\Enums\PricingMode::stayUntilFor($room->roomType)) }}</span></div>
                 @else
                     <div class="price"><small>Tarif sur demande</small></div>
                 @endif
@@ -42,7 +42,7 @@
             <div class="content">
                 <h4><a href="{{ $room->publicUrl() }}">{{ $room->displayName() }}</a></h4>
                 @if ($lowest)
-                    <div class="price-line">dès {{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA <small>{{ $lowest['mode']->rateUnit() }}</small></div>
+                    <div class="price-line">dès {{ number_format($lowest['rate'], 0, ',', ' ') }} FCFA <small>{{ $lowest['mode']->rateUnit(\App\Enums\PricingMode::stayUntilFor($room->roomType)) }}</small></div>
                 @else
                     <div class="price-line">Tarif sur demande</div>
                 @endif

@@ -41,13 +41,23 @@
     var update = function () {
         var type = checked('room_type_id');
         var typeRates = type ? (rates[type.value] || {}) : {};
+        // Séjour of a type ending the next day at a fixed time (data-stay-until « 12:00 »).
+        var stayUntil = type ? (type.dataset.stayUntil || '') : '';
+        var clock = stayUntil.slice(0, 5).replace(':', 'h');
+        var unitOf = function (radio) {
+            return radio.value === 'sejour' && stayUntil ? '/ séjour' : radio.dataset.unit;
+        };
 
         // Formulas offered by this type; move off a formula it doesn't offer.
         form.querySelectorAll('[data-mode]').forEach(function (radio) {
             var rate = typeRates[radio.value];
             radio.disabled = rate === null || rate === undefined;
             radio.closest('label').classList.toggle('is-disabled', radio.disabled);
-            radio.closest('label').querySelector('[data-mode-price]').textContent = radio.disabled ? 'non proposée' : fcfa(rate) + ' ' + radio.dataset.unit;
+            radio.closest('label').querySelector('[data-mode-price]').textContent = radio.disabled ? 'non proposée' : fcfa(rate) + ' ' + unitOf(radio);
+            var name = radio.closest('label').querySelector('span');
+            if (name && name.firstChild && radio.dataset.label) {
+                name.firstChild.textContent = radio.value === 'sejour' && stayUntil ? "Séjour (jusqu'à " + clock + ')' : radio.dataset.label;
+            }
         });
         var mode = checked('pricing_mode');
         if (!mode || mode.disabled) {
@@ -69,7 +79,8 @@
             checkIn.value = day ? (isNight ? day : day + 'T10:00') : '';
         }
         checkInLabel.textContent = isNight ? 'Nuit du' : 'Arrivée le';
-        unitsLabel.textContent = mode.dataset.units;
+        var fixedStay = mode.value === 'sejour' && stayUntil;
+        unitsLabel.textContent = fixedStay ? 'séjours (sortie à ' + clock + ')' : mode.dataset.units;
 
         var n = Math.max(1, parseInt(duration.value, 10) || 1);
         var rate = typeRates[mode.value] || 0;
@@ -79,6 +90,10 @@
             if (isNight) {
                 start = atTime(start, nightFrom);
                 end = atTime(new Date(start.getTime() + n * 86400000), nightUntil);
+            } else if (fixedStay) {
+                // That time N days after the arrival's date, whatever the arrival time.
+                var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + n);
+                end = atTime(day, stayUntil);
             } else {
                 var hours = mode.value === 'heure' ? n : (mode.value === 'journee' ? n * dayHours : n * stayHours);
                 end = new Date(start.getTime() + hours * 3600000);
@@ -89,7 +104,7 @@
 
         form.querySelector('[data-sum-type]').textContent = type ? type.closest('label').querySelector('strong').textContent : '—';
         form.querySelector('[data-sum-mode]').textContent = mode.closest('label').querySelector('span').firstChild.textContent.trim()
-            + (rate ? ' — ' + n + ' × ' + fcfa(rate) + ' ' + mode.dataset.unit : '');
+            + (rate ? ' — ' + n + ' × ' + fcfa(rate) + ' ' + unitOf(mode) : '');
         form.querySelector('[data-sum-start]').textContent = start ? formatDate(start) : '—';
         form.querySelector('[data-sum-end]').textContent = end ? formatDate(end) : '—';
         form.querySelector('[data-sum-total]').textContent = rate ? fcfa(rate * n) : '—';

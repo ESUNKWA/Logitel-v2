@@ -30,6 +30,8 @@ class RoomTypeRequest extends FormRequest
             'capacity_adults' => ['required', 'integer', 'min:1'],
             'capacity_children' => ['required', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            // Séjour ending the next day at hotel.stay_checkout_time instead of periods of 24 h.
+            'stay_fixed_checkout' => ['sometimes', 'boolean'],
         ];
     }
 

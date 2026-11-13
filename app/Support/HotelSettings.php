@@ -23,6 +23,7 @@ class HotelSettings
         'night_until' => 'hotel.night.until',
         'day_hours' => 'hotel.day_hours',
         'stay_min_hours' => 'hotel.stay_min_hours',
+        'stay_checkout_time' => 'hotel.stay_checkout_time',
         'cleaning_buffer_minutes' => 'hotel.cleaning_buffer_minutes',
         'request_expiry_minutes' => 'hotel.request_expiry_minutes',
         'receipt_width' => 'hotel.receipt.width',

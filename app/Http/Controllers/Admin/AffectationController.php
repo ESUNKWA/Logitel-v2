@@ -212,7 +212,7 @@ class AffectationController extends Controller
 
         for ($extra = 1; $extra <= self::EXTENSION_PREVIEW_MAX && $stay->duration + $extra <= 365; $extra++) {
             $duration = $stay->duration + $extra;
-            [, $end] = $stay->pricing_mode->resolve($stay->check_in, $duration);
+            [, $end] = $stay->pricing_mode->resolve($stay->check_in, $duration, null, $stay->stay_until);
             $normal = bcmul((string) $stay->unit_rate, (string) $duration, 2);
             $subtotal = isset($forfaits[$duration]) && bccomp((string) $forfaits[$duration], $normal, 2) < 0
                 ? bcadd((string) $forfaits[$duration], '0', 2)
@@ -239,7 +239,7 @@ class AffectationController extends Controller
 
         $payments = DB::transaction(function () use ($request, $affectation) {
             $duration = $request->newDuration();
-            [, $end] = $affectation->pricing_mode->resolve($affectation->check_in, $duration);
+            [, $end] = $affectation->pricing_mode->resolve($affectation->check_in, $duration, null, $affectation->stay_until);
             Room::lockAvailable($affectation->room_id, $affectation->check_in, $end, $affectation->id, 'extra');
 
             // The model re-derives check_out and total, re-bills the invoice and clears any alarm snooze.
@@ -273,7 +273,7 @@ class AffectationController extends Controller
         // Lock the room and re-check before extending; the model re-derives check_out and total
         // and re-bills the invoice.
         DB::transaction(function () use ($request, $affectation) {
-            [, $end] = $affectation->pricing_mode->resolve($affectation->check_in, (int) $request->validated('duration'));
+            [, $end] = $affectation->pricing_mode->resolve($affectation->check_in, (int) $request->validated('duration'), null, $affectation->stay_until);
             Room::lockAvailable($affectation->room_id, $affectation->check_in, $end, $affectation->id, 'duration');
 
             $affectation->update($request->stayAttributes());

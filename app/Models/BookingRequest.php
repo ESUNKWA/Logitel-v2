@@ -53,7 +53,13 @@ class BookingRequest extends Model
     {
         // Like Reservation: the departure and the (indicative) total are always derived.
         static::saving(function (BookingRequest $request) {
-            $request->check_out = $request->pricing_mode->end($request->check_in, max(1, (int) $request->duration));
+            // Séjour at a fixed time (room type setting): the rule is kept from when the request was made.
+            if (! $request->exists || $request->isDirty(['room_type_id', 'pricing_mode'])) {
+                $request->stay_until = $request->pricing_mode === PricingMode::Sejour
+                    ? PricingMode::stayUntilFor(RoomType::query()->find($request->room_type_id))
+                    : null;
+            }
+            $request->check_out = $request->pricing_mode->end($request->check_in, max(1, (int) $request->duration), $request->pricing_mode === PricingMode::Sejour ? $request->stay_until : null);
             $request->total_amount = bcmul((string) $request->unit_rate, (string) max(1, (int) $request->duration), 2);
             $request->status ??= self::STATUS_PENDING;
         });
@@ -101,7 +107,7 @@ class BookingRequest extends Model
 
     public function billingLabel(): string
     {
-        return $this->pricing_mode->durationLabel($this->duration).' × '.number_format((float) $this->unit_rate, 0, ',', ' ').' FCFA';
+        return $this->pricing_mode->durationLabel($this->duration, $this->stay_until).' × '.number_format((float) $this->unit_rate, 0, ',', ' ').' FCFA';
     }
 
     /**

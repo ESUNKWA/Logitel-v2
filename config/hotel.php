@@ -26,6 +26,10 @@ return [
     // "Séjour": priced per period of at least this many hours.
     'stay_min_hours' => 24,
 
+    // "Séjour" of the room types ticked « fin le lendemain à heure fixe »: departure at this time
+    // the day after the arrival (N séjours = N days later), whatever the arrival time.
+    'stay_checkout_time' => '12:00',
+
     // Mandatory cleaning time between two stays in the same room (minutes; 0 = none): a stay
     // ending at 12:00 lets the next one start at 12:30 at the earliest.
     'cleaning_buffer_minutes' => 30,

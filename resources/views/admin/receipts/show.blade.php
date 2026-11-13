@@ -117,16 +117,16 @@
             {{-- No client part (name, phone, RCCM / contact), room type nor number of guests on the
                  ticket (client request, 2026-10-19) — except a booking's client phone, above (2026-11-10). --}}
             <div class="row"><span>Chambre</span><span class="strong">N°{{ $reservation->room?->number }}</span></div>
-            <div class="row"><span>Formule</span><span>{{ $reservation->pricing_mode->getLabel() }}</span></div>
+            <div class="row"><span>Formule</span><span>{{ $reservation->modeLabel() }}</span></div>
             <div class="row"><span>{{ $isStay ? 'Entrée' : 'Arrivée prévue' }}</span><span>{{ $at($reservation->check_in) }}</span></div>
             <div class="row"><span>{{ $isStay ? 'Sortie prévue' : 'Départ prévu' }}</span><span>{{ $at($reservation->check_out) }}</span></div>
 
             <hr class="sep">
             @if ($reservation->hasSpecialRate())
-                <div class="row"><span>Forfait {{ $reservation->pricing_mode->durationLabel($reservation->duration) }}</span><span>{{ $fcfa($reservation->special_price) }}</span></div>
+                <div class="row"><span>Forfait {{ $reservation->pricing_mode->durationLabel($reservation->duration, $reservation->stay_until) }}</span><span>{{ $fcfa($reservation->special_price) }}</span></div>
                 <div class="row sub"><span>au lieu de {{ $fcfa($reservation->normalSubtotal()) }} ({{ $reservation->special_rate_name }})</span><span></span></div>
             @else
-                <div class="row"><span>{{ $reservation->pricing_mode->durationLabel($reservation->duration) }} × {{ $fcfa($reservation->unit_rate) }}</span><span></span></div>
+                <div class="row"><span>{{ $reservation->pricing_mode->durationLabel($reservation->duration, $reservation->stay_until) }} × {{ $fcfa($reservation->unit_rate) }}</span><span></span></div>
             @endif
             @if ($reservation->hasDiscount())
                 <div class="row"><span>Sous-total</span><span>{{ $fcfa($reservation->subtotal()) }}</span></div>

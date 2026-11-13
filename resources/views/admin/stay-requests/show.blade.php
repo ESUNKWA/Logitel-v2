@@ -40,7 +40,7 @@
                     <dt class="col-5">Chambre</dt>
                     <dd class="col-7">N°{{ $room?->number }} — {{ $type?->name }}</dd>
                     <dt class="col-5">Formule choisie</dt>
-                    <dd class="col-7"><x-admin::mode-badge :mode="$stayRequest->pricing_mode" /> : {{ $stayRequest->billingLabel() }}</dd>
+                    <dd class="col-7"><x-admin::mode-badge :mode="$stayRequest->pricing_mode" :until="$stayRequest->stay_until" /> : {{ $stayRequest->billingLabel() }}</dd>
                     <dt class="col-5">Total annoncé</dt>
                     <dd class="col-7"><strong>{{ $fcfa($stayRequest->total_amount) }} FCFA</strong></dd>
                 </dl>
@@ -86,6 +86,7 @@
                     data-day-rate="{{ $type->day_rate }}"
                     data-night-rate="{{ $type->night_rate }}"
                     data-stay-rate="{{ $type->stay_rate }}"
+                    data-stay-until="{{ \App\Enums\PricingMode::stayUntilFor($type) }}"
                     data-forfaits="{{ json_encode((object) $forfaits) }}"
                     data-perks="{{ json_encode((object) $perks) }}"
                 >
@@ -130,7 +131,7 @@
                                     @continue($mode->rateFor($type) === null)
                                     <input type="radio" class="btn-check" name="pricing_mode" id="mode-{{ $mode->value }}" value="{{ $mode->value }}" data-mode-option
                                         @checked($selectedMode === $mode->value)>
-                                    <label class="btn mode-btn mode--{{ $mode->value }}" for="mode-{{ $mode->value }}"><i class="fas {{ $mode->icon() }}" aria-hidden="true"></i> {{ $mode->getLabel() }}</label>
+                                    <label class="btn mode-btn mode--{{ $mode->value }}" for="mode-{{ $mode->value }}"><i class="fas {{ $mode->icon() }}" aria-hidden="true"></i> {{ $mode->getLabel(\App\Enums\PricingMode::stayUntilFor($type)) }}</label>
                                 @endforeach
                             </div>
                         </div>

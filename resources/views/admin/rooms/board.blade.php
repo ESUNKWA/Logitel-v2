@@ -49,7 +49,7 @@
                             <tr>
                                 <td><strong>{{ $row['type']->name }}</strong>@if ($row['type']->capacity_adults)<div class="small text-muted">{{ $row['type']->capacity_adults }} adulte(s){{ $row['type']->capacity_children ? ' + '.$row['type']->capacity_children.' enfant(s)' : '' }}</div>@endif</td>
                                 @foreach (\App\Enums\PricingMode::cases() as $mode)
-                                    <td class="text-end">{!! $mode->rateFor($row['type']) !== null ? '<strong>'.e(number_format((float) $mode->rateFor($row['type']), 0, ',', ' ')).'</strong>' : '<span class="text-muted">—</span>' !!}</td>
+                                    <td class="text-end">{!! $mode->rateFor($row['type']) !== null ? '<strong>'.e(number_format((float) $mode->rateFor($row['type']), 0, ',', ' ')).'</strong>' : '<span class="text-muted">—</span>' !!}@if ($mode === \App\Enums\PricingMode::Sejour && $mode->rateFor($row['type']) !== null && ($until = \App\Enums\PricingMode::stayUntilFor($row['type'])))<div class="small text-muted">jusqu'à {{ \App\Enums\PricingMode::clock($until) }}</div>@endif</td>
                                 @endforeach
                                 <td class="text-end"><span class="badge bg-{{ $row['free'] ? 'success' : 'secondary' }}">{{ $row['free'] }}</span></td>
                             </tr>
@@ -100,7 +100,7 @@
             <span class="room-type-heading__name">{{ $typeName }}</span>
             <span class="room-type-heading__count">{{ $typeRooms->count() }} libre{{ $typeRooms->count() > 1 ? 's' : '' }}</span>
             @if ($lowest)
-                <span class="room-type-heading__rate">dès {{ number_format((float) $lowest[1], 0, ',', ' ') }} F {{ $lowest[0]->rateUnit() }}</span>
+                <span class="room-type-heading__rate">dès {{ number_format((float) $lowest[1], 0, ',', ' ') }} F {{ $lowest[0]->rateUnit(\App\Enums\PricingMode::stayUntilFor($typeRooms->first()->roomType)) }}</span>
             @endif
         </h3>
     @endif
@@ -127,6 +127,7 @@
                     data-day-rate="{{ $room->roomType?->day_rate }}"
                     data-night-rate="{{ $room->roomType?->night_rate }}"
                     data-stay-rate="{{ $room->roomType?->stay_rate }}"
+                    data-stay-until="{{ \App\Enums\PricingMode::stayUntilFor($room->roomType) }}"
                     data-forfaits="{{ json_encode((object) ($forfaits[$room->room_type_id] ?? [])) }}"
                     data-perks="{{ json_encode((object) ($perks[$room->room_type_id] ?? [])) }}"
                 @endif
@@ -158,7 +159,7 @@
                     @can('affectations.view')
                         <div class="mt-2 small">
                             {{ $room->pendingRequest->fullName() }}<br>
-                            <span class="text-muted"><x-admin::mode-badge :mode="$room->pendingRequest->pricing_mode" /> · retenue jusqu'à {{ $room->pendingRequest->expires_at->format('H\hi') }}</span>
+                            <span class="text-muted"><x-admin::mode-badge :mode="$room->pendingRequest->pricing_mode" :until="$room->pendingRequest->stay_until" /> · retenue jusqu'à {{ $room->pendingRequest->expires_at->format('H\hi') }}</span>
                         </div>
                         <div class="mt-1">
                             <a href="{{ route('admin.stay-requests.show', $room->pendingRequest) }}" class="small">Traiter la demande</a>
@@ -214,7 +215,7 @@
                         @foreach (\App\Enums\PricingMode::cases() as $mode)
                             @if ($mode->rateFor($room->roomType) !== null)
                                 <li>
-                                    <span><i class="fas {{ $mode->icon() }} mode-icon mode--{{ $mode->value }}" aria-hidden="true"></i> {{ $mode->getLabel() }}@if ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen) <small class="text-muted">dès {{ str_replace(':', 'h', config('hotel.night.from')) }}</small>@endif</span>
+                                    <span><i class="fas {{ $mode->icon() }} mode-icon mode--{{ $mode->value }}" aria-hidden="true"></i> {{ $mode->getLabel(\App\Enums\PricingMode::stayUntilFor($room->roomType)) }}@if ($mode === \App\Enums\PricingMode::Nuitee && ! $nightOpen) <small class="text-muted">dès {{ str_replace(':', 'h', config('hotel.night.from')) }}</small>@endif</span>
                                     <strong>{{ number_format((float) $mode->rateFor($room->roomType), 0, ',', ' ') }}</strong>
                                 </li>
                             @endif

@@ -91,7 +91,7 @@
         <select class="form-select @error('room_type_id') is-invalid @enderror" id="booking_room_type" name="room_type_id" data-booking-type required>
             <option value="">Choisissez un type de chambre…</option>
             @foreach ($roomTypes as $type)
-                <option value="{{ $type->id }}" @selected((string) $type->id === $selectedTypeId)@foreach (\App\Enums\PricingMode::cases() as $case) data-{{ $case->value }}="{{ $case->rateFor($type) !== null ? '1' : '' }}"@endforeach data-perks="{{ json_encode((object) ($perkMenus[$type->id] ?? [])) }}">{{ $type->name }}</option>
+                <option value="{{ $type->id }}" @selected((string) $type->id === $selectedTypeId)@foreach (\App\Enums\PricingMode::cases() as $case) data-{{ $case->value }}="{{ $case->rateFor($type) !== null ? '1' : '' }}"@endforeach data-perks="{{ json_encode((object) ($perkMenus[$type->id] ?? [])) }}" data-stay-until="{{ $reservation->exists && $reservation->pricing_mode === \App\Enums\PricingMode::Sejour && $reservation->room?->room_type_id === $type->id ? $reservation->stay_until : \App\Enums\PricingMode::stayUntilFor($type) }}">{{ $type->name }}</option>
             @endforeach
         </select>
     </div>
@@ -122,7 +122,7 @@
         <div class="btn-group w-100 booking-modes" role="group">
             @foreach (\App\Enums\PricingMode::cases() as $case)
                 <input type="radio" class="btn-check" name="pricing_mode" id="booking-mode-{{ $case->value }}" value="{{ $case->value }}" data-booking-mode data-availability-trigger @checked($mode === $case)@disabled(! $offers($case))>
-                <label class="btn mode-btn mode--{{ $case->value }}" for="booking-mode-{{ $case->value }}"@unless ($offers($case)) hidden @endunless><i class="fas {{ $case->icon() }}" aria-hidden="true"></i> {{ $case->getLabel() }}</label>
+                <label class="btn mode-btn mode--{{ $case->value }}" for="booking-mode-{{ $case->value }}"@unless ($offers($case)) hidden @endunless><i class="fas {{ $case->icon() }}" aria-hidden="true"></i> {{ $case->getLabel($selectedType ? \App\Enums\PricingMode::stayUntilFor($selectedType) : null) }}</label>
             @endforeach
         </div>
         <div class="form-text" data-booking-type-hint{{ $selectedType ? ' hidden' : '' }}>Choisissez d'abord le type de chambre : seuls ses modes s'affichent.</div>

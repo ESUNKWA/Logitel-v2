@@ -17,7 +17,7 @@
                 @foreach ($offer['formulas'] as $formula)
                     <li class="home-offer__formula home-offer__formula--{{ $formula['mode']->value }}">
                         <i class="fas {{ $formula['mode']->icon() }}" aria-hidden="true"></i>
-                        <span class="home-offer__formula-name">{{ $formula['mode']->getLabel() }}</span>
+                        <span class="home-offer__formula-name">{{ $formula['mode']->getLabel($formula['until'] ?? null) }}</span>
                         <span class="home-offer__formula-price">dès <strong>{{ $fcfa($formula['from']) }} F</strong></span>
                         <span class="home-offer__formula-window">{{ $formula['window'] }}</span>
                     </li>

@@ -40,7 +40,15 @@
     <div class="col-md-6 col-xl-3">
         <label class="form-label" for="stay_rate">Tarif séjour</label>
         <input type="text" inputmode="numeric" autocomplete="off" data-money class="form-control" id="stay_rate" name="stay_rate" value="{{ old('stay_rate', $roomType->stay_rate !== null ? number_format((float) $roomType->stay_rate, 0, ',', ' ') : null) }}">
-        <div class="form-text">Par période de {{ config('hotel.stay_min_hours') }} h (séjour d'au moins {{ config('hotel.stay_min_hours') }} h).</div>
+        <div class="form-text">Par période de {{ config('hotel.stay_min_hours') }} h (séjour d'au moins {{ config('hotel.stay_min_hours') }} h), ou jusqu'au lendemain à heure fixe si la case ci-dessous est cochée.</div>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input type="hidden" name="stay_fixed_checkout" value="0">
+            <input type="checkbox" class="form-check-input" id="stay_fixed_checkout" name="stay_fixed_checkout" value="1" @checked(old('stay_fixed_checkout', $roomType->stay_fixed_checkout ?? false))>
+            <label class="form-check-label" for="stay_fixed_checkout">Séjour jusqu'au lendemain à {{ \App\Enums\PricingMode::clock((string) config('hotel.stay_checkout_time')) }} (au lieu de {{ config('hotel.stay_min_hours') }} h complètes)</label>
+        </div>
+        <div class="form-text">Le client sort le lendemain de son arrivée à {{ \App\Enums\PricingMode::clock((string) config('hotel.stay_checkout_time')) }} (2 séjours = le surlendemain), quelle que soit l'heure d'arrivée. L'heure se règle dans Configuration → Paramètres. Les dossiers déjà enregistrés gardent leur heure de sortie.</div>
     </div>
 </div>
 

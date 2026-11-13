@@ -53,8 +53,14 @@ class StayRequest extends Model
     {
         // Like Reservation: the departure and the total are always derived, never submitted.
         static::saving(function (StayRequest $request) {
+            // Séjour at a fixed time (room type setting): the rule is kept from when the request was made.
+            if (! $request->exists || $request->isDirty(['room_id', 'pricing_mode'])) {
+                $request->stay_until = $request->pricing_mode === PricingMode::Sejour && $request->room_id
+                    ? PricingMode::stayUntilFor(Room::query()->with('roomType')->find($request->room_id)?->roomType)
+                    : null;
+            }
             if ($request->pricing_mode && $request->check_in) {
-                $request->check_out = $request->pricing_mode->end($request->check_in, max(1, (int) $request->duration));
+                $request->check_out = $request->pricing_mode->end($request->check_in, max(1, (int) $request->duration), $request->pricing_mode === PricingMode::Sejour ? $request->stay_until : null);
             }
             $request->total_amount = bcmul((string) $request->unit_rate, (string) max(1, (int) $request->duration), 2);
             $request->status ??= StayRequestStatus::EnAttente;
@@ -147,7 +153,7 @@ class StayRequest extends Model
      */
     public function billingLabel(): string
     {
-        return $this->pricing_mode->durationLabel($this->duration).' × '.number_format((float) $this->unit_rate, 0, ',', ' ').' FCFA';
+        return $this->pricing_mode->durationLabel($this->duration, $this->stay_until).' × '.number_format((float) $this->unit_rate, 0, ',', ' ').' FCFA';
     }
 
     /**

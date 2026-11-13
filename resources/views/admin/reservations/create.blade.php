@@ -13,7 +13,7 @@
     @if ($bookingRequest)
         <div class="alert alert-info">
             <i class="far fa-globe"></i> Depuis la <strong>demande en ligne n°{{ $bookingRequest->id }}</strong>
-            ({{ $bookingRequest->fullName() }}, {{ \App\Support\PhoneFormat::display($bookingRequest->phone) }}) : {{ $bookingRequest->roomType?->name ?? 'type supprimé' }}, {{ $bookingRequest->pricing_mode->getLabel() }}.
+            ({{ $bookingRequest->fullName() }}, {{ \App\Support\PhoneFormat::display($bookingRequest->phone) }}) : {{ $bookingRequest->roomType?->name ?? 'type supprimé' }}, {{ $bookingRequest->pricing_mode->getLabel($bookingRequest->stay_until) }}.
             Choisissez la chambre et vérifiez les informations ; la demande passera en « Réservation créée » à l'enregistrement.
         </div>
     @endif

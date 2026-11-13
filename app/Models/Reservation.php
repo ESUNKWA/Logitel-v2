@@ -415,15 +415,21 @@ class Reservation extends Model
     /**
      * "3 heures × 5 000 FCFA" — the billing line shown on the stay and its invoice.
      */
+    /** « Séjour (24 h) » or « Séjour (jusqu'à 12h00) » for this file's own rule. */
+    public function modeLabel(): string
+    {
+        return $this->pricing_mode->getLabel($this->stay_until);
+    }
+
     public function billingLabel(): string
     {
         if ($this->hasSpecialRate()) {
-            return 'Forfait '.$this->pricing_mode->durationLabel($this->duration)
+            return 'Forfait '.$this->pricing_mode->durationLabel($this->duration, $this->stay_until)
                 .' : '.number_format((float) $this->special_price, 0, ',', ' ').' FCFA'
                 .' au lieu de '.number_format((float) $this->normalSubtotal(), 0, ',', ' ').' FCFA';
         }
 
-        return $this->pricing_mode->durationLabel($this->duration)
+        return $this->pricing_mode->durationLabel($this->duration, $this->stay_until)
             .' × '.number_format((float) $this->unit_rate, 0, ',', ' ').' FCFA';
     }
 
@@ -439,7 +445,17 @@ class Reservation extends Model
             }
 
             $mode = $reservation->pricing_mode ?? PricingMode::Nuitee;
-            [$start, $end, $duration] = $mode->resolve($reservation->check_in, $reservation->duration, $reservation->check_out);
+
+            // Séjour ending the next day at a fixed time (room type setting, 2026-11-13): taken when
+            // the file is made or moved to another room / formula, then kept — changing the setting
+            // or the type later never moves an existing departure (an extension keeps it too).
+            if (! $reservation->exists || $reservation->isDirty(['room_id', 'pricing_mode'])) {
+                $reservation->stay_until = $mode === PricingMode::Sejour && $reservation->room_id
+                    ? PricingMode::stayUntilFor(Room::query()->with('roomType')->find($reservation->room_id)?->roomType)
+                    : null;
+            }
+
+            [$start, $end, $duration] = $mode->resolve($reservation->check_in, $reservation->duration, $reservation->check_out, $reservation->stay_until);
 
             $reservation->pricing_mode = $mode;
             $reservation->check_in = $start;

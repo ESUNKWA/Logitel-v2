@@ -57,7 +57,7 @@ class AffectationExtensionRequest extends FormRequest
                     return;
                 }
 
-                [, $end] = $stay->pricing_mode->resolve($stay->check_in, $duration);
+                [, $end] = $stay->pricing_mode->resolve($stay->check_in, $duration, null, $stay->stay_until);
                 $error = Room::find($stay->room_id)?->availabilityError($stay->check_in, $end, $stay->id);
                 if ($error) {
                     $validator->errors()->add('extra', 'Impossible de prolonger jusqu\'au '.$end->format('d/m/Y à H\hi').' : '.lcfirst($error));

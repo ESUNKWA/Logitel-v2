@@ -180,7 +180,7 @@
                     <tr>
                         <td>@can('affectations.delete')<input type="checkbox" class="form-check-input bulk-check" name="ids[]" value="{{ $stay->id }}" form="affectationDeleteForm" data-bulk-item data-label="{{ $stay->reference() }} — chambre N°{{ $stay->room?->number }} — {{ $stay->guest?->fullName() }} — {{ $stay->check_in->format('d/m/Y H\hi') }}" data-amount="{{ $paidAmount }}" aria-label="Sélectionner {{ $stay->reference() }}">@endcan<strong>N°{{ $stay->room?->number }}</strong><div class="small text-muted">{{ $stay->room?->roomType?->name }}</div><a href="{{ route('admin.affectations.show', $stay) }}" class="file-ref">{{ $stay->reference() }}</a></td>
                         <td data-search="{{ $stay->guest?->fullName() }} {{ \App\Support\PhoneFormat::searchText($stay->guest?->phone) }}">{{ $stay->guest?->fullName() }}<div class="small text-muted">{{ \App\Support\PhoneFormat::display($stay->guest?->phone) }}</div></td>
-                        <td><x-admin::mode-badge :mode="$stay->pricing_mode" /><div class="small text-muted">{{ $stay->billingLabel() }}</div></td>
+                        <td><x-admin::mode-badge :mode="$stay->pricing_mode" :until="$stay->stay_until" /><div class="small text-muted">{{ $stay->billingLabel() }}</div></td>
                         <td class="text-nowrap">{{ $stay->check_in->format('d/m/Y') }}<div class="small text-muted">{{ $stay->check_in->format('H\hi') }}</div></td>
                         <td class="text-nowrap">
                             {{ $stay->check_out->format('d/m/Y') }}

@@ -100,7 +100,7 @@
                                 @endif
                                 <td>
                                     @if ($stay->status === \App\Enums\ReservationStatus::Enregistree)
-                                        <div class="small"><x-admin::mode-badge :mode="$stay->pricing_mode" /></div>
+                                        <div class="small"><x-admin::mode-badge :mode="$stay->pricing_mode" :until="$stay->stay_until" /></div>
                                         <div><i class="fas fa-sign-in-alt text-muted me-1"></i>Entrée le {{ $stay->check_in->format('d/m/Y à H\hi') }}</div>
                                         <div><i class="fas fa-sign-out-alt text-muted me-1"></i>Sortie le {{ $stay->check_out->format('d/m/Y à H\hi') }}</div>
                                         @if ($stay->check_out->isPast())

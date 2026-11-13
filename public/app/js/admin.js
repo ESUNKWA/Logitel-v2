@@ -68,13 +68,36 @@
     }, true);
     document.querySelectorAll('[data-money]').forEach(formatMoneyInput);
 
+    // « 12:00 » → « 12h00 ».
+    var clockLabel = function (time) {
+        return String(time || '').slice(0, 5).replace(':', 'h');
+    };
+
     var unitLabels = function (mode, config) {
         return {
             heure: { duration: "Nombre d'heures", rate: '/ heure' },
             journee: { duration: 'Journées de ' + config.dayHours + ' h', rate: '/ journée' },
             nuitee: { duration: 'Nombre de nuits', rate: '/ nuit' },
-            sejour: { duration: 'Périodes de ' + config.stayHours + ' h', rate: '/ ' + config.stayHours + ' h' },
+            sejour: config.stayUntil
+                ? { duration: 'Nombre de séjours (sortie à ' + clockLabel(config.stayUntil) + ')', rate: '/ séjour' }
+                : { duration: 'Périodes de ' + config.stayHours + ' h', rate: '/ ' + config.stayHours + ' h' },
         }[mode];
+    };
+
+    // Séjour button label for a room type: « Séjour (jusqu'à 12h00) » when it ends the next day at
+    // a fixed time (data-stay-until), else « Séjour (N h) ». Only the label's text after its icon
+    // changes (the markup stays the server's).
+    var applyStayLabel = function (scope, stayUntil, stayHours) {
+        if (!scope) {
+            return;
+        }
+        scope.querySelectorAll('input[type="radio"][value="sejour"]').forEach(function (radio) {
+            var label = radio.id ? scope.querySelector('label[for="' + radio.id + '"]') : null;
+            var text = label ? label.lastChild : null;
+            if (text && text.nodeType === 3) {
+                text.textContent = ' ' + (stayUntil ? "Séjour (jusqu'à " + clockLabel(stayUntil) + ')' : 'Séjour (' + stayHours + ' h)');
+            }
+        });
     };
 
     // Departure for an arrival "now" (affectation), same rules as PricingMode::end().
@@ -84,6 +107,12 @@
             end.setHours(end.getHours() + duration);
         } else if (mode === 'journee') {
             end.setHours(end.getHours() + duration * config.dayHours);
+        } else if (mode === 'sejour' && config.stayUntil) {
+            // Séjour ending the next day at a fixed time: that time N days after the arrival's date.
+            var fixed = String(config.stayUntil).split(':');
+            end.setHours(0, 0, 0, 0);
+            end.setDate(end.getDate() + duration);
+            end.setHours(parseInt(fixed[0], 10), parseInt(fixed[1], 10));
         } else if (mode === 'sejour') {
             end.setHours(end.getHours() + duration * config.stayHours);
         } else {
@@ -177,6 +206,7 @@
             nightUntil: stayForm.dataset.nightUntil,
             stayHours: parseInt(stayForm.dataset.stayHours, 10),
             dayHours: parseInt(stayForm.dataset.dayHours, 10),
+            stayUntil: currentCard ? (currentCard.dataset.stayUntil || '') : '',
         };
         var checked = stayForm.querySelector('[data-mode-option]:checked');
         var durationInput = stayForm.querySelector('[data-duration-input]');
@@ -285,7 +315,8 @@
             var button = document.createElement('button');
             button.type = 'button';
             button.className = 'forfait-hint__item' + (d === duration ? ' is-active' : '');
-            button.textContent = d + ' ' + FORFAIT_UNITS[mode][d > 1 ? 1 : 0] + ' = ' + formatAmount(menu[String(d)]);
+            var units = mode === 'sejour' && currentCard && currentCard.dataset.stayUntil ? ['séjour', 'séjours'] : FORFAIT_UNITS[mode];
+            button.textContent = d + ' ' + units[d > 1 ? 1 : 0] + ' = ' + formatAmount(menu[String(d)]);
             button.addEventListener('click', function () {
                 stayForm.querySelector('[data-duration-input]').value = d;
                 refreshStayPreview();
@@ -319,6 +350,8 @@
             return;
         }
         currentCard = card;
+        var stayFormOfModal = assignModal.querySelector('[data-stay-form]');
+        applyStayLabel(assignModal, card.dataset.stayUntil || '', stayFormOfModal ? stayFormOfModal.dataset.stayHours : 24);
 
         var form = assignModal.querySelector('form');
         form.action = card.dataset.assignUrl;
@@ -1483,6 +1516,12 @@
             nuitee: { name: 'nuits', rate: '/ nuit' },
             sejour: { name: 'périodes de ' + bookingConfig.stayHours + ' h', rate: '/ ' + bookingConfig.stayHours + ' h' },
         };
+        // The chosen room type's séjour rule (data-stay-until on its option: « 12:00 » or empty).
+        var bookingStayUntil = function () {
+            var select = bookingForm.querySelector('[data-booking-type]');
+            var option = select && select.value !== '' ? select.options[select.selectedIndex] : null;
+            return option ? (option.dataset.stayUntil || '') : '';
+        };
 
         var bookingMode = function () {
             var checked = bookingForm.querySelector('[data-booking-mode]:checked');
@@ -1498,8 +1537,13 @@
 
         var refreshBooking = function () {
             var mode = bookingMode();
-            bookingForm.querySelector('[data-booking-duration-label]').textContent = 'Nombre de ' + bookingUnits[mode].name;
-            bookingForm.querySelector('[data-booking-rate-unit]').textContent = bookingUnits[mode].rate;
+            bookingConfig.stayUntil = bookingStayUntil();
+            var unit = mode === 'sejour' && bookingConfig.stayUntil
+                ? { name: 'séjours (sortie à ' + clockLabel(bookingConfig.stayUntil) + ')', rate: '/ séjour' }
+                : bookingUnits[mode];
+            bookingForm.querySelector('[data-booking-duration-label]').textContent = 'Nombre de ' + unit.name;
+            bookingForm.querySelector('[data-booking-rate-unit]').textContent = unit.rate;
+            applyStayLabel(bookingForm, bookingConfig.stayUntil, bookingConfig.stayHours);
 
             var duration = Math.max(1, parseInt(bookingDuration.value, 10) || 1);
             var rate = moneyValue(bookingRate);
@@ -1587,10 +1631,13 @@
             bookingRoom.addEventListener('change', refreshBooking);
             bookingRoom.addEventListener('rooms:refreshed', function () {
                 var selected = bookingRoom.options[bookingRoom.selectedIndex];
-                if (rateIsStale && selected && selected.dataset.rate) {
+                // The rate follows the new mode, or fills an empty field (type chosen before the
+                // arrival: the list first comes without a room picked). It stays « stale » until a
+                // room with a rate is actually picked, so an agreed rate isn't overwritten otherwise.
+                if (selected && selected.dataset.rate && (rateIsStale || !moneyValue(bookingRate))) {
                     setMoney(bookingRate, parseFloat(selected.dataset.rate));
+                    rateIsStale = false;
                 }
-                rateIsStale = false;
                 refreshBooking();
             });
         }

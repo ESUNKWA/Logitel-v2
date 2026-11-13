@@ -168,7 +168,16 @@ class RoomAssignmentRequest extends FormRequest
      */
     public function period(): array
     {
-        return $this->pricingMode()->resolve($this->arrival(), (int) $this->validated('duration'));
+        return $this->pricingMode()->resolve($this->arrival(), (int) $this->validated('duration'), null, $this->stayUntil());
+    }
+
+    /**
+     * Séjour of a room type ending the next day at a fixed time (« 12:00 »), else null — the
+     * same rule the model snapshots on the new stay.
+     */
+    public function stayUntil(): ?string
+    {
+        return $this->pricingMode() === PricingMode::Sejour ? PricingMode::stayUntilFor($this->targetRoom()?->roomType) : null;
     }
 
     /**
