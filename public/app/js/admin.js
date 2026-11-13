@@ -377,7 +377,6 @@
             'Chambre N°' + card.dataset.roomNumber + ' — ' + card.dataset.roomType;
 
         if (stayForm) {
-            var nightOpen = stayForm.dataset.nightOpen === '1';
             var firstEnabled = null;
             var preferred = null;
             var kept = null;
@@ -398,7 +397,9 @@
                 radio.checked = false;
                 if (!radio.disabled) {
                     firstEnabled = firstEnabled || radio;
-                    if ((radio.value === 'nuitee' && nightOpen) || (radio.value === 'heure' && !preferred)) {
+                    // « À l'heure » is preselected at any time of day (client request, 2026-11-13);
+                    // a type without an hourly rate starts on its first formula.
+                    if (radio.value === 'heure') {
                         preferred = radio;
                     }
                 }
