@@ -73,6 +73,11 @@
             <li><a class="dropdown-item" href="{{ route('admin.trash.index') }}"><i class="far fa-trash-alt"></i> Corbeille des affectations</a></li>
         @endcan
         <li><a class="dropdown-item" href="{{ route('admin.stats') }}"><i class="far fa-chart-bar"></i> Tableau de bord chiffré</a></li>
+        @if (! \App\Models\User::onPhone() && ($trainingUrl = $hotelInfo->trainingUrl(request()->getHost())))
+            {{-- Training (UAT) environment, set in Paramètres; opens in a new tab. Computers only
+                 (client request, 2026-11-15): not rendered for phones, and hidden under 860 px. --}}
+            <li class="simple-nav__wide-only"><a class="dropdown-item" href="{{ $trainingUrl }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" data-training-link><i class="far fa-graduation-cap"></i> Formation <i class="far fa-external-link-alt small text-muted" aria-hidden="true"></i></a></li>
+        @endif
         @canany(['site.manage', 'site.stats'])
             <li><hr class="dropdown-divider"></li>
             <li><h6 class="dropdown-header"><i class="far fa-globe"></i> Site web</h6></li>

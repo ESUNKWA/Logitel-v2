@@ -120,6 +120,29 @@
             </div>
         </div>
 
+        <div class="admin-card">
+            <h5><i class="far fa-graduation-cap me-2 text-primary"></i>Formation</h5>
+            <p class="text-muted small">
+                Adresse de l'environnement de formation (UAT), où le personnel peut s'exercer sans toucher aux vraies données.
+                Elle ajoute un menu « Formation » qui l'ouvre dans un nouvel onglet. Laissez vide pour masquer ce menu.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-8 col-xl-6">
+                    <label class="form-label" for="training_url">Adresse de l'environnement de formation</label>
+                    <input type="text" inputmode="url" class="form-control @error('training_url') is-invalid @enderror" id="training_url" name="training_url" maxlength="255" placeholder="https://uat.exemple.ci/admin" value="{{ old('training_url', $settings['training_url']) }}">
+                    @error('training_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @if ($hotelInfo->trainingUrlIsInsecure())
+                    <div class="col-12">
+                        <div class="alert alert-warning mb-0 py-2">
+                            <i class="far fa-exclamation-triangle me-1"></i> Cette adresse commence par « http:// » : la connexion n'est pas chiffrée.
+                            Dès que l'environnement de formation a un nom de domaine en HTTPS, remplacez-la par « https://… ».
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
         <button type="submit" class="btn btn-primary">Enregistrer les paramètres</button>
     </form>
 @endsection

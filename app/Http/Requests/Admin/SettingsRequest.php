@@ -12,6 +12,18 @@ class SettingsRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // A bare "uat.example.ci" is accepted and stored as https://…
+        // Only a plain string is normalised: a forged array is left to the `string` rule (422, not 500).
+        if (is_string($this->input('training_url'))) {
+            $value = trim($this->input('training_url'));
+            if ($value !== '' && ! preg_match('#^https?://#i', $value)) {
+                $this->merge(['training_url' => 'https://'.$value]);
+            }
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -30,6 +42,8 @@ class SettingsRequest extends FormRequest
             // Customer receipt (absent from older forms/tests = left unchanged)
             'receipt_width' => ['sometimes', 'required', 'integer', 'in:58,80'],
             'receipt_footer' => ['sometimes', 'nullable', 'string', 'max:200'],
+            // « Formation » menu entry (absent = unchanged, empty = no entry)
+            'training_url' => ['sometimes', 'nullable', 'string', 'max:255', 'url:http,https'],
         ];
     }
 
@@ -44,7 +58,28 @@ class SettingsRequest extends FormRequest
                 if (is_string($from) && is_string($until) && $from <= $until) {
                     $validator->errors()->add('night_from', 'La nuitée doit commencer le soir et se terminer le lendemain : l\'heure de début doit être après l\'heure de départ (ex. 22h00 → 12h00).');
                 }
+
+                // « Formation » link: shown to every staff member, so no credentials inside it
+                // (https://user:password@…) and nothing but a plain web address.
+                $training = $this->input('training_url');
+                if (is_string($training) && $training !== '' && ! $validator->errors()->has('training_url')) {
+                    $parts = parse_url($training);
+                    if ($parts === false || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])
+                        || preg_match('/[\s\x00-\x1F\x7F<>"\'`\\\\]/', $training)) {
+                        $validator->errors()->add('training_url', 'Saisissez une adresse web simple, sans identifiant ni mot de passe, par exemple https://uat.exemple.ci/admin.');
+                    }
+                }
             },
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'training_url.url' => 'Saisissez une adresse web valide, par exemple https://uat.exemple.ci/admin.',
         ];
     }
 
@@ -64,6 +99,7 @@ class SettingsRequest extends FormRequest
             'request_expiry_minutes' => 'délai de traitement des demandes',
             'receipt_width' => 'largeur du rouleau',
             'receipt_footer' => 'message de bas de reçu',
+            'training_url' => 'adresse de l\'environnement de formation',
         ];
     }
 }

@@ -28,6 +28,7 @@ class HotelSettings
         'request_expiry_minutes' => 'hotel.request_expiry_minutes',
         'receipt_width' => 'hotel.receipt.width',
         'receipt_footer' => 'hotel.receipt.footer',
+        'training_url' => 'hotel.training_url',
         // Hotel identity & contact (Configuration → Hôtel)
         'hotel_name' => 'hotel.info.name',
         'hotel_tagline' => 'hotel.info.tagline',

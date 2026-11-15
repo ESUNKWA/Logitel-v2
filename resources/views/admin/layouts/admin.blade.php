@@ -98,6 +98,12 @@
                             <i class="far fa-user-clock"></i> Prises de service
                         </a>
                     @endcan
+                    @if ($trainingUrl = $hotelInfo->trainingUrl(request()->getHost()))
+                        {{-- Training (UAT) environment, set in Paramètres; opens in a new tab. --}}
+                        <a href="{{ $trainingUrl }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" data-training-link>
+                            <i class="far fa-graduation-cap"></i> Formation <i class="far fa-external-link-alt ms-auto small" aria-hidden="true"></i>
+                        </a>
+                    @endif
                     @canany(['site.manage', 'site.stats'])
                         <div class="admin-sidebar__section">Site web</div>
                     @endcanany

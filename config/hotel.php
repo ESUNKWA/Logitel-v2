@@ -70,6 +70,10 @@ return [
         'login_background' => '',      // staff login page photo, same place (empty = navy gradient)
     ],
 
+    // « Formation » menu entry: address of the training (UAT) environment, opened in a new tab.
+    // Editable in Configuration → Paramètres; empty = no menu entry.
+    'training_url' => env('TRAINING_URL', ''),
+
     // Customer receipt (thermal ticket printed after an affectation / a réservation).
     'receipt' => [
         'width' => 80,                 // roll width in mm: 58 or 80

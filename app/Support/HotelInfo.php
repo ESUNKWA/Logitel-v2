@@ -113,6 +113,39 @@ class HotelInfo
     }
 
     /**
+     * Address of the training (UAT) environment for the « Formation » menu entry, or null when
+     * none is set, when it isn't an http(s) URL, or when the user is already on that host.
+     */
+    public function trainingUrl(?string $currentHost = null): ?string
+    {
+        $url = trim((string) config('hotel.training_url', ''));
+
+        if ($url === '' || ! preg_match('#^https?://#i', $url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        // Never hand out an address carrying credentials (a value planted in the database).
+        if (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null) {
+            return null;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        if ($currentHost !== null && $host !== '' && $host === strtolower($currentHost)) {
+            return null;
+        }
+
+        return $url;
+    }
+
+    /**
+     * True when the training address is set but not encrypted (http://): Paramètres warns about it.
+     */
+    public function trainingUrlIsInsecure(): bool
+    {
+        return (bool) preg_match('#^http://#i', trim((string) config('hotel.training_url', '')));
+    }
+
+    /**
      * "Quartier Commerce, Bouaké, Côte d'Ivoire".
      */
     public function fullAddress(): string
