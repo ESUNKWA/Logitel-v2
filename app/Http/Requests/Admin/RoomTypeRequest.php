@@ -42,7 +42,7 @@ class RoomTypeRequest extends FormRequest
     {
         return [
             'name' => 'nom',
-            'hourly_rate' => 'tarif à l\'heure',
+            'hourly_rate' => 'tarif passage',
             'day_rate' => 'tarif journée',
             'night_rate' => 'tarif nuitée',
             'stay_rate' => 'tarif séjour',

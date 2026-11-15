@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\PaymentMethod;
 use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
+use App\Models\Concerns\Audited;
 use App\Models\Concerns\RecordsCreator;
+use App\Support\Audit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +15,54 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
-    use HasFactory, RecordsCreator;
+    use Audited, HasFactory, RecordsCreator;
+
+    public function auditFields(): array
+    {
+        return ['method' => 'Mode', 'amount' => 'Montant', 'amount_received' => 'Reçu', 'change_given' => 'Rendu', 'paid_at' => 'Date'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'payment';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'encaissement';
+    }
+
+    public function auditName(): string
+    {
+        $file = $this->invoice?->reservation;
+
+        return 'encaissement de '.Audit::money($this->amount).' ('.$this->method?->getLabel().') — facture '
+            .($this->invoice?->number ?? '?').($file ? ' · '.$file->reference() : '');
+    }
+
+    public function auditReference(): ?string
+    {
+        return $this->invoice?->reservation?->reference() ?? $this->invoice?->number;
+    }
+
+    public function auditSubject(): array
+    {
+        return ['invoice', $this->invoice_id ? (int) $this->invoice_id : null];
+    }
+
+    public function auditMoneyFields(): array
+    {
+        return ['amount', 'amount_received', 'change_given'];
+    }
+
+    public function auditAction(string $event, array $changes, array $dirty): ?array
+    {
+        return match ($event) {
+            'created' => ['payment.created', 'Encaissement : '.mb_substr($this->auditName(), mb_strlen('encaissement de '))],
+            'deleted' => ['payment.deleted', 'Suppression d\'un '.$this->auditName()],
+            default => null,
+        };
+    }
 
     protected $fillable = [
         'invoice_id',

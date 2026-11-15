@@ -47,6 +47,10 @@ class AppServiceProvider extends ServiceProvider
                 : $user->hasPermission($permission));
         }
 
+        // Pages shared by two permissions (V2): requesting or validating expenses.
+        Gate::define('expenses.access', fn (User $user) => $user->can('expenses.create') || $user->can('expenses.validate'));
+        Gate::define('cash.access', fn (User $user) => $user->can('cash.close') || $user->can('cash.review'));
+
         // Client request: at least 4 characters, no other constraint.
         Password::defaults(fn () => Password::min(4));
     }

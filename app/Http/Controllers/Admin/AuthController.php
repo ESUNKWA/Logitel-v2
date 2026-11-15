@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,6 +47,8 @@ class AuthController extends Controller
         $throttleKey = Str::transliterate(Str::lower($byEmail ? $identifier : (string) $phone).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_LOGIN_ATTEMPTS)) {
+            Audit::record('auth.locked', 'connexion', 'Connexion bloquée (trop de tentatives) pour « '.mb_strimwidth($identifier, 0, 100, '…').' »');
+
             return back()
                 ->withErrors(['email' => 'Trop de tentatives de connexion. Réessayez dans '.RateLimiter::availableIn($throttleKey).' secondes.'])
                 ->onlyInput('email');
@@ -56,6 +59,8 @@ class AuthController extends Controller
         $wellFormed = $byEmail || preg_match('/^[0-9]{10}$/', (string) $phone) === 1;
         if (! $wellFormed || ! Auth::attempt([...$credentials, 'is_active' => true], $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey);
+            // The typed identifier only — never the password.
+            Audit::record('auth.failed', 'connexion', 'Échec de connexion pour « '.mb_strimwidth($identifier, 0, 100, '…').' »');
 
             return back()
                 ->withErrors(['email' => 'Identifiants incorrects.'])
@@ -65,12 +70,14 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
 
         $request->session()->regenerate();
+        Audit::record('auth.login', 'connexion', 'Connexion de '.$request->user()->name);
 
         return redirect()->intended(route('admin.dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        Audit::record('auth.logout', 'connexion', 'Déconnexion de '.($request->user()?->name ?? '?'));
         Auth::logout();
 
         $request->session()->invalidate();

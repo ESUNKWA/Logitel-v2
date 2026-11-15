@@ -6,12 +6,16 @@
  * Under /admin on a shared address, or at the root of its own sub-domain (config/routing.php).
  */
 
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AffectationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BookingRequestController;
+use App\Http\Controllers\Admin\CashClosingController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DutyController;
+use App\Http\Controllers\Admin\ExpenseCategoryController;
+use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\FrontDeskController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\HotelInfoController;
@@ -180,6 +184,33 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
 
         Route::get('/hotel', [HotelInfoController::class, 'edit'])->middleware('can:settings.manage')->name('hotel.edit');
         Route::put('/hotel', [HotelInfoController::class, 'update'])->middleware('can:settings.manage')->name('hotel.update');
+
+        // « Dépenses » (V2): requested with a receipt, validated by the Gérant. Never deleted.
+        Route::get('/depenses', [ExpenseController::class, 'index'])->middleware('can:expenses.access')->name('expenses.index');
+        Route::get('/depenses/nouvelle', [ExpenseController::class, 'create'])->middleware('can:expenses.access')->name('expenses.create');
+        Route::post('/depenses', [ExpenseController::class, 'store'])->middleware(['can:expenses.access', 'throttle:30,1'])->name('expenses.store');
+        Route::get('/depenses/export', [ExpenseController::class, 'export'])->middleware('can:expenses.access')->name('expenses.export');
+        Route::get('/depenses/categories', [ExpenseCategoryController::class, 'index'])->middleware('can:expenses.validate')->name('expense-categories.index');
+        Route::post('/depenses/categories', [ExpenseCategoryController::class, 'store'])->middleware('can:expenses.validate')->name('expense-categories.store');
+        Route::put('/depenses/categories/{category}', [ExpenseCategoryController::class, 'update'])->middleware('can:expenses.validate')->name('expense-categories.update');
+        Route::delete('/depenses/categories/{category}', [ExpenseCategoryController::class, 'destroy'])->middleware('can:expenses.validate')->name('expense-categories.destroy');
+        Route::get('/depenses/{expense}', [ExpenseController::class, 'show'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.show');
+        Route::get('/depenses/{expense}/justificatif', [ExpenseController::class, 'receipt'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.receipt');
+        Route::post('/depenses/{expense}/valider', [ExpenseController::class, 'approve'])->middleware('can:expenses.validate')->whereNumber('expense')->name('expenses.approve');
+        Route::post('/depenses/{expense}/refuser', [ExpenseController::class, 'refuse'])->middleware('can:expenses.validate')->whereNumber('expense')->name('expenses.refuse');
+        Route::post('/depenses/{expense}/annuler', [ExpenseController::class, 'cancel'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.cancel');
+
+        // « Clôture de caisse » (V2): one per business day and till; the Gérant validates or contests.
+        Route::get('/caisse', [CashClosingController::class, 'index'])->middleware('can:cash.access')->name('cash-closings.index');
+        Route::post('/caisse', [CashClosingController::class, 'store'])->middleware('can:cash.close')->name('cash-closings.store');
+        Route::get('/caisse/export', [CashClosingController::class, 'export'])->middleware('can:cash.review')->name('cash-closings.export');
+        Route::get('/caisse/{closing}', [CashClosingController::class, 'show'])->middleware('can:cash.access')->whereNumber('closing')->name('cash-closings.show');
+        Route::post('/caisse/{closing}/valider', [CashClosingController::class, 'validateClosing'])->middleware('can:cash.review')->whereNumber('closing')->name('cash-closings.validate');
+        Route::post('/caisse/{closing}/contester', [CashClosingController::class, 'contest'])->middleware('can:cash.review')->whereNumber('closing')->name('cash-closings.contest');
+
+        // « Journal d'activité » (V2): read only, no route changes or deletes a line.
+        Route::get('/journal', [ActivityLogController::class, 'index'])->middleware('can:activity.view')->name('activity.index');
+        Route::get('/journal/export', [ActivityLogController::class, 'export'])->middleware('can:activity.view')->name('activity.export');
 
         Route::get('/parametres', [SettingsController::class, 'edit'])->middleware('can:settings.manage')->name('settings.edit');
         Route::put('/parametres', [SettingsController::class, 'update'])->middleware('can:settings.manage')->name('settings.update');

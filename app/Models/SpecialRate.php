@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PricingMode;
+use App\Models\Concerns\Audited;
 use App\Support\BusinessDay;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,34 @@ use Illuminate\Support\Collection;
  */
 class SpecialRate extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['name' => 'Nom', 'pricing_mode' => 'Formule', 'duration' => 'Durée', 'price' => 'Prix', 'all_room_types' => 'Tous les types',
+            'days' => 'Jours', 'starts_on' => 'Du', 'ends_on' => 'Au', 'is_active' => 'Actif'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'special_rate';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'configuration';
+    }
+
+    public function auditName(): string
+    {
+        return 'tarif spécial « '.$this->name.' »';
+    }
+
+    public function auditMoneyFields(): array
+    {
+        return ['price'];
+    }
+
     protected $fillable = [
         'name',
         'pricing_mode',

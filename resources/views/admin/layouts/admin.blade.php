@@ -93,6 +93,28 @@
                             <i class="far fa-cash-register"></i> Recettes
                         </a>
                     @endcan
+                    @can('cash.access')
+                        <a href="{{ route('admin.cash-closings.index') }}" class="{{ request()->routeIs('admin.cash-closings.*') ? 'active' : '' }}">
+                            <i class="far fa-lock"></i> Clôture de caisse
+                            @can('cash.review')
+                                @php($closingsToReview = \App\Models\CashClosing::query()->where('status', \App\Models\CashClosing::STATUS_SUBMITTED)->count())
+                                @if ($closingsToReview)
+                                    <span class="badge rounded-pill bg-warning text-dark ms-auto" title="Clôtures à valider">{{ $closingsToReview }}</span>
+                                @endif
+                            @endcan
+                        </a>
+                    @endcan
+                    @can('expenses.access')
+                        <a href="{{ route('admin.expenses.index') }}" class="{{ request()->routeIs('admin.expenses.*', 'admin.expense-categories.*') ? 'active' : '' }}">
+                            <i class="far fa-receipt"></i> Dépenses
+                            @can('expenses.validate')
+                                @php($pendingExpenses = \App\Models\Expense::query()->pending()->count())
+                                @if ($pendingExpenses)
+                                    <span class="badge rounded-pill bg-warning text-dark ms-auto" title="Dépenses à valider">{{ $pendingExpenses }}</span>
+                                @endif
+                            @endcan
+                        </a>
+                    @endcan
                     @can('duty.manage')
                         <a href="{{ route('admin.duty.index') }}" class="{{ request()->routeIs('admin.duty.*') ? 'active' : '' }}">
                             <i class="far fa-user-clock"></i> Prises de service
@@ -157,6 +179,11 @@
                     @can('roles.manage')
                         <a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                             <i class="far fa-user-shield"></i> Rôles
+                        </a>
+                    @endcan
+                    @can('activity.view')
+                        <a href="{{ route('admin.activity.index') }}" class="{{ request()->routeIs('admin.activity.*') ? 'active' : '' }}">
+                            <i class="far fa-history"></i> Journal d'activité
                         </a>
                     @endcan
                 </nav>

@@ -7,7 +7,7 @@
 @php
     $isActive = fn (string ...$patterns) => request()->routeIs(...$patterns) ? 'active' : '';
     $pendingBookings = auth()->user()->can('reservations.view') ? \App\Models\BookingRequest::query()->pending()->count() : 0;
-    $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage']);
+    $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view']);
     // The manager's « Plus » menu is long: on phones it drops the desk screens (client request,
     // 2026-10-17) — they stay on wider screens and by their address; the Réception keeps them.
     $deskOnWideScreens = auth()->user()->can('dashboard.revenue') ? 'simple-nav__wide-only' : '';
@@ -66,6 +66,14 @@
             {{-- Not on phones: the tab bar has it (client request, 2026-11-09). --}}
             <li class="simple-nav__wide-only"><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
         @endcan
+        @can('cash.access')
+            @php($closingsToReview = auth()->user()->can('cash.review') ? \App\Models\CashClosing::query()->where('status', \App\Models\CashClosing::STATUS_SUBMITTED)->count() : 0)
+            <li><a class="dropdown-item" href="{{ route('admin.cash-closings.index') }}"><i class="far fa-lock"></i> Clôture de caisse @if ($closingsToReview)<span class="badge bg-warning text-dark" title="Clôtures à valider">{{ $closingsToReview }}</span>@endif</a></li>
+        @endcan
+        @can('expenses.access')
+            @php($pendingExpenses = auth()->user()->can('expenses.validate') ? \App\Models\Expense::query()->pending()->count() : 0)
+            <li><a class="dropdown-item" href="{{ route('admin.expenses.index') }}"><i class="far fa-receipt"></i> Dépenses @if ($pendingExpenses)<span class="badge bg-warning text-dark" title="Dépenses à valider">{{ $pendingExpenses }}</span>@endif</a></li>
+        @endcan
         @can('duty.manage')
             <li><a class="dropdown-item" href="{{ route('admin.duty.index') }}"><i class="far fa-user-clock"></i> Prises de service</a></li>
         @endcan
@@ -110,6 +118,9 @@
             @endcan
             @can('roles.manage')
                 <li><a class="dropdown-item" href="{{ route('admin.roles.index') }}"><i class="far fa-user-shield"></i> Rôles</a></li>
+            @endcan
+            @can('activity.view')
+                <li><a class="dropdown-item" href="{{ route('admin.activity.index') }}"><i class="far fa-history"></i> Journal d'activité</a></li>
             @endcan
         @endif
     </ul>

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\Permission;
+use App\Models\Concerns\Audited;
+use App\Support\Audit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +12,28 @@ use Illuminate\Support\Str;
 
 class Role extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['name' => 'Nom', 'description' => 'Description'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'role';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'personnel';
+    }
+
+    public function auditName(): string
+    {
+        return 'rôle « '.$this->name.' »';
+    }
+
     protected $fillable = [
         'name',
         'description',
@@ -80,6 +104,12 @@ class Role extends Model
      */
     public function syncPermissions(array $permissions): void
     {
+        $before = DB::table('permission_role')->where('role_id', $this->id)->pluck('permission')->all();
+        $after = array_values(array_unique($permissions));
+        $label = fn (string $p) => Permission::tryFrom($p)?->getLabel() ?? $p;
+        $added = array_values(array_diff($after, $before));
+        $removed = array_values(array_diff($before, $after));
+
         DB::transaction(function () use ($permissions) {
             DB::table('permission_role')->where('role_id', $this->id)->delete();
 
@@ -90,5 +120,12 @@ class Role extends Model
         });
 
         $this->permissionCache = null;
+
+        if ($added !== [] || $removed !== []) {
+            Audit::record('role.permissions', 'personnel', 'Permissions modifiées : rôle « '.$this->name.' »', 'role', (int) $this->id, null, array_merge(
+                array_map(fn ($p) => ['label' => 'Ajoutée', 'old' => null, 'new' => $label($p)], $added),
+                array_map(fn ($p) => ['label' => 'Retirée', 'old' => $label($p), 'new' => null], $removed),
+            ));
+        }
     }
 }

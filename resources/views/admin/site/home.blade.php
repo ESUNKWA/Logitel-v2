@@ -30,7 +30,7 @@
                 </div>
                 <div class="col-lg-6">
                     <label class="form-label" for="hero_text">Texte d'accroche</label>
-                    <textarea class="form-control" id="hero_text" name="hero_text" rows="3" maxlength="2000" placeholder="Ex. Des chambres confortables à l'heure, à la journée ou pour la nuit, au cœur de Bouaké.">{{ $v('hero_text') }}</textarea>
+                    <textarea class="form-control" id="hero_text" name="hero_text" rows="3" maxlength="2000" placeholder="Ex. Des chambres confortables pour vos séjours, au cœur de Bouaké.">{{ $v('hero_text') }}</textarea>
                 </div>
                 <div class="col-md-4">@include('admin.site._photo-field', ['name' => 'hero_photo_1', 'label' => 'Photo de gauche (paysage)', 'url' => $photo('hero_photo_1')])</div>
                 <div class="col-md-4">@include('admin.site._photo-field', ['name' => 'hero_photo_2', 'label' => 'Photo de droite (portrait)', 'url' => $photo('hero_photo_2')])</div>

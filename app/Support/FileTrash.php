@@ -55,6 +55,11 @@ class FileTrash
             return $stays->map(fn (Reservation $stay) => self::trashOne($stay, $batch, $reason));
         });
 
+        foreach ($entries as $entry) {
+            Audit::record('trash.deleted', 'corbeille', 'Affectation '.$entry->reference.' mise à la corbeille (encaissé retiré des chiffres : '.Audit::money($entry->paid_amount).')'
+                .($reason !== null && $reason !== '' ? ' — motif : '.$reason : ''), 'trashed_file', (int) $entry->id, $entry->reference);
+        }
+
         Log::notice('Affectations mises à la corbeille', [
             'by' => Auth::id(),
             'references' => $entries->pluck('reference')->all(),
@@ -215,6 +220,7 @@ class FileTrash
         });
 
         Log::notice('Affectation restaurée depuis la corbeille', ['by' => Auth::id(), 'reference' => $entry->reference]);
+        Audit::record('trash.restored', 'corbeille', 'Affectation '.$entry->reference.' restaurée depuis la corbeille', 'reservation', (int) $restored->id, $entry->reference);
 
         return $restored;
     }
@@ -232,6 +238,8 @@ class FileTrash
             }
 
             $entry->forceFill(['purged_at' => now(), 'purged_by' => $byUserId, 'payload' => null, 'guest_name' => null])->save();
+            Audit::record('trash.purged', 'corbeille', 'Affectation '.$entry->reference.' supprimée définitivement'.($byUserId === null ? ' (effacement automatique après '.TrashedFile::retentionDays().' jours)' : ''),
+                'trashed_file', (int) $entry->id, $entry->reference, [], $byUserId, $byUserId === null ? 'Système' : null);
 
             return true;
         });

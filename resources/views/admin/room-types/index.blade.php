@@ -15,7 +15,7 @@
             <thead>
                 <tr>
                     <th>Nom</th>
-                    <th class="text-end">À l'heure</th>
+                    <th class="text-end">Passage</th>
                     <th class="text-end">Journée ({{ config('hotel.day_hours') }} h)</th>
                     <th class="text-end">Nuitée</th>
                     <th class="text-end">Séjour (24 h)</th>

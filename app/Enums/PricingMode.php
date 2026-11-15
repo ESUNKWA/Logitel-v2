@@ -32,7 +32,7 @@ enum PricingMode: string
     public function getLabel(?string $stayUntil = null): string
     {
         return match ($this) {
-            self::Heure => "À l'heure",
+            self::Heure => 'Passage', // formerly « À l'heure » (client request, 2026-11-15); billed per hour
             self::Journee => 'Journée ('.self::dayHours().' h)',
             self::Nuitee => 'Nuitée',
             self::Sejour => $stayUntil ? "Séjour (jusqu'à ".self::clock($stayUntil).')' : 'Séjour ('.self::stayHours().' h)',

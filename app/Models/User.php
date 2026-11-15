@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\Permission;
+use App\Models\Concerns\Audited;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,47 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Audited, HasFactory, Notifiable;
+
+    /** Never the password's value: only that it changed (auditDisplay). */
+    public function auditFields(): array
+    {
+        return ['name' => 'Nom', 'email' => 'E-mail', 'phone' => 'Téléphone', 'role_id' => 'Rôle', 'is_active' => 'Compte actif',
+            'must_change_password' => 'Mot de passe temporaire', 'password' => 'Mot de passe'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'user';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'personnel';
+    }
+
+    public function auditName(): string
+    {
+        return 'compte de '.$this->name;
+    }
+
+    public function auditDisplay(string $field, mixed $value): ?string
+    {
+        return match ($field) {
+            'password' => $value ? '••••••' : '—',
+            'role_id' => $value ? (Role::query()->whereKey($value)->value('name') ?? '#'.$value) : '—',
+            default => null,
+        };
+    }
+
+    public function auditAction(string $event, array $changes, array $dirty): ?array
+    {
+        if ($event === 'updated' && $dirty === ['password']) {
+            return ['user.password', 'Mot de passe modifié : '.$this->auditName()];
+        }
+
+        return null;
+    }
 
     /**
      * The attributes that are mass assignable. `role_id`, `is_active` and `must_change_password`

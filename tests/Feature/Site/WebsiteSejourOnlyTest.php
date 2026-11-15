@@ -23,7 +23,7 @@ class WebsiteSejourOnlyTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const FORBIDDEN = ["à l'heure", 'journée', 'nuitée', '/ heure', '/ journée', '/ nuit', '3 000 f', '12 000 f', '25 000 f', '"heure"', '"journee"', '"nuitee"'];
+    private const FORBIDDEN = ["à l'heure", 'passage', 'journée', 'nuitée', '/ heure', '/ journée', '/ nuit', '3 000 f', '12 000 f', '25 000 f', '"heure"', '"journee"', '"nuitee"'];
 
     public function test_no_public_page_mentions_another_formula_than_the_sejour(): void
     {
@@ -63,6 +63,6 @@ class WebsiteSejourOnlyTest extends TestCase
         $type = RoomType::factory()->create(['hourly_rate' => 3000, 'day_rate' => 12000, 'night_rate' => 25000, 'stay_rate' => 45000, 'is_active' => true]);
         $room = Room::factory()->create(['room_type_id' => $type->id]);
 
-        $this->get('/demande/chambre/'.$room->id)->assertOk()->assertSee("À l'heure")->assertSee('Journée')->assertSee('Séjour');
+        $this->get('/demande/chambre/'.$room->id)->assertOk()->assertSee('Passage')->assertSee('Journée')->assertSee('Séjour');
     }
 }

@@ -50,6 +50,18 @@ class HotelSettings
         'hotel_login_background' => 'hotel.info.login_background',
     ];
 
+    /** French names of the settings, for the journal d'activité. */
+    public const LABELS = [
+        'business_day_start' => 'Début de la journée commerciale', 'night_from' => 'Début de la nuitée', 'night_until' => 'Fin de la nuitée',
+        'day_hours' => 'Durée de la journée (h)', 'stay_min_hours' => 'Durée du séjour (h)', 'stay_checkout_time' => 'Heure de fin du séjour à heure fixe',
+        'cleaning_buffer_minutes' => 'Délai de ménage (min)', 'request_expiry_minutes' => 'Délai de traitement des demandes (min)',
+        'receipt_width' => 'Largeur du rouleau', 'receipt_footer' => 'Message de bas de reçu', 'training_url' => 'Lien Formation',
+        'hotel_name' => 'Nom de l\'hôtel', 'hotel_tagline' => 'Slogan', 'hotel_phone' => 'Téléphone', 'hotel_phone2' => 'Téléphone 2',
+        'hotel_whatsapp' => 'WhatsApp', 'hotel_email' => 'E-mail', 'hotel_website' => 'Site web', 'hotel_address' => 'Adresse', 'hotel_city' => 'Ville',
+        'hotel_country' => 'Pays', 'hotel_rccm' => 'RCCM', 'hotel_ncc' => 'NCC', 'hotel_tax_regime' => 'Régime fiscal', 'hotel_legal_other' => 'Autres mentions',
+        'hotel_facebook' => 'Facebook', 'hotel_instagram' => 'Instagram', 'hotel_logo' => 'Logo', 'hotel_login_background' => 'Photo de la page de connexion',
+    ];
+
     /**
      * Applies stored values over the config. Called at boot; silently keeps the config/hotel.php
      * defaults when the table isn't there yet (fresh install before migrating, test bootstrap).
@@ -81,6 +93,7 @@ class HotelSettings
     public static function save(array $values): void
     {
         $values = array_intersect_key($values, self::KEYS);
+        $before = self::all();
 
         DB::transaction(function () use ($values) {
             foreach ($values as $key => $value) {
@@ -93,6 +106,17 @@ class HotelSettings
 
         Cache::forget(self::CACHE_KEY);
         self::put($values);
+
+        $changes = [];
+        foreach ($values as $key => $value) {
+            if ((string) ($before[$key] ?? '') !== (string) $value) {
+                $changes[] = ['label' => self::LABELS[$key] ?? $key, 'old' => Audit::format($before[$key] ?? null), 'new' => Audit::format($value)];
+            }
+        }
+        if ($changes !== []) {
+            $hotel = array_filter(array_keys($values), fn ($k) => str_starts_with($k, 'hotel_')) !== [];
+            Audit::record($hotel ? 'settings.hotel' : 'settings.updated', 'configuration', $hotel ? 'Informations de l\'hôtel modifiées' : 'Paramètres modifiés', null, null, null, $changes);
+        }
     }
 
     /**

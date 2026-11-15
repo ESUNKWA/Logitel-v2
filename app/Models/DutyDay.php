@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Audited;
 use App\Support\BusinessDay;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,45 @@ use Illuminate\Validation\ValidationException;
  */
 class DutyDay extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['user_id' => 'Réceptionniste'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'duty';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'personnel';
+    }
+
+    public function auditName(): string
+    {
+        return 'prise de service du '.$this->business_date?->format('d/m/Y');
+    }
+
+    public function auditDisplay(string $field, mixed $value): ?string
+    {
+        return $field === 'user_id' && $value ? (User::query()->whereKey($value)->value('name') ?? '#'.$value) : null;
+    }
+
+    public function auditAction(string $event, array $changes, array $dirty): ?array
+    {
+        $who = User::query()->whereKey($this->user_id)->value('name') ?? '?';
+        $by = $this->assigned_by ? ' (désignée par '.(User::query()->whereKey($this->assigned_by)->value('name') ?? 'le gérant').')' : '';
+
+        return match ($event) {
+            'created' => ['duty.taken', 'Prise de service du '.$this->business_date?->format('d/m/Y').' : '.$who.$by],
+            'updated' => ['duty.reassigned', 'Réceptionniste du '.$this->business_date?->format('d/m/Y').' changée : '.$who.$by],
+            default => null,
+        };
+    }
+
     protected $fillable = [
         'business_date',
         'user_id',
@@ -99,6 +139,9 @@ class DutyDay extends Model
             Payment::query()->where('created_at', '>=', $start)->where('created_at', '<', $end)
                 ->update(['attributed_to' => $user->id]);
             Reservation::query()->where('checked_in_at', '>=', $start)->where('checked_in_at', '<', $end)
+                ->update(['attributed_to' => $user->id]);
+            // Expenses paid from that day's till (V2) follow the till too.
+            Expense::query()->whereDate('business_date', $businessDate->toDateString())->where('source', '!=', 'hors_caisse')
                 ->update(['attributed_to' => $user->id]);
 
             return $duty->setRelation('user', $user);

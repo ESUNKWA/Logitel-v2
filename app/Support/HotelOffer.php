@@ -75,7 +75,7 @@ class HotelOffer
         $hour = fn (string $time) => str_replace(':', 'h', $time);
 
         return match ($mode) {
-            PricingMode::Heure => "À l'heure, quand vous voulez",
+            PricingMode::Heure => 'Passage, quand vous voulez (tarif par heure)',
             PricingMode::Journee => 'Bloc de '.config('hotel.day_hours').' h en journée',
             PricingMode::Nuitee => 'De '.$hour((string) config('hotel.night.from')).' à '.$hour((string) config('hotel.night.until')).' le lendemain',
             PricingMode::Sejour => 'Par période de '.config('hotel.stay_min_hours').' h',

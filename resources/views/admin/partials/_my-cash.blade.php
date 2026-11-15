@@ -22,9 +22,15 @@
         @endforeach
     </ul>
     <div class="my-cash__side">
-        @if ($myCash['cash'] > 0)
-            <div class="my-cash__drawer"><i class="far fa-wallet"></i> Espèces à remettre : <strong>{{ $fcfa($myCash['cash']) }} F</strong></div>
+        @if (($myCash['cashExpenses'] ?? 0) > 0)
+            <div class="my-cash__drawer"><i class="far fa-receipt"></i> Dépenses payées en espèces : <strong>− {{ $fcfa($myCash['cashExpenses']) }} F</strong></div>
+        @endif
+        @if ($myCash['cash'] - ($myCash['cashExpenses'] ?? 0) > 0)
+            <div class="my-cash__drawer"><i class="far fa-wallet"></i> Espèces à remettre : <strong>{{ $fcfa($myCash['cash'] - ($myCash['cashExpenses'] ?? 0)) }} F</strong></div>
         @endif
         <a href="{{ route('admin.revenue.index') }}" class="btn btn-sm btn-light fw-semibold">Voir le détail</a>
+        @can('cash.close')
+            <a href="{{ route('admin.cash-closings.index') }}" class="btn btn-sm btn-light fw-semibold"><i class="far fa-lock"></i> Clôturer ma caisse</a>
+        @endcan
     </div>
 </section>

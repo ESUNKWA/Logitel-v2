@@ -186,7 +186,7 @@ class RevenueTest extends TestCase
         $this->assertStringContainsString('formule=nuitee', $page->getContent());
 
         $this->get(route('admin.revenue.index', ['formule' => 'heure']))->assertOk()
-            ->assertSee($hourly->reference())->assertDontSee($night->reference())->assertSeeInOrder(["Total encaissé — à l'heure", '20 000']);
+            ->assertSee($hourly->reference())->assertDontSee($night->reference())->assertSeeInOrder(['Total encaissé — passage', '20 000']);
 
         // Export: same filter, plus the formula column.
         $csv = $this->get(route('admin.revenue.export', ['formule' => 'nuitee']))->assertOk()->streamedContent();

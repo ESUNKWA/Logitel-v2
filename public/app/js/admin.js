@@ -397,7 +397,7 @@
                 radio.checked = false;
                 if (!radio.disabled) {
                     firstEnabled = firstEnabled || radio;
-                    // « À l'heure » is preselected at any time of day (client request, 2026-11-13);
+                    // « Passage » (formerly « À l'heure ») is preselected at any time of day (client request, 2026-11-13);
                     // a type without an hourly rate starts on its first formula.
                     if (radio.value === 'heure') {
                         preferred = radio;
@@ -2454,4 +2454,186 @@
         }
         refresh();
     });
+})();
+
+// « Dépenses » (V2): the mandatory receipt. Phone photos are often 3–6 Mo while the server takes
+// 2 Mo: an image is re-encoded in the browser (JPEG, ≤ 1600 px, which also drops EXIF/GPS) and
+// put back in the file input; a PDF over 2 Mo is flagged at once. The server checks everything again.
+(function () {
+    'use strict';
+
+    var MAX = 2 * 1024 * 1024;
+    document.querySelectorAll('input[data-receipt-input]').forEach(function (input) {
+        var form = input.form;
+        var status = form ? form.querySelector('[data-receipt-status]') : null;
+        var preview = form ? form.querySelector('[data-receipt-preview]') : null;
+        var previewUrl = null;
+        var say = function (text, bad) {
+            if (status) {
+                status.textContent = text;
+                status.className = 'small mt-1 ' + (bad ? 'text-danger' : 'text-muted');
+            }
+        };
+        var show = function (file) {
+            if (!preview) {
+                return;
+            }
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+            if (file && /^image\//.test(file.type)) {
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.hidden = false;
+            } else {
+                preview.hidden = true;
+                preview.removeAttribute('src');
+            }
+        };
+        var size = function (bytes) {
+            return (bytes / 1024 / 1024).toFixed(1).replace('.', ',') + ' Mo';
+        };
+        var replace = function (file) {
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                return true;
+            } catch (e) {
+                return false;
+            }
+        };
+        var shrink = function (file) {
+            return new Promise(function (resolve, reject) {
+                var img = new Image();
+                var url = URL.createObjectURL(file);
+                img.onload = function () {
+                    URL.revokeObjectURL(url);
+                    var scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+                    var canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+                    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(function (blob) {
+                        blob ? resolve(new File([blob], 'justificatif.jpg', { type: 'image/jpeg' })) : reject(new Error('encode'));
+                    }, 'image/jpeg', 0.82);
+                };
+                img.onerror = function () {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('decode'));
+                };
+                img.src = url;
+            });
+        };
+
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            show(null);
+            if (!file) {
+                say('', false);
+                return;
+            }
+            if (file.type === 'application/pdf') {
+                say(file.size > MAX ? 'Ce PDF fait ' + size(file.size) + ' : 2 Mo au maximum.' : 'PDF prêt (' + size(file.size) + ').', file.size > MAX);
+                return;
+            }
+            if (!/^image\//.test(file.type)) {
+                say('Choisissez une photo (JPG, PNG, WebP) ou un PDF.', true);
+                return;
+            }
+            if (file.size <= MAX && file.type !== 'image/heic') {
+                say('Photo prête (' + size(file.size) + ').', false);
+                show(file);
+                return;
+            }
+            say('Réduction de la photo…', false);
+            shrink(file).then(function (small) {
+                if (small.size <= MAX && replace(small)) {
+                    say('Photo réduite et prête (' + size(small.size) + ').', false);
+                    show(small);
+                } else {
+                    say('Photo trop lourde (' + size(file.size) + ') : 2 Mo au maximum. Reprenez-la de plus loin ou envoyez un PDF.', true);
+                }
+            }).catch(function () {
+                say('Cette photo ne peut pas être lue ici : prenez-la en JPG ou envoyez un PDF.', true);
+            });
+        });
+    });
+})();
+
+// « Clôture de caisse » (V2): live gap per method (declared − expected) and the optional note /
+// coin count, whose total fills the cash field. Display only: the server recomputes everything.
+(function () {
+    'use strict';
+
+    var form = document.querySelector('form[data-cash-closing]');
+    if (!form) {
+        return;
+    }
+    var digits = function (v) {
+        return parseInt(String(v || '').replace(/[^\d-]/g, ''), 10);
+    };
+    var fmt = function (n) {
+        return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
+    var paint = function (cell, gap, typed) {
+        cell.textContent = typed ? (gap > 0 ? '+' : gap < 0 ? '−' : '') + fmt(Math.abs(gap)) + ' F' : '—';
+        cell.classList.remove('text-danger', 'text-warning', 'text-success');
+        if (typed) {
+            cell.classList.add(gap < 0 ? 'text-danger' : gap > 0 ? 'text-warning' : 'text-success');
+        }
+    };
+    var cashInput = form.querySelector('[data-cash-especes]');
+    var countedOut = form.querySelector('[data-cash-counted]');
+    var counts = form.querySelectorAll('[data-cash-count]');
+
+    var refresh = function () {
+        var totalDeclared = 0;
+        var totalGap = 0;
+        var allTyped = true;
+        form.querySelectorAll('[data-cash-row]').forEach(function (row) {
+            var input = row.querySelector('[data-cash-declared]');
+            var value = digits(input.value);
+            var typed = !isNaN(value);
+            var gap = (typed ? value : 0) - parseFloat(row.dataset.expected || '0');
+            paint(row.querySelector('[data-cash-gap]'), gap, typed);
+            allTyped = allTyped && typed;
+            totalDeclared += typed ? value : 0;
+            totalGap += gap;
+        });
+        form.querySelector('[data-cash-total-declared]').textContent = fmt(totalDeclared) + ' F';
+        paint(form.querySelector('[data-cash-total-gap]'), totalGap, allTyped);
+    };
+
+    var recount = function () {
+        var total = 0;
+        var any = false;
+        counts.forEach(function (input) {
+            var n = parseInt(input.value, 10);
+            if (n > 0) {
+                total += n * parseInt(input.dataset.cashCount, 10);
+                any = true;
+            }
+        });
+        if (countedOut) {
+            countedOut.textContent = fmt(total) + ' F';
+        }
+        if (cashInput) {
+            if (any) {
+                cashInput.value = fmt(total);
+            }
+            cashInput.readOnly = any;
+        }
+        refresh();
+    };
+
+    form.addEventListener('input', function (event) {
+        if (event.target.matches('[data-cash-count]')) {
+            recount();
+        } else if (event.target.matches('[data-cash-declared]')) {
+            refresh();
+        }
+    });
+    recount();
 })();

@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 /**
  * The website only mentions the séjour (PricingMode::WEBSITE, client decision 2026-10-19). The
  * code guarantees it for prices and forms; this lists the texts typed in the application that
- * still mention another formula (« nuitée », « à l'heure »…), for the staff to rephrase.
+ * still mention another formula (« nuitée », « passage » / « à l'heure »…), for the staff to rephrase.
  * Read only: nothing is changed. Usage (also in production, Coolify → Terminal):
  *   php artisan site:check-formulas
  */
@@ -26,7 +26,7 @@ class CheckWebsiteFormulas extends Command
     protected $description = 'Liste les textes du site qui mentionnent une autre formule que le séjour (lecture seule)';
 
     /** Case- and accent-insensitive patterns of the formulas the website must not mention. */
-    public const PATTERNS = ['/nuit[ée]e/iu', "/[àa]\\s*l['’]\\s*heure/iu", '/\bjourn[ée]e\b/iu', '/(?:\bpar|\/)\s*(heure|nuit)\b/iu'];
+    public const PATTERNS = ['/nuit[ée]e/iu', "/[àa]\\s*l['’]\\s*heure/iu", '/\bjourn[ée]e\b/iu', '/(?:\bpar|\/)\s*(heure|nuit)\b/iu', '/\b(?:formule|tarif|mode)\s+passage\b/iu', '/\ben\s+passage\b/iu'];
 
     public function handle(): int
     {

@@ -3,12 +3,41 @@
 namespace App\Models;
 
 use App\Exceptions\DeletionBlocked;
+use App\Models\Concerns\Audited;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RoomType extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['name' => 'Nom', 'hourly_rate' => 'Tarif passage', 'day_rate' => 'Tarif journée', 'night_rate' => 'Tarif nuitée', 'stay_rate' => 'Tarif séjour',
+            'capacity_adults' => 'Adultes max.', 'capacity_children' => 'Enfants max.', 'is_active' => 'Type actif', 'stay_fixed_checkout' => 'Séjour jusqu\'au lendemain à heure fixe'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'room_type';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'configuration';
+    }
+
+    public function auditName(): string
+    {
+        return 'type de chambre « '.$this->name.' »';
+    }
+
+    public function auditMoneyFields(): array
+    {
+        return ['hourly_rate', 'day_rate', 'night_rate', 'stay_rate'];
+    }
+
     use HasFactory;
 
     protected $fillable = [
