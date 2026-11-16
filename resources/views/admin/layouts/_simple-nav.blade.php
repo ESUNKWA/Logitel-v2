@@ -55,6 +55,9 @@
             <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.stay-requests.index') }}"><i class="far fa-mobile-alt"></i> Demandes clients</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.stay-requests.qr') }}"><i class="far fa-qrcode"></i> QR code client</a></li>
         @endcan
+        @can('planning.view')
+            <li><a class="dropdown-item" href="{{ route('admin.planning.index') }}"><i class="far fa-calendar-week"></i> Planning</a></li>
+        @endcan
         @can('reservations.view')
             <li><a class="dropdown-item" href="{{ route('admin.booking-requests.index') }}"><i class="far fa-globe"></i> Demandes en ligne @if ($pendingBookings)<span class="badge bg-warning text-dark">{{ $pendingBookings }}</span>@endif</a></li>
         @endcan

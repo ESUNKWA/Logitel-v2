@@ -83,6 +83,11 @@
                             @endif
                         </a>
                     @endcan
+                    @can('planning.view')
+                        <a href="{{ route('admin.planning.index') }}" class="{{ request()->routeIs('admin.planning.*') ? 'active' : '' }}">
+                            <i class="far fa-calendar-week"></i> Planning
+                        </a>
+                    @endcan
                     @can('invoices.view')
                         <a href="{{ route('admin.invoices.index') }}" class="{{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
                             <i class="far fa-file-invoice-dollar"></i> Factures

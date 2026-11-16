@@ -105,7 +105,7 @@
             data-availability-url="{{ route('admin.rooms.available') }}"
             data-exclude-reservation-id="{{ $reservation->id }}"
             @if ($bookingRequest ?? null) data-refresh-on-load data-preferred-type="{{ $bookingRequest->room_type_id }}" @endif
-            @if (! ($currentRoomOption ?? null) && is_scalar(old('room_id'))) data-old-room="{{ old('room_id') }}" @endif
+            @if (! ($currentRoomOption ?? null) && is_scalar(old('room_id', $prefillRoomId ?? null))) data-old-room="{{ old('room_id', $prefillRoomId ?? null) }}" @endif
             required
         >
             @if ($currentRoomOption ?? null)

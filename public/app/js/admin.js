@@ -2637,3 +2637,66 @@
     });
     recount();
 })();
+
+// « Planning » (V2): a click on a free spot of a room's line opens the existing screens —
+// the réservation form pre-filled (room, date, time) for a future slot, or the board's
+// assignment modal for a room free right now. Display only: those screens re-check everything.
+(function () {
+    'use strict';
+
+    var box = document.querySelector('[data-planning]');
+    if (!box) {
+        return;
+    }
+    var start = parseInt(box.dataset.start, 10);
+    var end = parseInt(box.dataset.end, 10);
+    var now = parseInt(box.dataset.now, 10);
+    var offset = parseInt(box.dataset.offset || '0', 10); // server time zone, in seconds
+    var view = box.dataset.view;
+    var dayStart = parseInt(box.dataset.dayStart || '21600', 10); // business day start, seconds after midnight
+    var bookUrl = box.dataset.bookUrl;
+    var assignUrl = box.dataset.assignUrl;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    // Date / time as the server sees them (its own time zone, whatever the browser's).
+    var parts = function (ts) {
+        var d = new Date((ts + offset) * 1000);
+        return { date: d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()), time: pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) };
+    };
+    var nextHour = function (ts) { return Math.ceil((ts + 60) / 3600) * 3600; };
+
+    // Open on the « now » line when the timeline is wider than the screen (phones, day view).
+    var nowLine = box.querySelector('.plan-now');
+    if (nowLine && box.scrollWidth > box.clientWidth) {
+        var roomCol = box.querySelector('.plan-room');
+        box.scrollLeft = Math.max(0, nowLine.offsetLeft + (roomCol ? roomCol.offsetWidth : 0) - box.clientWidth / 3);
+    }
+
+    box.addEventListener('click', function (event) {
+        var track = event.target.closest('[data-plan-track]');
+        if (!track || event.target.closest('.plan-block') || track.hasAttribute('data-out')) {
+            return;
+        }
+        var rect = track.getBoundingClientRect();
+        var ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+        var at = start + ratio * (end - start);
+        // The clicked column: one hour (Jour) or one business day (Semaine / Mois).
+        var step = view === 'jour' ? 3600 : 86400;
+        var colStart = start + Math.floor((at - start) / step) * step;
+        var colEnd = colStart + step;
+
+        if (colStart <= now && now < colEnd && track.hasAttribute('data-free-now') && assignUrl) {
+            window.location.href = assignUrl + '?affecter=' + encodeURIComponent(track.dataset.room) + '#disponible';
+            return;
+        }
+        if (colEnd <= now || !bookUrl) {
+            return;
+        }
+        // Future slot: the hour clicked (Jour), else 14:00 that day — never in the past.
+        var arrival = view === 'jour' ? colStart : colStart + (14 * 3600 - dayStart);
+        if (arrival <= now) {
+            arrival = nextHour(now);
+        }
+        var p = parts(arrival);
+        window.location.href = bookUrl + '?chambre=' + encodeURIComponent(track.dataset.room) + '&date=' + p.date + '&heure=' + encodeURIComponent(p.time);
+    });
+})();

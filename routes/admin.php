@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LiveFiguresController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PerkController;
+use App\Http\Controllers\Admin\PlanningController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PwaController;
 use App\Http\Controllers\Admin\ReceiptController;
@@ -199,6 +200,9 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::post('/depenses/{expense}/valider', [ExpenseController::class, 'approve'])->middleware('can:expenses.validate')->whereNumber('expense')->name('expenses.approve');
         Route::post('/depenses/{expense}/refuser', [ExpenseController::class, 'refuse'])->middleware('can:expenses.validate')->whereNumber('expense')->name('expenses.refuse');
         Route::post('/depenses/{expense}/annuler', [ExpenseController::class, 'cancel'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.cancel');
+
+        // « Planning » (V2): rooms × time, read only.
+        Route::get('/planning', [PlanningController::class, 'index'])->middleware('can:planning.view')->name('planning.index');
 
         // « Clôture de caisse » (V2): one per business day and till; the Gérant validates or contests.
         Route::get('/caisse', [CashClosingController::class, 'index'])->middleware('can:cash.access')->name('cash-closings.index');
