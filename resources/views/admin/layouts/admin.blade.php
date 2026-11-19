@@ -32,6 +32,7 @@
         <link rel="stylesheet" href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/datatables/dataTables.bootstrap5.min.css') }}">
         <link rel="stylesheet" href="{{ asset('vendor/datatables/rowGroup.bootstrap5.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/tom-select/tom-select.bootstrap5.min.css') }}">
         <link rel="stylesheet" href="{{ \App\Support\Asset::url('app/css/admin.css') }}">
         @include('admin.pwa._head')
         @stack('styles')
@@ -316,6 +317,9 @@
         @if (($useSweetAlert ?? false) || \Illuminate\Support\Facades\View::hasSection('sweetalert-confirm') || auth()->user()?->receivesCheckoutAlarm())
             <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
         @endif
+        {{-- Searchable selects (Tom Select, vendored): before admin.js so its changes to the selects are mirrored. --}}
+        <script src="{{ asset('vendor/tom-select/tom-select.complete.min.js') }}"></script>
+        <script src="{{ \App\Support\Asset::url('app/js/select-search.js') }}"></script>
         <script src="{{ \App\Support\Asset::url('app/js/admin.js') }}"></script>
         <script src="{{ \App\Support\Asset::url('app/js/pwa.js') }}"></script>
         @stack('scripts')

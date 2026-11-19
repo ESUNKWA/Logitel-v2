@@ -3502,3 +3502,59 @@ tr.is-selected > td { background-color: rgba(var(--bs-danger-rgb), .06) !importa
     .plan-toolbar form, .plan-legend .text-muted { display: none !important; }
     .plan-scroll { overflow: visible; }
 }
+
+/* Searchable selects (Tom Select, public/app/js/select-search.js): the wrapper carries the
+   select's classes (.form-select, -sm, is-invalid…), so it keeps the .form-select look above;
+   only the inner control, the focus ring and the list are themed here. */
+.ts-wrapper.ek-select.form-select .ts-control,
+.ts-wrapper.ek-select.form-select-sm .ts-control {
+    padding: .55rem 2.25rem .55rem .85rem;
+    font-size: .92rem;
+    line-height: 1.5;
+    color: var(--ek-ink);
+    border-radius: 10px;
+    min-height: 0;
+}
+.ts-wrapper.ek-select .ts-control > .item { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.ts-wrapper.ek-select .items-placeholder { font-size: .92rem; }
+.ts-wrapper.ek-select.focus:not(.is-invalid) {
+    border-color: rgba(var(--ek-primary-rgb), .55);
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(var(--ek-primary-rgb), .12);
+}
+.ts-wrapper.ek-select.disabled { background-color: var(--bs-secondary-bg); opacity: 1; }
+.ts-dropdown.ek-select__dropdown {
+    min-width: 11rem;
+    margin-top: 4px;
+    border: 1px solid var(--ek-border);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(16, 24, 40, .14);
+    overflow: hidden;
+    font-size: .92rem;
+    color: var(--ek-ink);
+}
+body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to <body> (table cells) */
+.ek-select__dropdown .dropdown-input-wrap { padding: 8px; border-bottom: 1px solid var(--ek-border); }
+.ek-select__dropdown .dropdown-input {
+    width: 100%;
+    border: 1px solid var(--ek-border);
+    border-radius: 8px;
+    padding: .4rem .7rem;
+    font-size: .9rem;
+    background: #fbfcfe;
+}
+.ek-select__dropdown .dropdown-input:focus { outline: 0; border-color: rgba(var(--ek-primary-rgb), .55); background: #fff; }
+.ek-select__dropdown .ts-dropdown-content { max-height: 280px; padding: 4px 0; }
+.ek-select__dropdown .option { padding: .45rem .85rem; }
+.ek-select__dropdown .option.active { background: var(--ek-primary-50); color: var(--ek-primary-700); }
+.ek-select__dropdown .option.selected { font-weight: 600; }
+.ek-select__dropdown .option[aria-disabled="true"] { color: var(--ek-muted); opacity: .6; }
+.ek-select__dropdown .no-results { padding: .55rem .85rem; color: var(--ek-muted); }
+.ek-select__dropdown .highlight { background: rgba(var(--ek-gold-rgb), .28); border-radius: 2px; color: inherit; }
+@media (max-width: 767.98px) {
+    .ek-select__dropdown .dropdown-input { font-size: 16px; } /* no zoom-in on iOS */
+}
+@media print {
+    .ts-dropdown { display: none !important; }
+}
