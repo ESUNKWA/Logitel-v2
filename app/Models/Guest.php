@@ -55,6 +55,13 @@ class Guest extends Model
 
     public const TYPE_COMPANY = 'morale';
 
+    /** Identity documents offered by the guest form (value stored => label). */
+    public const ID_DOCUMENT_TYPES = [
+        'cni' => "Carte Nationale d'Identité",
+        'passeport' => 'Passeport',
+        'permis' => 'Permis de conduire',
+    ];
+
     protected $fillable = [
         'first_name',
         'last_name',

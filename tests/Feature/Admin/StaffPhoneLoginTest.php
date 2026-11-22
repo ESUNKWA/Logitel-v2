@@ -102,7 +102,8 @@ class StaffPhoneLoginTest extends TestCase
     {
         $user = User::factory()->create(['email' => 'awa@hotel.ci', 'phone' => '0711223344', 'password' => self::PASSWORD]);
 
-        $this->get('/admin/login')->assertOk()->assertSee('E-mail ou téléphone')->assertSee('autocomplete="username"', false);
+        // Shared reception computers: the identifier field asks the browser not to fill it in (5e99f61).
+        $this->get('/admin/login')->assertOk()->assertSee('E-mail ou téléphone')->assertSee('name="email" value="" autocomplete="off"', false);
 
         foreach (['07 11 22 33 44', '0711223344', '07.11.22.33.44', 'awa@hotel.ci'] as $identifier) {
             $this->post('/admin/login', ['email' => $identifier, 'password' => self::PASSWORD])->assertRedirect(route('admin.dashboard'));
@@ -161,7 +162,6 @@ class StaffPhoneLoginTest extends TestCase
         $this->put(route('admin.profile.update'), ['name' => 'Awa K.', 'email' => '', 'phone' => '0711223344', 'confirm_password' => self::PASSWORD])->assertSessionHasNoErrors();
         $this->assertNull($user->fresh()->email);
         $this->put(route('admin.profile.update'), ['name' => 'Awa K.', 'email' => '', 'phone' => '', 'confirm_password' => self::PASSWORD])->assertSessionHasErrors('email');
-
 
         // Another staff member's number is refused.
         User::factory()->create(['phone' => '0544332211']);

@@ -39,9 +39,13 @@
         <label class="form-label" for="id_document_type">Type de pièce d'identité</label>
         <select class="form-select" id="id_document_type" name="id_document_type">
             <option value="">—</option>
-            @foreach (['cni' => "Carte Nationale d'Identité", 'passeport' => 'Passeport', 'permis' => 'Permis de conduire'] as $value => $label)
+            @foreach (\App\Models\Guest::ID_DOCUMENT_TYPES as $value => $label)
                 <option value="{{ $value }}" @selected(old('id_document_type', $guest->id_document_type) === $value)>{{ $label }}</option>
             @endforeach
+            @php($legacyDocument = old('id_document_type', $guest->id_document_type))
+            @if (filled($legacyDocument) && ! array_key_exists($legacyDocument, \App\Models\Guest::ID_DOCUMENT_TYPES) && $legacyDocument === $guest->id_document_type)
+                <option value="{{ $legacyDocument }}" selected>{{ $legacyDocument }}</option>
+            @endif
         </select>
     </div>
     <div class="col-md-6">
