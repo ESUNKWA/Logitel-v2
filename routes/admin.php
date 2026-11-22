@@ -119,6 +119,8 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
             ->middlewareFor('destroy', 'can:guests.delete');
 
         // Réservations (booked ahead): "check-in" = the guest arrives → the file becomes a stay.
+        // « Arrivée du client » page: what is left to pay, optionally cashed with the check-in.
+        Route::get('/reservations/{reservation}/arrivee', [ReservationController::class, 'arrival'])->middleware('can:reservations.manage')->name('reservations.arrival');
         Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->middleware('can:reservations.manage')->name('reservations.check-in');
         Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->middleware('can:reservations.cancel')->name('reservations.cancel');
         Route::resource('reservations', ReservationController::class)->except(['show', 'destroy'])

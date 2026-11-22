@@ -96,12 +96,15 @@ class ReservationTabsTest extends TestCase
         $busy = $this->booking('BUSY', '2026-10-14 16:00', roomStatus: RoomStatus::Nettoyage);
         $over = $this->booking('OVER', '2026-10-14 06:00'); // 06:00 → 08:00, already over
         $checkIn = fn (Reservation $r) => 'action="'.route('admin.reservations.check-in', $r).'"';
+        // Unpaid: « Affecter » opens the « Arrivée du client » page (rest to cash), which posts the check-in.
+        $arrival = fn (Reservation $r) => 'href="'.route('admin.reservations.arrival', $r).'"';
 
         $page = $this->actingAs($this->staff)->get(route('admin.reservations.index'))->assertOk();
-        $page->assertSee($checkIn($today), false)->assertSee('Oui, affecter la chambre');
+        $page->assertSee($arrival($today), false);
         foreach ([$tomorrow, $busy, $over] as $booking) {
-            $page->assertDontSee($checkIn($booking), false);
+            $page->assertDontSee($checkIn($booking), false)->assertDontSee($arrival($booking), false);
         }
+        $this->get(route('admin.reservations.arrival', $today))->assertOk()->assertSee($checkIn($today), false);
 
         // Same action as « Arrivée du client »: the booking becomes an affectation.
         $this->post(route('admin.reservations.check-in', $today))->assertRedirect(route('admin.affectations.show', $today));
