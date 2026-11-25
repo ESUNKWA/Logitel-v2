@@ -182,7 +182,7 @@ class Payment extends Model
     {
         // Never from input (not fillable). Runs after RecordsCreator has set created_by.
         static::creating(function (Payment $payment) {
-            $payment->attributed_to ??= DutyDay::attributeeAt(now()) ?? $payment->created_by;
+            $payment->attributed_to ??= DutyShift::attributeeAt(now()) ?? $payment->created_by;
         });
         static::created(fn (Payment $payment) => $payment->invoice->recalculateStatus());
         static::deleted(fn (Payment $payment) => $payment->invoice->recalculateStatus());

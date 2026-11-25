@@ -48,7 +48,7 @@
                         <label class="btn btn-outline-primary btn-sm" for="source-{{ $s->value }}">{{ $s->getLabel() }}</label>
                     @endforeach
                 </div>
-                <div class="form-text">« Caisse » : l'argent sort de la caisse de la réception et sera déduit à la clôture. « Hors caisse » : payée par le gérant ou la banque.</div>
+                <div class="form-text">« Caisse » : l'argent sort de la caisse de la réception et est déduit des espèces à remettre (« Ma recette du jour »). « Hors caisse » : payée par le gérant ou la banque.</div>
                 @error('source')<div class="text-danger small">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-6">

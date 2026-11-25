@@ -4,10 +4,11 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\ExpenseStatus;
 use App\Models\ActivityLog;
-use App\Models\DutyDay;
+use App\Models\DutyShift;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\User;
+use App\Support\BusinessDay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -206,7 +207,7 @@ class ExpenseTest extends TestCase
     public function test_the_till_of_the_receptionist_on_duty_and_the_dashboard(): void
     {
         $onDuty = User::factory()->reception()->create();
-        DutyDay::assign(now(), $onDuty);
+        DutyShift::designateDay(BusinessDay::today(), $onDuty);
         $manager = User::factory()->create();
 
         $this->actingAs($manager)->post(route('admin.expenses.store'), $this->payload(['amount' => '20 000']));

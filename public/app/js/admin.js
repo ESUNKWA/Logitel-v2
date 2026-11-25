@@ -2562,82 +2562,6 @@
     });
 })();
 
-// « Clôture de caisse » (V2): live gap per method (declared − expected) and the optional note /
-// coin count, whose total fills the cash field. Display only: the server recomputes everything.
-(function () {
-    'use strict';
-
-    var form = document.querySelector('form[data-cash-closing]');
-    if (!form) {
-        return;
-    }
-    var digits = function (v) {
-        return parseInt(String(v || '').replace(/[^\d-]/g, ''), 10);
-    };
-    var fmt = function (n) {
-        return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    };
-    var paint = function (cell, gap, typed) {
-        cell.textContent = typed ? (gap > 0 ? '+' : gap < 0 ? '−' : '') + fmt(Math.abs(gap)) + ' F' : '—';
-        cell.classList.remove('text-danger', 'text-warning', 'text-success');
-        if (typed) {
-            cell.classList.add(gap < 0 ? 'text-danger' : gap > 0 ? 'text-warning' : 'text-success');
-        }
-    };
-    var cashInput = form.querySelector('[data-cash-especes]');
-    var countedOut = form.querySelector('[data-cash-counted]');
-    var counts = form.querySelectorAll('[data-cash-count]');
-
-    var refresh = function () {
-        var totalDeclared = 0;
-        var totalGap = 0;
-        var allTyped = true;
-        form.querySelectorAll('[data-cash-row]').forEach(function (row) {
-            var input = row.querySelector('[data-cash-declared]');
-            var value = digits(input.value);
-            var typed = !isNaN(value);
-            var gap = (typed ? value : 0) - parseFloat(row.dataset.expected || '0');
-            paint(row.querySelector('[data-cash-gap]'), gap, typed);
-            allTyped = allTyped && typed;
-            totalDeclared += typed ? value : 0;
-            totalGap += gap;
-        });
-        form.querySelector('[data-cash-total-declared]').textContent = fmt(totalDeclared) + ' F';
-        paint(form.querySelector('[data-cash-total-gap]'), totalGap, allTyped);
-    };
-
-    var recount = function () {
-        var total = 0;
-        var any = false;
-        counts.forEach(function (input) {
-            var n = parseInt(input.value, 10);
-            if (n > 0) {
-                total += n * parseInt(input.dataset.cashCount, 10);
-                any = true;
-            }
-        });
-        if (countedOut) {
-            countedOut.textContent = fmt(total) + ' F';
-        }
-        if (cashInput) {
-            if (any) {
-                cashInput.value = fmt(total);
-            }
-            cashInput.readOnly = any;
-        }
-        refresh();
-    };
-
-    form.addEventListener('input', function (event) {
-        if (event.target.matches('[data-cash-count]')) {
-            recount();
-        } else if (event.target.matches('[data-cash-declared]')) {
-            refresh();
-        }
-    });
-    recount();
-})();
-
 // « Planning » (V2): a click on a free spot of a room's line opens the existing screens —
 // the réservation form pre-filled (room, date, time) for a future slot, or the board's
 // assignment modal for a room free right now. Display only: those screens re-check everything.
@@ -2698,5 +2622,284 @@
         }
         var p = parts(arrival);
         window.location.href = bookUrl + '?chambre=' + encodeURIComponent(track.dataset.room) + '&date=' + p.date + '&heure=' + encodeURIComponent(p.time);
+    });
+})();
+
+// Folding menu groups (client request, 2026-11-24): « Site web » and « Configuration » in the
+// sidebar (mode complet) and the « Plus » menu (mode simple). One group open at a time.
+// - Computers with a mouse (hover + fine pointer, wider than 860 px): « fly-out » — the group's
+//   links open in a panel right next to the menu on hover (to the right, or to the left when the
+//   screen has no room), also on click / Enter / → ; Échap or ← closes it. The panel is
+//   position: fixed (placed here), so neither the sidebar's nor the « Plus » menu's scrolling
+//   clips it; the « Plus » menu stops scrolling while a panel is open (.has-flyout).
+// - Phones / tablets (no hover): the group unfolds in place on tap, as before; the group of the
+//   current page is rendered open by the server. Display only: every link stays as it was.
+(function () {
+    'use strict';
+
+    var groups = Array.prototype.slice.call(document.querySelectorAll('[data-nav-group]'));
+    if (!groups.length) {
+        return;
+    }
+
+    var flyoutQuery = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 861px)') : null;
+    var flyout = false;
+    var closeTimer = null;
+    var CLOSE_DELAY = 300; // lets the pointer cross the gap between the line and its panel
+
+    var parts = function (group) {
+        var toggle = group.querySelector('[data-nav-group-toggle]');
+        var items = toggle ? document.getElementById(toggle.getAttribute('aria-controls')) : null;
+        return { toggle: toggle, items: items };
+    };
+    var isOpen = function (group) {
+        var p = parts(group);
+        return !!p.toggle && p.toggle.getAttribute('aria-expanded') === 'true';
+    };
+    // The menu the group belongs to: the « Plus » dropdown or the sidebar.
+    var menuOf = function (group) {
+        return group.closest('.simple-nav__menu') || group.closest('.admin-sidebar') || group.parentElement;
+    };
+
+    // Fly-out panel: right next to the menu, to the right when it fits, otherwise to the left;
+    // kept inside the screen vertically. Fixed coordinates are corrected by the panel's real
+    // containing block (a transformed / filtered ancestor, e.g. the « Plus » menu).
+    var place = function (group) {
+        var p = parts(group);
+        var items = p.items;
+        var menuBox = menuOf(group).getBoundingClientRect();
+        var lineBox = p.toggle.getBoundingClientRect();
+        var gap = 6;
+        var margin = 8;
+
+        items.style.left = '0px';
+        items.style.top = '0px';
+        var origin = items.getBoundingClientRect();
+        var width = items.offsetWidth;
+        var height = items.offsetHeight;
+
+        var left = menuBox.right + gap;
+        if (left + width > window.innerWidth - margin && menuBox.left - gap - width >= margin) {
+            left = menuBox.left - gap - width;
+        }
+        var top = Math.max(margin, Math.min(lineBox.top - 8, window.innerHeight - margin - height));
+
+        items.style.left = (left - origin.left) + 'px';
+        items.style.top = (top - origin.top) + 'px';
+        items.dataset.side = left < menuBox.left ? 'left' : 'right';
+    };
+
+    var setOpen = function (group, open) {
+        var p = parts(group);
+        if (!p.toggle || !p.items) {
+            return;
+        }
+        p.toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        p.items.hidden = !open;
+        if (flyout) {
+            var menu = group.closest('.simple-nav__menu');
+            if (open) {
+                if (menu) {
+                    menu.classList.add('has-flyout');
+                }
+                place(group);
+            } else {
+                p.items.style.left = '';
+                p.items.style.top = '';
+                if (menu && !groups.some(function (g) { return g !== group && isOpen(g) && g.closest('.simple-nav__menu') === menu; })) {
+                    menu.classList.remove('has-flyout');
+                }
+            }
+        }
+    };
+
+    var closeSiblings = function (group) {
+        if (!group.parentElement) {
+            return;
+        }
+        Array.prototype.forEach.call(group.parentElement.children, function (other) {
+            if (other !== group && other.hasAttribute('data-nav-group')) {
+                setOpen(other, false);
+            }
+        });
+    };
+    var open = function (group) {
+        clearTimeout(closeTimer);
+        closeSiblings(group);
+        if (!isOpen(group)) {
+            setOpen(group, true);
+        }
+    };
+    var closeAll = function () {
+        clearTimeout(closeTimer);
+        groups.forEach(function (group) {
+            if (isOpen(group)) {
+                setOpen(group, false);
+            }
+        });
+    };
+
+    // Switching between the two behaviours (window resized, mouse plugged…).
+    var applyMode = function () {
+        var wanted = !!(flyoutQuery && flyoutQuery.matches);
+        if (wanted === flyout && document.documentElement.hasAttribute('data-nav-mode')) {
+            return;
+        }
+        if (wanted) {
+            // A panel never floats open on its own: all closed, the current page's line stays marked.
+            closeAll();
+            flyout = true;
+        } else {
+            closeAll();
+            flyout = false;
+            groups.forEach(function (group) {
+                if (parts(group).toggle.classList.contains('is-current')) {
+                    setOpen(group, true);
+                }
+            });
+        }
+        document.documentElement.setAttribute('data-nav-mode', flyout ? 'flyout' : 'fold');
+        document.documentElement.classList.toggle('nav-flyout', flyout);
+    };
+
+    groups.forEach(function (group) {
+        var p = parts(group);
+        if (!p.toggle || !p.items) {
+            return;
+        }
+
+        p.toggle.addEventListener('click', function (event) {
+            // Inside the « Plus » dropdown, opening a group must not close the menu.
+            event.stopPropagation();
+            if (flyout) {
+                open(group); // hover already opened it: a click never closes it by surprise
+                return;
+            }
+            var opening = !isOpen(group);
+            if (opening) {
+                closeSiblings(group);
+            }
+            setOpen(group, opening);
+        });
+
+        // The panel stays a DOM child of its group: leaving the group = leaving line and panel.
+        group.addEventListener('mouseenter', function () {
+            if (flyout) {
+                open(group);
+            }
+        });
+        group.addEventListener('mouseleave', function () {
+            if (flyout) {
+                clearTimeout(closeTimer);
+                closeTimer = setTimeout(function () { setOpen(group, false); }, CLOSE_DELAY);
+            }
+        });
+
+        group.addEventListener('keydown', function (event) {
+            if (!flyout) {
+                return;
+            }
+            if (event.key === 'ArrowRight' && event.target === p.toggle) {
+                event.preventDefault();
+                open(group);
+                var first = p.items.querySelector('a');
+                if (first) {
+                    first.focus();
+                }
+            }
+        });
+    });
+
+    // Échap / ← inside an open panel: closes that panel only and returns to its line. Listened on
+    // window in the capture phase, before Bootstrap's own (delegated, capture) Échap handler,
+    // which would otherwise close the whole « Plus » menu.
+    window.addEventListener('keydown', function (event) {
+        if (!flyout || (event.key !== 'Escape' && event.key !== 'ArrowLeft')) {
+            return;
+        }
+        var group = groups.filter(function (g) { return isOpen(g) && parts(g).items.contains(event.target); })[0];
+        if (!group) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(group, false);
+        parts(group).toggle.focus();
+    }, true);
+
+    // Panels follow their menu: closed when the « Plus » menu closes, the page / sidebar
+    // scrolls or the window is resized.
+    document.addEventListener('hide.bs.dropdown', function () {
+        if (flyout) {
+            closeAll();
+        }
+    });
+    var closeOnMove = function (event) {
+        if (!flyout) {
+            return;
+        }
+        // Scrolling inside an open panel itself is fine.
+        if (event && event.target && event.target.nodeType === 1 && groups.some(function (g) { return parts(g).items && parts(g).items.contains(event.target); })) {
+            return;
+        }
+        closeAll();
+    };
+    window.addEventListener('scroll', closeOnMove, true);
+    window.addEventListener('resize', function () {
+        closeOnMove();
+        applyMode();
+    });
+    if (flyoutQuery && flyoutQuery.addEventListener) {
+        flyoutQuery.addEventListener('change', applyMode);
+    }
+    // The current page's group is the one the server rendered open: remembered once, so it is
+    // unfolded again in the « fold » mode (phones) and its line marked in the fly-out mode.
+    groups.forEach(function (group) {
+        if (isOpen(group)) {
+            parts(group).toggle.classList.add('is-current');
+        }
+    });
+    applyMode();
+})();
+
+// Log-out of the receptionist on duty (client request, 2026-11-25): « Terminer aussi votre service ? »
+// — yes: her period ends (the next receptionist takes the service when she logs in); no: she only
+// logs out and stays on duty. Sent as end_duty (AuthController@logout). Without SweetAlert: confirm().
+(function () {
+    'use strict';
+
+    document.querySelectorAll('form[data-logout-duty]').forEach(function (form) {
+        var field = form.querySelector('[data-end-duty]');
+        form.addEventListener('submit', function (event) {
+            if (form.dataset.answered === '1' || !field) {
+                return;
+            }
+            event.preventDefault();
+            var send = function (endDuty) {
+                field.value = endDuty ? '1' : '0';
+                form.dataset.answered = '1';
+                form.submit();
+            };
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire({
+                    title: 'Terminer aussi votre service ?',
+                    text: 'Si vous partez, terminez votre service : la prochaine réceptionniste le prendra à sa connexion.',
+                    icon: 'question',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, terminer mon service',
+                    denyButtonText: 'Non, me déconnecter seulement',
+                    cancelButtonText: 'Annuler',
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        send(true);
+                    } else if (result.isDenied) {
+                        send(false);
+                    }
+                });
+                return;
+            }
+            send(window.confirm('Terminer aussi votre service ?\n\nOK : terminer mon service et me déconnecter.\nAnnuler : me déconnecter seulement.'));
+        });
     });
 })();

@@ -106,17 +106,6 @@
                 <div class="dash-tile__value {{ $resultMonth < 0 ? 'text-danger' : '' }}"><span data-live-value="resultMonth">{{ $fcfa($resultMonth) }}</span> <small>FCFA</small></div>
                 <div class="dash-tile__hint">Recettes encaissées − dépenses validées</div>
             </div>
-            <div class="dash-tile">
-                <span class="dash-tile__icon dash-tile__icon--gold"><i class="fas fa-lock"></i></span>
-                <div class="dash-tile__label">Écarts de caisse du mois</div>
-                <div class="dash-tile__value {{ $closingsMonthGap < 0 ? 'text-danger' : '' }}">{{ $closingsMonthGap > 0 ? '+' : '' }}{{ $fcfa($closingsMonthGap) }} <small>FCFA</small></div>
-                <div class="dash-tile__hint">
-                    Clôtures déclarées (− = manque)
-                    @can('cash.access')
-                        · <a href="{{ route('admin.cash-closings.index') }}">{{ $closingsToReview ? $closingsToReview.' à valider' : 'voir les clôtures' }}</a>
-                    @endcan
-                </div>
-            </div>
         </div>
     @endcan
 

@@ -10,7 +10,6 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AffectationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BookingRequestController;
-use App\Http\Controllers\Admin\CashClosingController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DutyController;
@@ -87,9 +86,13 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         // « Prise de service »: the receptionist of the business day (mandatory), every sale of the day is hers.
         Route::get('/prise-de-service', [DutyController::class, 'show'])->middleware('can:duty.take')->name('duty.show');
         Route::post('/prise-de-service', [DutyController::class, 'take'])->middleware('can:duty.take')->name('duty.take');
-        Route::post('/prise-de-service/plus-tard', [DutyController::class, 'defer'])->middleware('can:duty.take')->name('duty.defer');
+        // « Non, je viens en renfort »: works without relieving the colleague on duty (her till).
+        Route::post('/prise-de-service/renfort', [DutyController::class, 'decline'])->middleware('can:duty.take')->name('duty.decline');
+        Route::post('/prise-de-service/terminer', [DutyController::class, 'end'])->middleware('can:duty.take')->name('duty.end');
         Route::get('/prises-de-service', [DutyController::class, 'index'])->middleware('can:duty.manage')->name('duty.index');
         Route::post('/prises-de-service', [DutyController::class, 'assign'])->middleware('can:duty.manage')->name('duty.assign');
+        Route::post('/prises-de-service/{shift}/corriger', [DutyController::class, 'reassign'])->middleware('can:duty.manage')->whereNumber('shift')->name('duty.reassign');
+        Route::post('/prises-de-service/{shift}/clore', [DutyController::class, 'close'])->middleware('can:duty.manage')->whereNumber('shift')->name('duty.close');
 
         Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:6,1')->name('profile.update');
@@ -203,14 +206,6 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
 
         // « Planning » (V2): rooms × time, read only.
         Route::get('/planning', [PlanningController::class, 'index'])->middleware('can:planning.view')->name('planning.index');
-
-        // « Clôture de caisse » (V2): one per business day and till; the Gérant validates or contests.
-        Route::get('/caisse', [CashClosingController::class, 'index'])->middleware('can:cash.access')->name('cash-closings.index');
-        Route::post('/caisse', [CashClosingController::class, 'store'])->middleware('can:cash.close')->name('cash-closings.store');
-        Route::get('/caisse/export', [CashClosingController::class, 'export'])->middleware('can:cash.review')->name('cash-closings.export');
-        Route::get('/caisse/{closing}', [CashClosingController::class, 'show'])->middleware('can:cash.access')->whereNumber('closing')->name('cash-closings.show');
-        Route::post('/caisse/{closing}/valider', [CashClosingController::class, 'validateClosing'])->middleware('can:cash.review')->whereNumber('closing')->name('cash-closings.validate');
-        Route::post('/caisse/{closing}/contester', [CashClosingController::class, 'contest'])->middleware('can:cash.review')->whereNumber('closing')->name('cash-closings.contest');
 
         // « Journal d'activité » (V2): read only, no route changes or deletes a line.
         Route::get('/journal', [ActivityLogController::class, 'index'])->middleware('can:activity.view')->name('activity.index');

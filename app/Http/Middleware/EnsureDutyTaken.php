@@ -2,36 +2,40 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\DutyDay;
-use App\Support\BusinessDay;
+use App\Http\Controllers\Admin\DutyController;
+use App\Models\DutyShift;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * « Prise de service » is mandatory (client request, 2026-10-25): while nobody holds the service
- * of the current business day, a receptionist (User::takesDuty()) is sent to the prise-de-service
- * page before anything else — unless she said she is finishing the previous day and waits for
- * the relief (DutyController@defer, for this business day only). Once a colleague holds the day,
- * the others work normally: their sales go to her. Background JSON polling (alarm, requests,
- * live figures) is never blocked, so the outgoing receptionist's alarm keeps ringing; nor is a
- * submitted form (only page views are redirected): a sale sent at 06:05 from a page opened before
- * 06:00 is saved — and attributed to whoever takes the service — instead of being lost.
+ * « Prise de service » by periods (client request, 2026-11-25), for a receptionist
+ * (User::takesDuty()) opening a page:
+ * - nobody on duty → she takes the service automatically (no click), and works;
+ * - she is on duty → nothing;
+ * - a colleague is on duty → the relief page asks « Prendre la relève ? » (DutyController@show),
+ *   once per colleague's period: answered « non » (DutyController@decline, she comes as
+ *   reinforcement), she works and her sales go to the colleague on duty (one till at a time).
+ * Background JSON polling (alarm, requests, live figures) and submitted forms are never blocked
+ * (page views only): a sale sent from a page opened earlier is saved, and attributed by the time
+ * it is recorded.
  */
 class EnsureDutyTaken
 {
-    /** Routes reachable before taking the service. */
+    /** Routes reachable without answering the relief question. */
     private const OPEN_ROUTES = [
         'admin.duty.show',
         'admin.duty.take',
-        'admin.duty.defer',
+        'admin.duty.decline',
+        'admin.duty.end',
         'admin.logout',
         'admin.profile.edit',
         'admin.profile.update',
         'admin.profile.password.update',
     ];
 
-    public const DEFER_SESSION_KEY = 'duty_deferred_for';
+    /** Session key: id of the colleague's period for which the relief was declined. */
+    public const DECLINED_SESSION_KEY = 'duty_relief_declined';
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -41,9 +45,23 @@ class EnsureDutyTaken
             || ! $user->takesDuty()
             || $request->routeIs(self::OPEN_ROUTES)
             || ! $request->isMethodSafe()
-            || $request->expectsJson()
-            || $request->session()->get(self::DEFER_SESSION_KEY) === BusinessDay::today()->toDateString()
-            || DutyDay::today() !== null) {
+            || $request->expectsJson()) {
+            return $next($request);
+        }
+
+        $current = DutyShift::current();
+
+        if ($current === null) {
+            $shift = DutyShift::start($user);
+            // Shown on this page, after any message already waiting (e.g. « Chambre affectée… »).
+            $waiting = $request->session()->get('status');
+            $request->session()->now('status', trim((is_string($waiting) ? $waiting.' ' : '').DutyController::startedMessage($shift)));
+
+            return $next($request);
+        }
+
+        if ($current->user_id === $user->id
+            || (int) $request->session()->get(self::DECLINED_SESSION_KEY) === $current->id) {
             return $next($request);
         }
 

@@ -29,8 +29,6 @@ enum Permission: string
     case PaymentsDelete = 'payments.delete';
     case ExpensesCreate = 'expenses.create';
     case ExpensesValidate = 'expenses.validate';
-    case CashClose = 'cash.close';
-    case CashReview = 'cash.review';
     case DashboardRevenue = 'dashboard.revenue';
     case AlertsCheckout = 'alerts.checkout';
     case DutyTake = 'duty.take';
@@ -63,8 +61,6 @@ enum Permission: string
             self::PaymentsCreate => 'Enregistrer un paiement',
             self::PaymentsDelete => 'Supprimer un paiement',
             self::ExpensesCreate => 'Demander une dépense (avec justificatif ; elle attend la validation du gérant) et voir ses propres dépenses',
-            self::CashClose => 'Clôturer sa caisse en fin de journée (déclarer ce qu\'on remet, par moyen de paiement)',
-            self::CashReview => 'Voir toutes les clôtures de caisse, les valider ou les contester',
             self::ExpensesValidate => 'Voir toutes les dépenses, les valider, les refuser ou les annuler, gérer leurs catégories (ses propres dépenses sont validées d\'office)',
             self::DashboardRevenue => "Voir le chiffre d'affaires sur le tableau de bord",
             self::AlertsCheckout => "Recevoir l'alarme de fin de séjour (sonne en continu jusqu'à la sortie du client ou à la prolongation ; jamais pour le Gérant)",
@@ -88,7 +84,6 @@ enum Permission: string
             self::ReservationsView, self::ReservationsManage, self::ReservationsCancel => 'Réservations',
             self::InvoicesView, self::PaymentsCreate, self::PaymentsDelete => 'Factures et paiements',
             self::ExpensesCreate, self::ExpensesValidate => 'Dépenses',
-            self::CashClose, self::CashReview => 'Clôture de caisse',
             self::DashboardRevenue => 'Tableau de bord',
             self::AlertsCheckout => 'Alertes',
             self::DutyTake, self::DutyManage => 'Prise de service',

@@ -7,7 +7,6 @@ use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Http\Controllers\Controller;
-use App\Models\CashClosing;
 use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -179,9 +178,6 @@ class DashboardController extends Controller
             'expensesMonth' => $expensesMonth,
             'resultMonth' => $revenueMonth - $expensesMonth,
             'pendingExpenses' => Expense::query()->pending()->count(),
-            // Cash closings (V2): to review, and the month's cumulated gap (− = missing).
-            'closingsToReview' => CashClosing::query()->where('status', CashClosing::STATUS_SUBMITTED)->count(),
-            'closingsMonthGap' => (float) CashClosing::query()->whereDate('business_date', '>=', $today->copy()->startOfMonth()->toDateString())->sum('total_difference'),
             // Cash actually received (payments), per business day / month.
             'revenueToday' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->sum('amount'),
             'revenueMonth' => $revenueMonth,

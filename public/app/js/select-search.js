@@ -8,8 +8,9 @@
 //   - admin.js changes are mirrored in the list: options rebuilt / disabled (MutationObserver),
 //     select.value / selectedIndex assigned (per-select setters), form reset, back/forward cache;
 //   - selects inserted later (payment lines from a <template>) are enhanced on insertion.
-// Opt-out: data-no-search on the select or an ancestor. Left native: multiple / size > 1 lists and
-// DataTables' « lignes par page » (a table control, not a form field).
+// Opt-out: data-no-search on the select or an ancestor. Left native: multiple / size > 1 lists,
+// DataTables' « lignes par page » (a table control, not a form field) and SweetAlert's own hidden
+// input select (.swal2-select, unused by our pop-ups: enhanced, it showed up in every confirmation).
 // Security: labels are rendered by Tom Select's default templates, which HTML-escape them (guest
 // and room names are user input) — any custom render function must use escape() too. No create:
 // only the existing options can be chosen (the server validates every value anyway). If the
@@ -28,7 +29,7 @@
         return;
     }
 
-    var SKIP = '[data-no-search], .dt-length select';
+    var SKIP = '[data-no-search], .dt-length select, .swal2-select, .swal2-container select';
 
     var eligible = function (select) {
         return !select.multiple && !(select.size > 1) && !select.matches(SKIP) && !select.closest('[data-no-search]');

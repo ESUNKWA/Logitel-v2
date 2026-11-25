@@ -4,39 +4,46 @@
 
 @section('content')
     @php
-        $days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        $label = $days[$today->dayOfWeek].' '.$today->format('d/m/Y');
-        $mine = $duty && $duty->user_id === auth()->id();
+        $mine = $current && $current->user_id === auth()->id();
     @endphp
 
     <div class="duty-take">
         <div class="admin-card duty-take__card">
             <div class="duty-take__icon"><i class="far fa-user-clock" aria-hidden="true"></i></div>
-            <h1 class="h3">Prise de service</h1>
-            <p class="duty-take__day">Journée du <strong>{{ $label }}</strong><br>
-                <span class="text-muted small">de {{ $bounds[0]->format('H\hi') }} à {{ $bounds[1]->copy()->subMinute()->format('H\hi') }} le lendemain</span></p>
+            <h1 class="h3">{{ $current && ! $mine ? 'Prendre la relève ?' : 'Prise de service' }}</h1>
 
             @if ($mine)
-                <div class="alert alert-success mb-0"><i class="far fa-check-circle"></i> Vous êtes de service depuis {{ $duty->taken_at->format('H\hi') }} : toutes les ventes de la journée vous sont attribuées.</div>
-                <a href="{{ route('admin.dashboard') }}" class="btn btn-primary mt-3">Continuer</a>
-            @elseif ($duty)
-                <div class="alert alert-info mb-0"><i class="far fa-info-circle"></i> <strong>{{ $duty->user?->name }}</strong> est de service aujourd'hui : les ventes de la journée lui sont attribuées.</div>
-                <a href="{{ route('admin.dashboard') }}" class="btn btn-primary mt-3">Continuer</a>
+                <div class="alert alert-success"><i class="far fa-check-circle"></i> Vous êtes de service depuis le {{ $current->started_at->format('d/m à H\hi') }} : vos encaissements vous sont attribués.</div>
+                <a href="{{ route('admin.dashboard') }}" class="btn btn-primary">Continuer</a>
+                <div class="duty-take__defer">
+                    <p class="small text-muted mb-2">Vous partez ? Terminez votre service : la prochaine réceptionniste le prendra à sa connexion.</p>
+                    <form method="POST" action="{{ route('admin.duty.end') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="far fa-sign-out-alt"></i> Terminer mon service</button>
+                    </form>
+                </div>
+            @elseif ($current)
+                {{-- Relief with confirmation (client request, 2026-11-25). --}}
+                <p class="duty-take__day"><strong>{{ $current->user?->name }}</strong> est de service depuis le <strong>{{ $current->started_at->format('d/m à H\hi') }}</strong>.</p>
+                <p>Si vous la remplacez, son service se termine maintenant et <strong>vos encaissements vous sont attribués à partir de maintenant</strong>. Les siens restent les siens.</p>
+                <form method="POST" action="{{ route('admin.duty.take') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="far fa-user-clock"></i> Oui, je prends la relève</button>
+                </form>
+
+                <div class="duty-take__defer">
+                    <form method="POST" action="{{ route('admin.duty.decline') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Non, je viens en renfort</button>
+                    </form>
+                    <p class="small text-muted mt-2 mb-0">{{ $current->user?->name }} reste alors de service : vos encaissements lui sont attribués.</p>
+                </div>
             @else
-                <p>Avant de commencer, prenez votre service : <strong>toutes les ventes de la journée vous seront attribuées</strong>, y compris celles déjà faites par une collègue avant votre arrivée.</p>
+                <p>Personne n'est de service. Prenez votre service : <strong>vos encaissements vous seront attribués</strong>, ainsi que ceux faits depuis le début de la journée quand personne n'était de service.</p>
                 <form method="POST" action="{{ route('admin.duty.take') }}">
                     @csrf
                     <button type="submit" class="btn btn-primary btn-lg w-100"><i class="far fa-user-clock"></i> Je prends mon service</button>
                 </form>
-
-                <div class="duty-take__defer">
-                    <p class="small text-muted mb-2">Vous terminez la journée précédente et attendez la relève ?</p>
-                    <form method="POST" action="{{ route('admin.duty.defer') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">Je termine la journée précédente</button>
-                    </form>
-                    <p class="small text-muted mt-2 mb-0">Vos ventes seront alors attribuées à la réceptionniste qui prendra le service.</p>
-                </div>
             @endif
         </div>
     </div>

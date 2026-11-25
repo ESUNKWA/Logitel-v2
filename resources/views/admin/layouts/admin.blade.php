@@ -99,17 +99,6 @@
                             <i class="far fa-cash-register"></i> Recettes
                         </a>
                     @endcan
-                    @can('cash.access')
-                        <a href="{{ route('admin.cash-closings.index') }}" class="{{ request()->routeIs('admin.cash-closings.*') ? 'active' : '' }}">
-                            <i class="far fa-lock"></i> Clôture de caisse
-                            @can('cash.review')
-                                @php($closingsToReview = \App\Models\CashClosing::query()->where('status', \App\Models\CashClosing::STATUS_SUBMITTED)->count())
-                                @if ($closingsToReview)
-                                    <span class="badge rounded-pill bg-warning text-dark ms-auto" title="Clôtures à valider">{{ $closingsToReview }}</span>
-                                @endif
-                            @endcan
-                        </a>
-                    @endcan
                     @can('expenses.access')
                         <a href="{{ route('admin.expenses.index') }}" class="{{ request()->routeIs('admin.expenses.*', 'admin.expense-categories.*') ? 'active' : '' }}">
                             <i class="far fa-receipt"></i> Dépenses
@@ -132,66 +121,81 @@
                             <i class="far fa-graduation-cap"></i> Formation <i class="far fa-external-link-alt ms-auto small" aria-hidden="true"></i>
                         </a>
                     @endif
+                    {{-- « Site web » and « Configuration »: folding groups, one open at a time (admin.js
+                         [data-nav-group]); the group of the current page starts open (client request, 2026-11-24). --}}
+                    @php($siteOpen = request()->routeIs(...\App\Support\NavGroups::SITE))
+                    @php($configOpen = request()->routeIs(...\App\Support\NavGroups::CONFIGURATION))
                     @canany(['site.manage', 'site.stats'])
-                        <div class="admin-sidebar__section">Site web</div>
+                        <div class="admin-sidebar__group" data-nav-group>
+                            <button type="button" class="admin-sidebar__section admin-sidebar__group-toggle" data-nav-group-toggle aria-expanded="{{ $siteOpen ? 'true' : 'false' }}" aria-controls="sidebar-group-site">
+                                Site web <i class="far fa-chevron-down nav-group__chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="admin-sidebar__group-items" id="sidebar-group-site" @unless ($siteOpen) hidden @endunless>
+                                @can('site.stats')
+                                    <a href="{{ route('admin.site.stats') }}" class="{{ request()->routeIs('admin.site.stats') ? 'active' : '' }}">
+                                        <i class="far fa-chart-bar"></i> Statistiques
+                                    </a>
+                                @endcan
+                                @can('site.manage')
+                                    <a href="{{ route('admin.site.home.edit') }}" class="{{ request()->routeIs('admin.site.home.*') ? 'active' : '' }}">
+                                        <i class="far fa-globe"></i> Accueil du site
+                                    </a>
+                                    <a href="{{ route('admin.site.services.index') }}" class="{{ request()->routeIs('admin.site.services.*') ? 'active' : '' }}">
+                                        <i class="far fa-concierge-bell"></i> Services
+                                    </a>
+                                    <a href="{{ route('admin.site.events.index') }}" class="{{ request()->routeIs('admin.site.events.*') ? 'active' : '' }}">
+                                        <i class="far fa-calendar-star"></i> Événements
+                                    </a>
+                                    <a href="{{ route('admin.site.gallery.index') }}" class="{{ request()->routeIs('admin.site.gallery.*') ? 'active' : '' }}">
+                                        <i class="far fa-images"></i> Galerie
+                                    </a>
+                                @endcan
+                            </div>
+                        </div>
                     @endcanany
-                    @can('site.stats')
-                        <a href="{{ route('admin.site.stats') }}" class="{{ request()->routeIs('admin.site.stats') ? 'active' : '' }}">
-                            <i class="far fa-chart-bar"></i> Statistiques
-                        </a>
-                    @endcan
-                    @can('site.manage')
-                        <a href="{{ route('admin.site.home.edit') }}" class="{{ request()->routeIs('admin.site.home.*') ? 'active' : '' }}">
-                            <i class="far fa-globe"></i> Accueil du site
-                        </a>
-                        <a href="{{ route('admin.site.services.index') }}" class="{{ request()->routeIs('admin.site.services.*') ? 'active' : '' }}">
-                            <i class="far fa-concierge-bell"></i> Services
-                        </a>
-                        <a href="{{ route('admin.site.events.index') }}" class="{{ request()->routeIs('admin.site.events.*') ? 'active' : '' }}">
-                            <i class="far fa-calendar-star"></i> Événements
-                        </a>
-                        <a href="{{ route('admin.site.gallery.index') }}" class="{{ request()->routeIs('admin.site.gallery.*') ? 'active' : '' }}">
-                            <i class="far fa-images"></i> Galerie
-                        </a>
-                    @endcan
-                    @can('rooms.manage')
-                        <div class="admin-sidebar__section">Configuration</div>
-                        <a href="{{ route('admin.room-types.index') }}" class="{{ request()->routeIs('admin.room-types.*') ? 'active' : '' }}">
-                            <i class="far fa-layer-group"></i> Types de chambre
-                        </a>
-                        <a href="{{ route('admin.special-rates.index') }}" class="{{ request()->routeIs('admin.special-rates.*') ? 'active' : '' }}">
-                            <i class="far fa-tags"></i> Tarifs spéciaux
-                        </a>
-                        <a href="{{ route('admin.perks.index') }}" class="{{ request()->routeIs('admin.perks.*') ? 'active' : '' }}">
-                            <i class="far fa-gift"></i> Avantages inclus
-                        </a>
-                    @endcan
-                    @can('settings.manage')
-                        @cannot('rooms.manage')
-                            <div class="admin-sidebar__section">Configuration</div>
-                        @endcannot
-                        <a href="{{ route('admin.hotel.edit') }}" class="{{ request()->routeIs('admin.hotel.*') ? 'active' : '' }}">
-                            <i class="far fa-building"></i> Hôtel
-                        </a>
-                        <a href="{{ route('admin.settings.edit') }}" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
-                            <i class="far fa-sliders-h"></i> Paramètres
-                        </a>
-                    @endcan
-                    @can('users.manage')
-                        <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                            <i class="far fa-user-tie"></i> Personnel
-                        </a>
-                    @endcan
-                    @can('roles.manage')
-                        <a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
-                            <i class="far fa-user-shield"></i> Rôles
-                        </a>
-                    @endcan
-                    @can('activity.view')
-                        <a href="{{ route('admin.activity.index') }}" class="{{ request()->routeIs('admin.activity.*') ? 'active' : '' }}">
-                            <i class="far fa-history"></i> Journal d'activité
-                        </a>
-                    @endcan
+                    @canany(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view'])
+                        <div class="admin-sidebar__group" data-nav-group>
+                            <button type="button" class="admin-sidebar__section admin-sidebar__group-toggle" data-nav-group-toggle aria-expanded="{{ $configOpen ? 'true' : 'false' }}" aria-controls="sidebar-group-config">
+                                Configuration <i class="far fa-chevron-down nav-group__chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="admin-sidebar__group-items" id="sidebar-group-config" @unless ($configOpen) hidden @endunless>
+                                @can('rooms.manage')
+                                    <a href="{{ route('admin.room-types.index') }}" class="{{ request()->routeIs('admin.room-types.*') ? 'active' : '' }}">
+                                        <i class="far fa-layer-group"></i> Types de chambre
+                                    </a>
+                                    <a href="{{ route('admin.special-rates.index') }}" class="{{ request()->routeIs('admin.special-rates.*') ? 'active' : '' }}">
+                                        <i class="far fa-tags"></i> Tarifs spéciaux
+                                    </a>
+                                    <a href="{{ route('admin.perks.index') }}" class="{{ request()->routeIs('admin.perks.*') ? 'active' : '' }}">
+                                        <i class="far fa-gift"></i> Avantages inclus
+                                    </a>
+                                @endcan
+                                @can('settings.manage')
+                                    <a href="{{ route('admin.hotel.edit') }}" class="{{ request()->routeIs('admin.hotel.*') ? 'active' : '' }}">
+                                        <i class="far fa-building"></i> Hôtel
+                                    </a>
+                                    <a href="{{ route('admin.settings.edit') }}" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+                                        <i class="far fa-sliders-h"></i> Paramètres
+                                    </a>
+                                @endcan
+                                @can('users.manage')
+                                    <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                                        <i class="far fa-user-tie"></i> Personnel
+                                    </a>
+                                @endcan
+                                @can('roles.manage')
+                                    <a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+                                        <i class="far fa-user-shield"></i> Rôles
+                                    </a>
+                                @endcan
+                                @can('activity.view')
+                                    <a href="{{ route('admin.activity.index') }}" class="{{ request()->routeIs('admin.activity.*') ? 'active' : '' }}">
+                                        <i class="far fa-history"></i> Journal d'activité
+                                    </a>
+                                @endcan
+                            </div>
+                        </div>
+                    @endcanany
                 </nav>
             </aside>
             @endunless
@@ -206,15 +210,17 @@
                         </button>
                     @endif
                     <div class="admin-topbar__spacer"></div>
-                    {{-- Receptionist of the business day (« prise de service »), to whom every sale of the day goes. --}}
+                    {{-- Receptionist on duty now (« prise de service » by periods): her till gets every sale. --}}
+                    @php($dutyNow = auth()->user()?->canAny(['duty.take', 'duty.manage']) ? \App\Models\DutyShift::current() : null)
+                    @php($onDutyMe = $dutyNow !== null && $dutyNow->user_id === auth()->id())
                     @canany(['duty.take', 'duty.manage'])
-                        @php($dutyToday = \App\Models\DutyDay::today())
-                        @if ($dutyToday)
-                            <span class="duty-pill" title="Réceptionniste de la journée : toutes les ventes de la journée lui sont attribuées"><i class="far fa-user-clock"></i><span class="duty-pill__text"><span class="duty-pill__label">De service : </span>{{ $dutyToday->user?->name }}</span></span>
+                        @php($dutyLink = auth()->user()->takesDuty() ? route('admin.duty.show') : route('admin.duty.index'))
+                        @if ($dutyNow)
+                            <a href="{{ $dutyLink }}" class="duty-pill" title="{{ $onDutyMe ? 'Vous êtes de service : vos encaissements vous sont attribués. Cliquez pour terminer votre service.' : 'Réceptionniste de service : les encaissements lui sont attribués' }}"><i class="far fa-user-clock"></i><span class="duty-pill__text"><span class="duty-pill__label">De service : </span>{{ $dutyNow->user?->name }}<span class="duty-pill__label"> depuis {{ $dutyNow->started_at->format('H\hi') }}</span></span></a>
                         @elseif (auth()->user()->takesDuty())
                             <a href="{{ route('admin.duty.show') }}" class="duty-pill duty-pill--none"><i class="far fa-user-clock"></i><span class="duty-pill__text">Prendre mon service</span></a>
                         @else
-                            <a href="{{ route('admin.duty.index') }}" class="duty-pill duty-pill--none" title="Personne n'a encore pris le service de la journée"><i class="far fa-user-clock"></i><span class="duty-pill__text">Personne de service</span></a>
+                            <a href="{{ route('admin.duty.index') }}" class="duty-pill duty-pill--none" title="Personne n'est de service : chaque vente reste attribuée à qui la saisit"><i class="far fa-user-clock"></i><span class="duty-pill__text">Personne de service</span></a>
                         @endif
                     @endcanany
                     <form method="POST" action="{{ route('admin.ui-mode.update') }}" class="ui-mode-switch">
@@ -228,8 +234,12 @@
                         <a href="{{ route('admin.profile.edit') }}" class="text-reset text-decoration-none" title="Mon profil">
                             <i class="far fa-user-circle"></i><span class="admin-topbar__username"> {{ auth()->user()?->name }}</span>
                         </a>
-                        <form method="POST" action="{{ route('admin.logout') }}">
+                        {{-- The receptionist on duty is asked whether she also ends her service (admin.js [data-logout-duty]). --}}
+                        <form method="POST" action="{{ route('admin.logout') }}" @if ($onDutyMe) data-logout-duty @endif>
                             @csrf
+                            @if ($onDutyMe)
+                                <input type="hidden" name="end_duty" value="0" data-end-duty>
+                            @endif
                             <button type="submit" class="btn btn-sm btn-outline-secondary" title="Déconnexion" aria-label="Déconnexion"><i class="far fa-sign-out-alt"></i><span class="admin-topbar__logout-label"> Déconnexion</span></button>
                         </form>
                     </div>

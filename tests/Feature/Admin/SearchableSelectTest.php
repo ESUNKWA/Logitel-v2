@@ -60,6 +60,15 @@ class SearchableSelectTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/render:\s*\{[^}]*\b(option|item)\s*:/s', $js, 'a custom option/item template must escape() its labels');
     }
 
+    public function test_sweetalert_pop_ups_keep_their_hidden_select_native(): void
+    {
+        // SweetAlert puts an unused <select class="swal2-select"> in every pop-up: enhanced, it
+        // showed up as an empty list in every confirmation (log-out, cancel…). Checked in a browser.
+        $js = file_get_contents(public_path('app/js/select-search.js'));
+
+        $this->assertStringContainsString(".swal2-select, .swal2-container select'", $js);
+    }
+
     public function test_the_website_does_not_load_it(): void
     {
         $this->get('/')->assertOk()

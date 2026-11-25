@@ -557,9 +557,9 @@ class Reservation extends Model
                     $reservation->{$stamp.'_at'} = now();
                     $reservation->{$stamp.'_by'} = Auth::id();
                 }
-                // The stay is the sale of the receptionist of the day (« prise de service »), else of whoever checked it in.
+                // The stay is the sale of the receptionist on duty (« prise de service »), else of whoever checked it in.
                 if ($stamp === 'checked_in') {
-                    $reservation->attributed_to = DutyDay::attributeeAt(now()) ?? Auth::id() ?? $reservation->created_by;
+                    $reservation->attributed_to = DutyShift::attributeeAt(now()) ?? Auth::id() ?? $reservation->created_by;
                 }
             }
 

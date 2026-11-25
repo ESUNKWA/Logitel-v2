@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\DutyShift;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
@@ -77,6 +78,11 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        // The receptionist on duty chose « Terminer aussi mon service » (admin.js [data-logout-duty]).
+        if ($request->boolean('end_duty') && $request->user()) {
+            DutyShift::endFor($request->user());
+        }
+
         Audit::record('auth.logout', 'connexion', 'Déconnexion de '.($request->user()?->name ?? '?'));
         Auth::logout();
 

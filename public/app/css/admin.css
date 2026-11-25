@@ -3318,6 +3318,7 @@ form:has(input[name="pricing_mode"][value="sejour"]:checked) .assign-pay__total 
     color: #7a4b00;
 }
 a.duty-pill--none:hover { color: #5c3800; background: rgba(var(--ek-warning-rgb), .24); }
+a.duty-pill:not(.duty-pill--none):hover { color: #0e5a3c; background: rgba(var(--ek-success-rgb), .18); }
 .duty-pill__text { overflow: hidden; text-overflow: ellipsis; }
 /* Simple layout on laptop widths: the top bar (brand, daily links, counters, « Plus », duty pill,
    mode, user) overflowed the screen — drop the texts that have an icon or badge, as
@@ -3425,19 +3426,6 @@ tr.is-selected > td { background-color: rgba(var(--bs-danger-rgb), .06) !importa
 .expense-receipt-preview { display: block; max-width: 100%; max-height: 28rem; border: 1px solid var(--bs-border-color); border-radius: .5rem; object-fit: contain; background: #fff; }
 .expense-details dt { font-weight: 600; color: var(--bs-secondary-color); }
 .expense-details dd { margin-bottom: .5rem; word-break: break-word; }
-
-/* « Clôture de caisse » (V2) */
-.cash-close__table td, .cash-close__table th { white-space: nowrap; }
-.cash-count summary { cursor: pointer; font-weight: 600; color: var(--ek-primary, #1f3a68); }
-@media (max-width: 767.98px) {
-    .cash-close__table thead { display: none; }
-    .cash-close__table tr { display: grid; grid-template-columns: 1fr 1fr; gap: .15rem .75rem; padding: .6rem 0; border-bottom: 1px solid var(--bs-border-color); }
-    .cash-close__table tr > * { border: 0; padding: .1rem 0; text-align: left !important; }
-    .cash-close__table tbody th, .cash-close__table tfoot th { grid-column: 1 / -1; }
-    .cash-close__table td[data-label]::before { content: attr(data-label) " : "; color: var(--bs-secondary-color); font-weight: 400; }
-    .cash-close__table td[data-label="Je remets"] { grid-column: 1 / -1; }
-    .cash-close__table tfoot td:empty { display: none; }
-}
 
 /* « Planning » (V2): rooms × time. Blocks are placed in % of the window; colours reuse the
    file kinds (affectation amber, réservation blue) and the pricing-mode icons. */
@@ -3558,3 +3546,56 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 @media print {
     .ts-dropdown { display: none !important; }
 }
+
+/* Folding menu groups (client request, 2026-11-24): « Site web » and « Configuration » in the
+   sidebar (mode complet) and the « Plus » menu (mode simple), one open at a time (admin.js). */
+.nav-group__chevron { transition: transform .15s ease; font-size: .75em; }
+[data-nav-group-toggle][aria-expanded="false"] .nav-group__chevron { transform: rotate(-90deg); }
+.admin-sidebar__group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 10px;
+}
+.admin-sidebar__group-toggle:hover, .admin-sidebar__group-toggle[aria-expanded="true"] { color: rgba(255, 255, 255, .7); }
+.admin-sidebar__group-toggle:focus-visible { outline: 2px solid var(--ek-gold); outline-offset: -2px; }
+.admin-sidebar__group-items { display: flex; flex-direction: column; gap: 2px; }
+.admin-sidebar__group-items[hidden], .nav-group__items[hidden] { display: none; }
+.simple-nav__menu .nav-group__toggle { width: 100%; font-weight: 600; }
+.simple-nav__menu .nav-group__toggle .nav-group__chevron { margin-left: auto; width: auto; color: var(--bs-secondary-color); }
+.simple-nav__menu .nav-group__items { margin: 2px 0 0; padding-left: 12px; }
+/* Fly-out (computers with a mouse, html.nav-flyout set by admin.js): the group's links open in a
+   panel right next to the menu, placed in fixed coordinates by admin.js; the chevron points to it. */
+.nav-flyout [data-nav-group-toggle] .nav-group__chevron { transform: rotate(-90deg); }
+.nav-flyout .nav-group__items,
+.nav-flyout .admin-sidebar__group-items {
+    position: fixed;
+    z-index: 1100;
+    min-width: 230px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+    margin: 0;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: var(--ek-shadow-lg);
+}
+.nav-flyout .nav-group__items { background: #fff; border: 1px solid var(--ek-border); }
+.nav-flyout .admin-sidebar__group-items {
+    background: linear-gradient(180deg, var(--ek-sidebar-from) 0%, var(--ek-sidebar-to) 100%);
+    border: 1px solid rgba(255, 255, 255, .1);
+}
+/* The sticky sidebar is its own stacking layer: raised above the page content (dashboard tiles…)
+   so its panels aren't covered; it never overlaps the top bar, which sits beside it. */
+.nav-flyout .admin-sidebar { z-index: 1025; }
+/* While a panel is open the « Plus » menu stops scrolling, so it doesn't clip the panel. */
+.nav-flyout .simple-nav__menu.has-flyout { overflow: visible; }
+.nav-flyout .simple-nav__menu .nav-group__toggle[aria-expanded="true"] { background: var(--bs-tertiary-bg); }
+.nav-flyout .admin-sidebar__group-toggle[aria-expanded="true"] { background: rgba(255, 255, 255, .07); color: #fff; }
+/* The line of the current page's group. */
+.nav-flyout .simple-nav__menu .nav-group__toggle.is-current { color: var(--ek-primary); }
+.nav-flyout .admin-sidebar__group-toggle.is-current { color: #ecd08a; }

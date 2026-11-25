@@ -17,8 +17,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * « Dépense » (V2): money going out. Requested with a mandatory receipt; the Gérant validates
  * or refuses it (an expense he records himself is validated at once). Only validated expenses
- * count: month's result, and — when paid from the till — what the receptionist hands over at
- * the cash closing. Never deleted: refused / cancelled with a reason. Nothing mass-assignable
+ * count: month's result, and — when paid from the till — what the receptionist hands over
+ * (« Ma recette du jour »). Never deleted: refused / cancelled with a reason. Nothing mass-assignable
  * but the typed fields; status, people and dates are set by the methods below.
  */
 class Expense extends Model
@@ -114,8 +114,9 @@ class Expense extends Model
         if ($expense->status === ExpenseStatus::Validee) {
             $expense->forceFill(['decided_by' => $by->id, 'decided_at' => now()]);
         }
-        // From the till of the receptionist of that business day (prise de service), else the author's.
-        $expense->attributed_to = DutyDay::query()->whereDate('business_date', $expense->business_date->toDateString())->value('user_id') ?? $by->id;
+        // From the till of the receptionist on duty when recorded for its own day, else of the last
+        // period of its date (prise de service), else the author's.
+        $expense->attributed_to = DutyShift::expenseAttributee($expense->business_date, now()) ?? $by->id;
         $expense->save();
 
         return $expense;
