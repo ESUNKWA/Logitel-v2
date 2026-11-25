@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Department;
 use App\Enums\PaymentMethod;
 use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
@@ -35,9 +36,10 @@ class Payment extends Model
     public function auditName(): string
     {
         $file = $this->invoice?->reservation;
+        $sale = $file ? null : $this->invoice?->sale;
 
         return 'encaissement de '.Audit::money($this->amount).' ('.$this->method?->getLabel().') — facture '
-            .($this->invoice?->number ?? '?').($file ? ' · '.$file->reference() : '');
+            .($this->invoice?->number ?? '?').($file ? ' · '.$file->reference() : '').($sale ? ' · vente '.$sale->department?->getLabel() : '');
     }
 
     public function auditReference(): ?string
@@ -79,6 +81,7 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
+            'department' => Department::class,
             'amount' => 'decimal:2',
             'method' => PaymentMethod::class,
             'paid_at' => 'datetime',
@@ -112,7 +115,15 @@ class Payment extends Model
 
     public function scopeStayPayments(Builder $query): Builder
     {
-        return $query->whereDoesntHave('invoice.reservation', fn (Builder $file) => self::constrainToBooking($file));
+        // Hébergement only: the other services' payments are neither affectations nor réservations.
+        return $query->where('payments.department', Department::Hebergement->value)
+            ->whereDoesntHave('invoice.reservation', fn (Builder $file) => self::constrainToBooking($file));
+    }
+
+    /** Payments of one service; null = all. */
+    public function scopeOfDepartment(Builder $query, ?Department $department): Builder
+    {
+        return $department === null ? $query : $query->where('payments.department', $department->value);
     }
 
     /**
@@ -183,6 +194,8 @@ class Payment extends Model
         // Never from input (not fillable). Runs after RecordsCreator has set created_by.
         static::creating(function (Payment $payment) {
             $payment->attributed_to ??= DutyShift::attributeeAt(now()) ?? $payment->created_by;
+            // The invoice's service (per-service turnover), read from the database — never from input.
+            $payment->department = Invoice::query()->whereKey($payment->invoice_id)->value('department') ?? Department::Hebergement->value;
         });
         static::created(fn (Payment $payment) => $payment->invoice->recalculateStatus());
         static::deleted(fn (Payment $payment) => $payment->invoice->recalculateStatus());

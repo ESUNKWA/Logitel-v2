@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AffectationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BookingRequestController;
+use App\Http\Controllers\Admin\CatalogItemController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DutyController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LiveFiguresController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PerkController;
+use App\Http\Controllers\Admin\PilotageController;
 use App\Http\Controllers\Admin\PlanningController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PwaController;
@@ -34,6 +36,7 @@ use App\Http\Controllers\Admin\RoomAssignmentController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\RoomImportController;
 use App\Http\Controllers\Admin\RoomTypeController;
+use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\Site\EventController;
 use App\Http\Controllers\Admin\Site\GalleryController;
@@ -45,7 +48,10 @@ use App\Http\Controllers\Admin\StayRequestController;
 use App\Http\Controllers\Admin\TrashController;
 use App\Http\Controllers\Admin\UiModeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VenueBookingController;
+use App\Http\Controllers\Admin\VenueController;
 use App\Http\Middleware\EnsureDutyTaken;
+use App\Http\Middleware\EnsureServiceOffered;
 use App\Http\Middleware\EnsureStaffAccountIsUsable;
 use App\Http\Middleware\NormalizeMoneyInputs;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +87,38 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         // « Recettes »: payments received over a period (the manager sees everyone, others their own).
         Route::get('/recettes', [RevenueController::class, 'index'])->middleware('can:payments.create')->name('revenue.index');
         Route::get('/recettes/export', [RevenueController::class, 'export'])->middleware('can:payments.create')->name('revenue.export');
+        // « Pilotage »: turnover (cash received) globally and per service, over a period.
+        Route::get('/pilotage', [PilotageController::class, 'index'])->middleware('can:dashboard.revenue')->name('pilotage.index');
+        Route::get('/pilotage/export', [PilotageController::class, 'export'])->middleware('can:dashboard.revenue')->name('pilotage.export');
+        // Sales of the other services (restaurant, beach & pool), whitelisted in the URL.
+        Route::prefix('/ventes/{department}')->where(['department' => 'restauration|plage-piscine'])->middleware(EnsureServiceOffered::class)->group(function () {
+            Route::get('/', [SaleController::class, 'index'])->middleware('can:sales.create')->name('sales.index');
+            Route::get('/nouvelle', [SaleController::class, 'create'])->middleware('can:sales.create')->name('sales.create');
+            Route::post('/', [SaleController::class, 'store'])->middleware('can:sales.create')->name('sales.store');
+            Route::get('/{sale}', [SaleController::class, 'show'])->middleware('can:sales.create')->whereNumber('sale')->name('sales.show');
+            Route::get('/{sale}/recu', [SaleController::class, 'receipt'])->middleware('can:sales.create')->whereNumber('sale')->name('sales.receipt');
+            Route::post('/{sale}/annuler', [SaleController::class, 'cancel'])->middleware('can:sales.cancel')->whereNumber('sale')->name('sales.cancel');
+        });
+        // Meetings & events: room bookings (events.manage), cancelling (sales.cancel), venues (catalog.manage).
+        Route::get('/evenements', [VenueBookingController::class, 'index'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->name('events.index');
+        Route::get('/evenements/planning', [VenueBookingController::class, 'planning'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->name('events.planning');
+        Route::get('/evenements/nouvelle', [VenueBookingController::class, 'create'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->name('events.create');
+        Route::post('/evenements', [VenueBookingController::class, 'store'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->name('events.store');
+        Route::get('/evenements/{booking}', [VenueBookingController::class, 'show'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('booking')->name('events.show');
+        Route::get('/evenements/{booking}/modifier', [VenueBookingController::class, 'edit'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('booking')->name('events.edit');
+        Route::put('/evenements/{booking}', [VenueBookingController::class, 'update'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('booking')->name('events.update');
+        Route::post('/evenements/{booking}/confirmer', [VenueBookingController::class, 'confirm'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('booking')->name('events.confirm');
+        Route::post('/evenements/{booking}/annuler', [VenueBookingController::class, 'cancel'])->middleware(['can:sales.cancel', EnsureServiceOffered::class.':evenements'])->whereNumber('booking')->name('events.cancel');
+        Route::get('/evenements/{booking}/document', [VenueBookingController::class, 'document'])->middleware(['can:events.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('booking')->name('events.document');
+        Route::get('/salles', [VenueController::class, 'index'])->middleware(['can:catalog.manage', EnsureServiceOffered::class.':evenements'])->name('venues.index');
+        Route::post('/salles', [VenueController::class, 'store'])->middleware(['can:catalog.manage', EnsureServiceOffered::class.':evenements'])->name('venues.store');
+        Route::put('/salles/{venue}', [VenueController::class, 'update'])->middleware(['can:catalog.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('venue')->name('venues.update');
+        Route::delete('/salles/{venue}', [VenueController::class, 'destroy'])->middleware(['can:catalog.manage', EnsureServiceOffered::class.':evenements'])->whereNumber('venue')->name('venues.destroy');
+        // « Catalogue des prestations » (Gérant).
+        Route::get('/catalogue', [CatalogItemController::class, 'index'])->middleware('can:catalog.manage')->name('catalog.index');
+        Route::post('/catalogue', [CatalogItemController::class, 'store'])->middleware('can:catalog.manage')->name('catalog.store');
+        Route::put('/catalogue/{item}', [CatalogItemController::class, 'update'])->middleware('can:catalog.manage')->whereNumber('item')->name('catalog.update');
+        Route::delete('/catalogue/{item}', [CatalogItemController::class, 'destroy'])->middleware('can:catalog.manage')->whereNumber('item')->name('catalog.destroy');
         Route::get('/recherche', [FrontDeskController::class, 'search'])->middleware('can:guests.view')->name('front-desk.search');
 
         // « Prise de service »: the receptionist of the business day (mandatory), every sale of the day is hers.

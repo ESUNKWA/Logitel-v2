@@ -70,6 +70,11 @@ return [
         'login_background' => '',      // staff login page photo, same place (empty = navy gradient)
     ],
 
+    // Services offered besides the accommodation (Configuration → Hôtel), comma-separated
+    // Department values: restauration, plage_piscine, evenements. Empty = none (client decision,
+    // 2026-11-27: every hotel ticks its own); a service not offered is hidden and blocked.
+    'services' => '',
+
     // « Formation » menu entry: address of the training (UAT) environment, opened in a new tab.
     // Editable in Configuration → Paramètres; empty = no menu entry.
     'training_url' => env('TRAINING_URL', ''),

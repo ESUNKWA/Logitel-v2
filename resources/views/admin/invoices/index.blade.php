@@ -14,6 +14,9 @@
                     <option value="">Affectations et réservations</option>
                     <option value="affectation" @selected(request('type') === 'affectation')>Affectations</option>
                     <option value="reservation" @selected(request('type') === 'reservation')>Réservations</option>
+                    @foreach (array_filter(\App\Enums\Department::salesServices(), fn ($d) => $d->isOffered() || request('type') === $d->value) as $saleService)
+                        <option value="{{ $saleService->value }}" @selected(request('type') === $saleService->value)>{{ $saleService->getLabel() }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="col-auto">
@@ -42,8 +45,13 @@
                 @forelse ($invoices as $invoice)
                     <tr>
                         <td>{{ $invoice->number }}</td>
-                        <td>{{ $invoice->reservation?->guest?->fullName() }}</td>
-                        <td><x-admin::file-badge :file="$invoice->reservation" :link="true" /></td>
+                        @if ($invoice->sale)
+                            <td>{{ $invoice->sale->label ?? '—' }}</td>
+                            <td><span class="file-kind"><span class="file-badge"><i class="fas {{ $invoice->sale->department->icon() }}" aria-hidden="true"></i> {{ $invoice->sale->department->getLabel() }}</span>@if ($invoice->sale->isCancelled()) <span class="badge bg-secondary">vente annulée</span>@endif</span></td>
+                        @else
+                            <td>{{ $invoice->reservation?->guest?->fullName() }}</td>
+                            <td><x-admin::file-badge :file="$invoice->reservation" :link="true" /></td>
+                        @endif
                         <td>{{ $invoice->issued_at->format('d/m/Y') }}</td>
                         <td>{{ number_format((float) $invoice->amount, 0, ',', ' ') }} FCFA</td>
                         <td><span class="badge bg-{{ $invoice->status->getColor() }}">{{ $invoice->status->getLabel() }}</span></td>

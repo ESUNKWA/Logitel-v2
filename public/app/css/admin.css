@@ -3599,3 +3599,59 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 /* The line of the current page's group. */
 .nav-flyout .simple-nav__menu .nav-group__toggle.is-current { color: var(--ek-primary); }
 .nav-flyout .admin-sidebar__group-toggle.is-current { color: #ecd08a; }
+
+/* ================================================================== Ventes (restauration, plage et piscine) */
+.sale-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.sale-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--ek-border); border-radius: 10px; background: #fff; }
+.sale-item__name { display: flex; flex-direction: column; font-weight: 600; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.sale-item__price { font-weight: 400; font-size: .85rem; color: var(--bs-secondary-color); }
+.sale-item__qty { width: 118px; flex-shrink: 0; }
+.sale-item__qty .form-control { padding-left: 2px; padding-right: 2px; }
+
+/* ================================================================== Pilotage (CA par service) */
+:root { --pilot-hebergement: #1f3a68; --pilot-restauration: #d9822b; --pilot-plage_piscine: #1aa3b8; --pilot-evenements: #7a4fb5; }
+.pilot-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.pilot-kpi { margin-bottom: 0; border-top: 4px solid var(--ek-border); }
+.pilot-kpi--total { border-top-color: var(--ek-gold, #c9a24b); }
+.pilot-kpi--hebergement { border-top-color: var(--pilot-hebergement); }
+.pilot-kpi--restauration { border-top-color: var(--pilot-restauration); }
+.pilot-kpi--plage_piscine { border-top-color: var(--pilot-plage_piscine); }
+.pilot-kpi--evenements { border-top-color: var(--pilot-evenements); }
+.pilot-kpi__label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color); }
+.pilot-kpi__value { font-size: 1.6rem; font-weight: 800; }
+.pilot-kpi__value small { font-size: .55em; font-weight: 600; color: var(--bs-secondary-color); }
+.pilot-kpi__compare { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; color: var(--bs-secondary-color); }
+.pilot-delta { font-weight: 700; }
+.pilot-delta.is-up { color: #13704b; }
+.pilot-delta.is-down { color: #b42318; }
+.pilot-delta.is-none { color: var(--bs-secondary-color); }
+.pilot-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.pilot-dot--hebergement, .pilot-fill--hebergement { background: var(--pilot-hebergement); }
+.pilot-dot--restauration, .pilot-fill--restauration { background: var(--pilot-restauration); }
+.pilot-dot--plage_piscine, .pilot-fill--plage_piscine { background: var(--pilot-plage_piscine); }
+.pilot-dot--evenements, .pilot-fill--evenements { background: var(--pilot-evenements); }
+.pilot-bar { height: 8px; border-radius: 999px; background: var(--bs-tertiary-bg, #eef1f5); overflow: hidden; }
+.pilot-bar__fill { height: 100%; border-radius: 999px; }
+.pilot-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .82rem; }
+.pilot-chart { display: flex; align-items: flex-end; gap: 4px; height: 220px; overflow-x: auto; padding-bottom: 22px; }
+.pilot-chart__col { flex: 1 0 18px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; position: relative; }
+.pilot-chart__stack { display: flex; flex-direction: column-reverse; min-height: 1px; border-radius: 4px 4px 0 0; overflow: hidden; background: var(--bs-tertiary-bg, #eef1f5); }
+.pilot-chart__stack > div { min-height: 1px; }
+.pilot-chart__label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: .65rem; color: var(--bs-secondary-color); white-space: nowrap; }
+.pilot-activity { border: 1px solid var(--ek-border); border-radius: 12px; padding: 12px 14px; height: 100%; }
+.revenue-services { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.revenue-service { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0; color: inherit; text-decoration: none; border: 1px solid var(--ek-border); }
+.revenue-service:hover { border-color: var(--ek-primary, #1f3a68); color: inherit; }
+.revenue-service.is-active { border-color: var(--ek-primary, #1f3a68); box-shadow: 0 0 0 2px rgba(31, 58, 104, .15); }
+.revenue-service__label { font-size: .8rem; font-weight: 700; color: var(--bs-secondary-color); }
+.revenue-service__total { font-size: 1.2rem; font-weight: 800; }
+
+/* ================================================================== Réunions et événements */
+.venue-planning th, .venue-planning td { min-width: 130px; }
+.venue-planning .is-today { background: rgba(201, 162, 75, .08); }
+.venue-slot { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; padding: 6px 8px; border-radius: 8px; font-size: .8rem; text-decoration: none; color: inherit; border-left: 4px solid var(--pilot-evenements, #7a4fb5); background: rgba(122, 79, 181, .08); }
+.venue-slot.is-option { border-left-color: #d9822b; background: rgba(217, 130, 43, .1); }
+.venue-slot:hover { color: inherit; filter: brightness(.97); }
+.venue-slot small { color: var(--bs-secondary-color); }
+.venue-slot__add { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 1px dashed var(--ek-border); color: var(--bs-secondary-color); text-decoration: none; }
+.venue-slot__add:hover { color: var(--ek-primary); border-color: var(--ek-primary); }

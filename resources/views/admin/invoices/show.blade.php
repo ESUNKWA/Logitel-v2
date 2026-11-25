@@ -9,6 +9,8 @@
             <span class="badge bg-{{ $invoice->status->getColor() }} fs-6">{{ $invoice->status->getLabel() }}</span>
             @if ($invoice->reservation)
                 <a href="{{ route('admin.receipts.show', $invoice->reservation) }}" class="btn btn-outline-primary phone-hidden" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
+            @elseif ($invoice->sale && $invoice->sale->department->isOffered())
+                <a href="{{ $invoice->sale->receiptUrl() }}" class="btn btn-outline-primary phone-hidden" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
             @endif
         </div>
     </div>
@@ -18,6 +20,25 @@
             <div class="admin-card">
                 <h5>Détails</h5>
                 <dl class="row mb-0">
+                    @if ($invoice->sale)
+                        {{-- A sale of another service (restaurant, beach & pool). --}}
+                        <dt class="col-5">Service</dt>
+                        <dd class="col-7"><i class="far {{ $invoice->sale->department->icon() }}"></i> {{ $invoice->sale->department->getLabel() }}@if ($invoice->sale->isCancelled()) <span class="badge bg-secondary">vente annulée</span>@endif</dd>
+                        @if ($invoice->sale->label)
+                            <dt class="col-5">Libellé</dt>
+                            <dd class="col-7">{{ $invoice->sale->label }}</dd>
+                        @endif
+                        @if ($invoice->sale->reservation)
+                            <dt class="col-5">Reportée sur</dt>
+                            <dd class="col-7">Chambre N°{{ $invoice->sale->reservation->room?->number }}</dd>
+                        @endif
+                        <dt class="col-5">Prestations</dt>
+                        <dd class="col-7">
+                            @foreach ($invoice->sale->lines as $line)
+                                <div>{{ $line->quantity }} × {{ $line->label }}</div>
+                            @endforeach
+                        </dd>
+                    @else
                     <dt class="col-5">Dossier</dt>
                     <dd class="col-7"><x-admin::file-badge :file="$invoice->reservation" :link="true" /></dd>
                     <dt class="col-5">Client</dt>
@@ -40,6 +61,7 @@
                             <dd class="col-7"><span class="text-success fw-semibold">− {{ number_format((float) $invoice->reservation->discount_amount, 0, ',', ' ') }} FCFA</span> <span class="small text-muted">({{ $invoice->reservation->discountLabel() }})</span></dd>
                         @endif
                     @endif
+                    @endif
                     <dt class="col-5">Émise le</dt>
                     <dd class="col-7">{{ $invoice->issued_at->format('d/m/Y') }}</dd>
                     <dt class="col-5">Montant total</dt>
@@ -58,6 +80,10 @@
                         @can('reservations.manage')
                             <a href="{{ route('admin.reservations.edit', $invoice->reservation) }}" class="btn btn-sm btn-outline-secondary">Voir la réservation</a>
                         @endcan
+                    @elseif ($invoice->sale && $invoice->sale->department->isOffered())
+                        @canany(['sales.create', 'events.manage'])
+                            <a href="{{ $invoice->sale->url() }}" class="btn btn-sm btn-outline-secondary">{{ $invoice->sale->venueBooking ? 'Voir la réservation de salle' : 'Voir la vente' }}</a>
+                        @endcanany
                     @endif
                 </div>
             </div>

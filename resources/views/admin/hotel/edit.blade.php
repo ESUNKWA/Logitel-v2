@@ -156,6 +156,26 @@
             </div>
         </div>
 
+        {{-- Services offered besides the accommodation (client request, 2026-11-27): a service not
+             ticked is hidden everywhere and its pages are blocked; its history stays in the figures. --}}
+        <div class="admin-card" id="services">
+            <h5><i class="far fa-concierge-bell me-2 text-primary"></i>Services proposés</h5>
+            <p class="text-muted small">L'hébergement est toujours proposé. Cochez les autres services de l'établissement : seuls ceux-là apparaissent dans les menus, le catalogue, les recettes et le pilotage. Décocher un service ne supprime rien : ses ventes passées restent dans les chiffres.</p>
+            @php
+                $ticked = old('services', array_map(fn ($d) => $d->value, \App\Enums\Department::offeredSalesServices()));
+            @endphp
+            <div class="d-flex flex-wrap gap-4">
+                @foreach (\App\Enums\Department::salesServices() as $service)
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="services[]" value="{{ $service->value }}" id="service-{{ $service->value }}" @checked(in_array($service->value, (array) $ticked, true))>
+                        <label class="form-check-label" for="service-{{ $service->value }}"><i class="far {{ $service->icon() }} text-muted"></i> {{ $service->getLabel() }}</label>
+                    </div>
+                @endforeach
+            </div>
+            @error('services')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+            @error('services.*')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+        </div>
+
         <button type="submit" class="btn btn-primary">Enregistrer les informations</button>
     </form>
 @endsection

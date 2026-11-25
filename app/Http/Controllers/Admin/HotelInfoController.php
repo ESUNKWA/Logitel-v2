@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Department;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\HotelInfoRequest;
 use App\Support\HotelSettings;
@@ -22,7 +23,11 @@ class HotelInfoController extends Controller
 
     public function update(HotelInfoRequest $request): RedirectResponse
     {
-        $values = collect($request->validated())->except(['logo', 'remove_logo', 'login_background', 'remove_login_background'])->map(fn ($v) => $v ?? '')->all();
+        $values = collect($request->validated())->except(['logo', 'remove_logo', 'login_background', 'remove_login_background', 'services'])->map(fn ($v) => $v ?? '')->all();
+        // Services offered (whitelisted by the request), stored in a fixed order; none ticked = none.
+        $ticked = (array) ($request->validated('services') ?? []);
+        $values['hotel_services'] = implode(',', array_map(fn (Department $d) => $d->value,
+            array_filter(Department::salesServices(), fn (Department $d) => in_array($d->value, $ticked, true))));
 
         // Images (logo, login page photo): stored on the public disk under a random name; the
         // previous file is removed when replaced or removed.

@@ -9,6 +9,10 @@
         $invoice = $affectation->invoice;
         $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
         $remaining = (float) ($invoice?->remainingAmount() ?? 0);
+        // Sales charged to the room (« report sur la chambre »): settled with the stay.
+        $roomCharges = \App\Models\Sale::chargedTo($affectation);
+        $chargesDue = (float) $roomCharges->sum(fn ($sale) => max(0, (float) $sale->invoice?->amount - (float) $sale->invoice?->payments_sum_amount));
+        $saleServices = $inProgress ? \App\Support\NavGroups::saleServices(auth()->user()) : [];
     @endphp
 
     <div class="admin-page-header">
@@ -33,9 +37,9 @@
                 @can('affectations.manage')
                     <form method="POST" action="{{ route('admin.affectations.check-out', $affectation) }}" id="check-out"
                         data-confirm-title="Sortie — chambre N°{{ $affectation->room?->number }}"
-                        data-confirm="{{ $remaining > 0 ? 'Attention : il reste '.$fcfa($remaining).' FCFA à encaisser. ' : '' }}Confirmer le départ du client ? La chambre redeviendra libre."
+                        data-confirm="{{ $remaining + $chargesDue > 0 ? 'Attention : il reste '.$fcfa($remaining + $chargesDue).' FCFA à encaisser'.($chargesDue > 0 ? ' (dont '.$fcfa($chargesDue).' FCFA de consommations reportées sur la chambre)' : '').'. ' : '' }}Confirmer le départ du client ? La chambre redeviendra libre."
                         data-confirm-button="Oui, valider la sortie"
-                        @if ($remaining > 0) data-confirm-danger @endif>
+                        @if ($remaining + $chargesDue > 0) data-confirm-danger @endif>
                         @csrf
                         <button type="submit" class="btn btn-warning"><i class="fas fa-sign-out-alt"></i> Sortie</button>
                     </form>
@@ -115,6 +119,59 @@
                     @can('invoices.view')
                         <a href="{{ route('admin.invoices.show', $invoice) }}" class="btn btn-outline-primary"><i class="fas fa-cash-register"></i> Voir la facture / encaisser</a>
                     @endcan
+                </div>
+            @endif
+
+            {{-- « Report sur la chambre »: restaurant / pool sales the guest settles with the stay. --}}
+            @if ($roomCharges->isNotEmpty() || $saleServices !== [])
+                <div class="admin-card" id="consommations">
+                    <h5><i class="far fa-utensils text-muted me-1"></i> Consommations reportées sur la chambre</h5>
+                    @if ($roomCharges->isEmpty())
+                        <p class="text-muted small">Aucune consommation reportée.</p>
+                    @else
+                        <table class="table table-sm align-middle">
+                            <tbody>
+                                @foreach ($roomCharges as $charge)
+                                    @php
+                                        $chargeDue = max(0, (float) $charge->invoice?->amount - (float) $charge->invoice?->payments_sum_amount);
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <i class="far {{ $charge->department->icon() }} text-muted"></i> {{ $charge->department->getLabel() }}
+                                            <div class="small text-muted">{{ $charge->sold_at->format('d/m H\hi') }}@if ($charge->label) · {{ $charge->label }}@endif</div>
+                                        </td>
+                                        <td class="text-end text-nowrap">{{ $fcfa($charge->total_amount) }} F</td>
+                                        <td class="text-end text-nowrap">
+                                            @if ($chargeDue > 0)
+                                                @can('payments.create')
+                                                    <a href="{{ route('admin.invoices.show', $charge->invoice) }}" class="btn btn-sm btn-outline-primary">Encaisser {{ $fcfa($chargeDue) }} F</a>
+                                                @else
+                                                    <span class="text-danger">{{ $fcfa($chargeDue) }} F dû</span>
+                                                @endcan
+                                            @else
+                                                <span class="badge bg-success">Soldée</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-between fw-semibold mb-2">
+                            <span>Reste dû sur les consommations</span>
+                            <span class="{{ $chargesDue > 0 ? 'text-danger' : 'text-success' }}">{{ $fcfa($chargesDue) }} FCFA</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                            <span>Total à régler (séjour + consommations)</span>
+                            <span class="{{ $remaining + $chargesDue > 0 ? 'text-danger' : 'text-success' }}">{{ $fcfa($remaining + $chargesDue) }} FCFA</span>
+                        </div>
+                    @endif
+                    @if ($saleServices !== [])
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            @foreach ($saleServices as $saleService)
+                                <a href="{{ route('admin.sales.create', [$saleService->slug(), 'chambre' => $affectation->id]) }}" class="btn btn-sm btn-outline-secondary"><i class="far fa-plus"></i> {{ $saleService->getLabel() }}</a>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>

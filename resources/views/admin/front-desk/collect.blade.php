@@ -27,12 +27,26 @@
                 };
             @endphp
             <div class="fd-item">
+                @if ($invoice->sale)
+                    {{-- A sale of another service (restaurant, beach & pool), possibly charged to a room. --}}
+                    @php
+                        $sale = $invoice->sale;
+                    @endphp
+                    <div class="fd-item__main">
+                        <div class="fd-item__title"><i class="far {{ $sale->department->icon() }} text-muted"></i> {{ $sale->department->getLabel() }}@if ($sale->label) · {{ $sale->label }}@endif</div>
+                        <div>Vente du {{ $sale->sold_at->format('d/m H\hi') }} · facture {{ $invoice->number }}</div>
+                        @if ($sale->reservation)
+                            <div class="small text-muted">Reportée sur la chambre N°{{ $sale->reservation->room?->number }}</div>
+                        @endif
+                    </div>
+                @else
                 <div class="fd-item__main">
                     <div class="fd-item__title">{{ $file?->guest?->fullName() }}</div>
                     <div><x-admin::file-badge :file="$file" :link="true" /> <span class="small text-muted">{{ $state }}</span></div>
                     <div>Chambre N°{{ $file?->room?->number }} · facture {{ $invoice->number }}</div>
                     <div class="small text-muted">{{ $file?->check_in?->format('d/m H\hi') }} → {{ $file?->check_out?->format('d/m H\hi') }}</div>
                 </div>
+                @endif
                 <div class="fd-item__when">
                     <span class="small text-muted">Total</span>
                     <strong>{{ $fcfa($invoice->amount) }}</strong>

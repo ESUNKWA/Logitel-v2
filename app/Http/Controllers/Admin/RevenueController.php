@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Department;
 use App\Enums\PaymentMethod;
 use App\Enums\PricingMode;
 use App\Http\Controllers\Controller;
@@ -10,13 +11,13 @@ use App\Models\User;
 use App\Support\Audit;
 use App\Support\BusinessDay;
 use App\Support\FinanceStats;
+use App\Support\PeriodFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Throwable;
 
 /**
  * « Recettes »: the payments actually received over a period (business days), one line per
@@ -50,7 +51,9 @@ class RevenueController extends Controller
         return view('admin.revenue.index', [
             'filters' => $filters,
             'manager' => $this->isManager($request),
-            'payments' => $payments->with(['creator', 'attributedTo', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
+            // Per service (other services' sales: restaurant, beach & pool) — ignores the service filter.
+            'byService' => $this->byService($this->query($request, ['service' => null] + $filters)),
+            'payments' => $payments->with(['creator', 'attributedTo', 'invoice.sale', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
                 ->orderBy('paid_at')->orderBy('id')->paginate(100)->withQueryString(),
             'summary' => $this->summary($all),
             'byKind' => [Payment::KIND_STAY => $this->summary($stay), Payment::KIND_BOOKING => $this->summary($booking)],
@@ -66,7 +69,7 @@ class RevenueController extends Controller
     {
         $filters = $this->filters($request);
         $payments = $this->query($request, $filters)
-            ->with(['creator', 'attributedTo', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
+            ->with(['creator', 'attributedTo', 'invoice.sale', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
             ->orderBy('paid_at')->orderBy('id');
         Audit::record('export.revenue', 'export', 'Export Excel des recettes du '.$filters['from']->format('d/m/Y').($filters['single'] ? '' : ' au '.$filters['to']->format('d/m/Y')));
         $name = 'recettes-'.$filters['from']->format('Y-m-d').($filters['from']->equalTo($filters['to']) ? '' : '-au-'.$filters['to']->format('Y-m-d')).'.csv';
@@ -82,10 +85,12 @@ class RevenueController extends Controller
             $payments->chunk(500, function ($chunk) use ($out, $cell) {
                 foreach ($chunk as $p) {
                     $file = $p->invoice?->reservation;
+                    $sale = $file ? null : $p->invoice?->sale;
                     fputcsv($out, array_map($cell, [
-                        $p->paid_at->format('d/m/Y'), $p->paid_at->format('H:i'), $p->isBookingPayment() ? 'Réservation' : 'Affectation',
+                        $p->paid_at->format('d/m/Y'), $p->paid_at->format('H:i'),
+                        $sale ? $sale->department->getLabel() : ($p->isBookingPayment() ? 'Réservation' : 'Affectation'),
                         $file?->reference() ?? '', $file?->pricing_mode?->getLabel() ?? '', $file?->room?->number ?? '',
-                        $file?->guest?->fullName() ?? '', $p->invoice?->number ?? '', $p->method->getLabel(), (int) round((float) $p->amount),
+                        $file?->guest?->fullName() ?? ($sale?->label ?? ''), $p->invoice?->number ?? '', $p->method->getLabel(), (int) round((float) $p->amount),
                         $p->amount_received !== null ? (int) round((float) $p->amount_received) : '', $p->change_given !== null ? (int) round((float) $p->change_given) : '',
                         $p->attributedTo?->name ?? 'Non attribué', $file?->assignedBy()?->name ?? '', $p->creator?->name ?? '',
                     ]), ';');
@@ -110,6 +115,22 @@ class RevenueController extends Controller
         ];
     }
 
+    /**
+     * Cash per service over the same payments (amount and encaissements).
+     *
+     * @return list<array{department: Department, total: float, count: int}>
+     */
+    private function byService(Builder $payments): array
+    {
+        $rows = $payments->get(['id', 'amount', 'settlement', 'department']);
+
+        return array_map(fn (Department $d) => [
+            'department' => $d,
+            'total' => (float) $rows->filter(fn (Payment $p) => $p->department === $d)->sum('amount'),
+            'count' => $rows->filter(fn (Payment $p) => $p->department === $d)->map(fn (Payment $p) => $p->settlement ?? 'p'.$p->id)->unique()->count(),
+        ], Department::cases());
+    }
+
     private function isManager(Request $request): bool
     {
         return $request->user()->can('dashboard.revenue');
@@ -129,7 +150,8 @@ class RevenueController extends Controller
             ->when(ctype_digit($staff), fn (Builder $q) => $q->where('attributed_to', (int) $staff))
             ->when($filters['method'], fn (Builder $q, PaymentMethod $m) => $q->where('method', $m))
             ->ofKind($filters['kind'])
-            ->ofPricingMode($filters['formula']);
+            ->ofPricingMode($filters['formula'])
+            ->ofDepartment($filters['service'] ?? null);
     }
 
     /**
@@ -143,39 +165,11 @@ class RevenueController extends Controller
      */
     private function filters(Request $request): array
     {
-        $today = BusinessDay::today();
         // Query values are only ever read as plain strings: a forged ?mode[]=x (array) is ignored
         // instead of crashing the page.
         $text = fn (string $key): string => is_string($value = $request->query($key)) ? $value : '';
-        $date = function (string $key) use ($text, $today): ?Carbon {
-            try {
-                $d = $text($key) !== '' ? Carbon::createFromFormat('!Y-m-d', $text($key)) : null;
-            } catch (Throwable) {
-                return null;
-            }
-
-            return $d?->min($today);
-        };
-
-        $period = $text('periode');
-        if ($text('du') !== '' || $text('au') !== '') {
-            $from = $date('du') ?? $date('au') ?? $today;
-            $to = $date('au') ?? $from;
-            [$from, $to] = $from->greaterThan($to) ? [$to, $from] : [$from, $to];
-            $from = $from->max($to->copy()->subDays(365));
-            $period = 'personnalisee';
-        } elseif ($text('jour') !== '' && ($day = $date('jour'))) {
-            [$from, $to, $period] = [$day, $day->copy(), 'jour'];
-        } else {
-            $period = array_key_exists($period, self::PERIODS) ? $period : 'aujourdhui';
-            [$from, $to] = match ($period) {
-                'hier' => [$today->copy()->subDay(), $today->copy()->subDay()],
-                'semaine' => [$today->copy()->startOfWeek(), $today->copy()],
-                'mois' => [$today->copy()->startOfMonth(), $today->copy()],
-                'mois-dernier' => [$today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()->startOfDay()],
-                default => [$today->copy(), $today->copy()],
-            };
-        }
+        ['period' => $period, 'from' => $from, 'to' => $to] = PeriodFilter::fromRequest($request, self::PERIODS);
+        $today = BusinessDay::today();
 
         $staff = $text('par');
 
@@ -191,6 +185,8 @@ class RevenueController extends Controller
             'kind' => in_array($text('dossier'), [Payment::KIND_STAY, Payment::KIND_BOOKING], true) ? $text('dossier') : null,
             // ?formule= : the file's pricing mode (« mode d'affectation »), not the payment method (?mode=).
             'formula' => PricingMode::tryFrom($text('formule')),
+            // ?service= : hebergement | restauration | plage_piscine (whitelist; anything else = all).
+            'service' => Department::tryFrom($text('service')),
             'single' => $from->isSameDay($to),
             'isToday' => $to->isSameDay($today),
         ];

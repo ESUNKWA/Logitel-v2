@@ -5,7 +5,11 @@
 @section('content')
     @php
         $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
-        $keep = array_filter(['par' => $manager ? $filters['staff'] : '', 'mode' => $filters['method']?->value, 'dossier' => $filters['kind'], 'formule' => $filters['formula']?->value]);
+        $keep = array_filter(['par' => $manager ? $filters['staff'] : '', 'mode' => $filters['method']?->value, 'dossier' => $filters['kind'], 'formule' => $filters['formula']?->value, 'service' => $filters['service']?->value]);
+        // Other services: the ones the hotel offers (Configuration → Hôtel), plus one no longer
+        // offered that still has cash in the period (history) or is being filtered.
+        $byService = array_values(array_filter($byService, fn ($row) => $row['department']->isOffered() || $row['total'] > 0 || $filters['service'] === $row['department']));
+        $showServices = count($byService) > 1;
         $kindLabels = [\App\Models\Payment::KIND_STAY => 'Affectations', \App\Models\Payment::KIND_BOOKING => 'Réservations'];
         $periodLabel = $filters['single']
             ? ucfirst($filters['from']->translatedFormat('l j F Y'))
@@ -83,6 +87,17 @@
                     @endforeach
                 </select>
             </div>
+            @if ($showServices)
+                <div class="col-12 col-md-auto">
+                    <label class="form-label small mb-1" for="service">Service</label>
+                    <select class="form-select form-select-sm" id="service" name="service">
+                        <option value="">Tous les services</option>
+                        @foreach ($byService as $row)
+                            <option value="{{ $row['department']->value }}" @selected($filters['service'] === $row['department'])>{{ $row['department']->getLabel() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
             <div class="col-12 col-md-auto">
                 <label class="form-label small mb-1" for="formule">Formule</label>
                 <select class="form-select form-select-sm" id="formule" name="formule">
@@ -102,6 +117,23 @@
          arrived counts as a réservation's; its balance paid once the guest is in, as an affectation's).
          PC: the full card (unchanged). Phones only (client request, 2026-11-09): a compact band, the
          per-method detail moves to a popup opened by ⓘ. The card / band filters the page. --}}
+    @if ($showServices)
+        {{-- Cash per service over the period (the band filters the page). --}}
+        <div class="revenue-services mb-3">
+            @foreach ($byService as $row)
+                @php
+                    $active = $filters['service'] === $row['department'];
+                @endphp
+                <a href="{{ route('admin.revenue.index', array_filter(['du' => $filters['from']->toDateString(), 'au' => $filters['to']->toDateString(), 'service' => $active ? null : $row['department']->value] + array_diff_key($keep, ['service' => 1]))) }}"
+                    class="admin-card revenue-service {{ $active ? 'is-active' : '' }}" title="{{ $active ? 'Afficher tous les services' : 'N\'afficher que : '.$row['department']->getLabel() }}">
+                    <span class="revenue-service__label"><i class="far {{ $row['department']->icon() }}"></i> {{ $row['department']->getLabel() }}</span>
+                    <span class="revenue-service__total">{{ $fcfa($row['total']) }} <small>FCFA</small></span>
+                    <span class="small text-muted">{{ $row['count'] }} encaissement(s)</span>
+                </a>
+            @endforeach
+        </div>
+    @endif
+
     <div class="revenue-kinds mb-3">
         @foreach ($byKind as $kind => $part)
             <div class="admin-card revenue-kind revenue-kind--{{ $kind }} {{ $filters['kind'] === $kind ? 'is-active' : '' }}">
@@ -247,6 +279,7 @@
                     @forelse ($payments as $payment)
                         @php
                             $file = $payment->invoice?->reservation;
+                            $sale = $file ? null : $payment->invoice?->sale;
                             $assignedBy = $file?->assignedBy();
                         @endphp
                         <tr>
@@ -271,12 +304,23 @@
                                             @endcan
                                         @endif
                                     </div>
+                                @elseif ($sale)
+                                    {{-- A sale of another service (restaurant, beach & pool). --}}
+                                    <span class="file-kind"><span class="file-badge"><i class="fas {{ $sale->department->icon() }}" aria-hidden="true"></i> {{ $sale->department->getLabel() }}</span></span>
+                                    <div class="small text-muted">
+                                        Vente
+                                        @can('invoices.view')
+                                            <a href="{{ route('admin.invoices.show', $payment->invoice) }}">{{ $payment->invoice->number }}</a>
+                                        @else
+                                            {{ $payment->invoice->number }}
+                                        @endcan
+                                    </div>
                                 @else
                                     —
                                 @endif
                             </td>
                             <td class="cell-show-sm">@if ($file)<x-admin::mode-badge :mode="$file->pricing_mode" :until="$file->stay_until" />@else — @endif</td>
-                            <td class="cell-hide-sm">{{ $file?->guest?->fullName() ?? '—' }}</td>
+                            <td class="cell-hide-sm">{{ $file?->guest?->fullName() ?? $sale?->label ?? '—' }}</td>
                             <td class="text-nowrap cell-hide-sm"><i class="fas {{ $payment->method->icon() }}"></i> {{ $payment->method->getLabel() }}</td>
                             <td class="text-end fw-semibold text-nowrap">{{ $fcfa($payment->amount) }} F</td>
                             <td class="text-end small text-muted text-nowrap cell-hide-sm">

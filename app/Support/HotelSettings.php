@@ -48,6 +48,7 @@ class HotelSettings
         'hotel_instagram' => 'hotel.info.instagram',
         'hotel_logo' => 'hotel.info.logo',
         'hotel_login_background' => 'hotel.info.login_background',
+        'hotel_services' => 'hotel.services',
     ];
 
     /** French names of the settings, for the journal d'activité. */
@@ -60,6 +61,7 @@ class HotelSettings
         'hotel_whatsapp' => 'WhatsApp', 'hotel_email' => 'E-mail', 'hotel_website' => 'Site web', 'hotel_address' => 'Adresse', 'hotel_city' => 'Ville',
         'hotel_country' => 'Pays', 'hotel_rccm' => 'RCCM', 'hotel_ncc' => 'NCC', 'hotel_tax_regime' => 'Régime fiscal', 'hotel_legal_other' => 'Autres mentions',
         'hotel_facebook' => 'Facebook', 'hotel_instagram' => 'Instagram', 'hotel_logo' => 'Logo', 'hotel_login_background' => 'Photo de la page de connexion',
+        'hotel_services' => 'Services proposés',
     ];
 
     /**

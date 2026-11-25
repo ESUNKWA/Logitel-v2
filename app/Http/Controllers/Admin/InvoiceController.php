@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Department;
 use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
@@ -13,11 +14,14 @@ class InvoiceController extends Controller
     public function index(Request $request): View
     {
         $invoices = Invoice::query()
-            ->with(['reservation.guest'])
+            ->with(['reservation.guest', 'sale'])
             ->when($request->string('status')->toString(), fn ($query, $status) => $query->where('status', $status))
             // Affectations and réservations share the table but are filtered/labelled apart.
             ->when($request->string('type')->toString() === 'affectation', fn ($query) => $query->whereHas('reservation', fn ($r) => $r->stays()))
             ->when($request->string('type')->toString() === 'reservation', fn ($query) => $query->whereHas('reservation', fn ($r) => $r->notStartedBookings()))
+            // Other services' sales (restaurant, beach & pool), whitelisted.
+            ->when(in_array($request->string('type')->toString(), array_map(fn ($d) => $d->value, Department::salesServices()), true),
+                fn ($query) => $query->where('department', $request->string('type')->toString())->whereNotNull('sale_id'))
             ->orderByDesc('issued_at')
             ->paginate(15)
             ->withQueryString();
@@ -30,7 +34,7 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): View
     {
-        $invoice->load(['reservation.guest', 'reservation.room', 'payments' => fn ($query) => $query->with('creator')->orderByDesc('paid_at')]);
+        $invoice->load(['reservation.guest', 'reservation.room', 'sale.lines', 'sale.reservation.room', 'payments' => fn ($query) => $query->with('creator')->orderByDesc('paid_at')]);
 
         return view('admin.invoices.show', compact('invoice'));
     }

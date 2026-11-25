@@ -7,7 +7,7 @@
 @php
     $isActive = fn (string ...$patterns) => request()->routeIs(...$patterns) ? 'active' : '';
     $pendingBookings = auth()->user()->can('reservations.view') ? \App\Models\BookingRequest::query()->pending()->count() : 0;
-    $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view']);
+    $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view', 'catalog.manage']);
     // The manager's « Plus » menu is long: on phones it drops the desk screens (client request,
     // 2026-10-17) — they stay on wider screens and by their address; the Réception keeps them.
     $deskOnWideScreens = auth()->user()->can('dashboard.revenue') ? 'simple-nav__wide-only' : '';
@@ -73,6 +73,17 @@
             {{-- Not on phones: the tab bar has it (client request, 2026-11-09). --}}
             <li class="simple-nav__wide-only"><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
         @endcan
+        @foreach (\App\Support\NavGroups::saleServices(auth()->user()) as $saleService)
+            <li><a class="dropdown-item" href="{{ route('admin.sales.index', $saleService->slug()) }}"><i class="far {{ $saleService->icon() }}"></i> {{ $saleService->getLabel() }}</a></li>
+        @endforeach
+        @if (\App\Enums\Department::Evenements->isOffered())
+            @can('events.manage')
+                <li><a class="dropdown-item" href="{{ route('admin.events.index') }}"><i class="far fa-briefcase"></i> Réunions et événements</a></li>
+            @endcan
+        @endif
+        @can('dashboard.revenue')
+            <li><a class="dropdown-item" href="{{ route('admin.pilotage.index') }}"><i class="far fa-chart-line"></i> Pilotage</a></li>
+        @endcan
         @can('expenses.access')
             @php($pendingExpenses = auth()->user()->can('expenses.validate') ? \App\Models\Expense::query()->pending()->count() : 0)
             <li><a class="dropdown-item" href="{{ route('admin.expenses.index') }}"><i class="far fa-receipt"></i> Dépenses @if ($pendingExpenses)<span class="badge bg-warning text-dark" title="Dépenses à valider">{{ $pendingExpenses }}</span>@endif</a></li>
@@ -117,6 +128,14 @@
                 <ul class="nav-group__items list-unstyled" id="plus-group-config" @unless ($configOpen) hidden @endunless>
                     @can('settings.manage')
                         <li><a class="dropdown-item" href="{{ route('admin.hotel.edit') }}"><i class="far fa-building"></i> Hôtel</a></li>
+                    @endcan
+                    @can('catalog.manage')
+                        @if (\App\Enums\Department::offeredSalesServices() !== [])
+                            <li><a class="dropdown-item" href="{{ route('admin.catalog.index') }}"><i class="far fa-list"></i> Catalogue des prestations</a></li>
+                        @endif
+                        @if (\App\Enums\Department::Evenements->isOffered())
+                            <li><a class="dropdown-item" href="{{ route('admin.venues.index') }}"><i class="far fa-door-open"></i> Salles</a></li>
+                        @endif
                     @endcan
                     @can('rooms.manage')
                         <li><a class="dropdown-item" href="{{ route('admin.room-types.index') }}"><i class="far fa-layer-group"></i> Types de chambre</a></li>

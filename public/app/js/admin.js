@@ -2903,3 +2903,121 @@
         });
     });
 })();
+
+// Sale of a service (restaurant, beach & pool — sales/create, form[data-sale-form]): − / + buttons,
+// live total (catalogue prices × quantities − discount) pre-filling the encaissement, and the
+// encaissement hidden and not sent when the sale is charged to a room. Display only: the server
+// computes the total from the catalogue and re-checks everything.
+(function () {
+    'use strict';
+
+    var form = document.querySelector('form[data-sale-form]');
+    if (!form) {
+        return;
+    }
+    var qtys = Array.prototype.slice.call(form.querySelectorAll('[data-sale-qty]'));
+    var discountInput = form.querySelector('[data-sale-discount]');
+    var totalBox = form.querySelector('[data-sale-total]');
+    var room = form.querySelector('[data-sale-room]');
+    var payment = form.querySelector('[data-sale-payment]');
+    var roomNote = form.querySelector('[data-sale-room-note]');
+    var lines = payment ? payment.querySelector('[data-payment-lines]') : null;
+    var number = function (value) { return parseInt(String(value || '').replace(/\D/g, ''), 10) || 0; };
+    var fcfa = function (value) { return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' F'; };
+
+    var refresh = function () {
+        var subtotal = qtys.reduce(function (sum, input) {
+            return sum + Math.max(0, number(input.value)) * (parseFloat(input.dataset.price) || 0);
+        }, 0);
+        var discount = Math.min(number(discountInput ? discountInput.value : 0), subtotal);
+        var total = subtotal - discount;
+        totalBox.textContent = 'Total : ' + fcfa(total) + (discount > 0 ? ' (remise de ' + fcfa(discount) + ' déduite)' : '');
+
+        var charged = room && room.value !== '';
+        if (payment) {
+            payment.hidden = charged;
+            payment.querySelectorAll('input, select, button').forEach(function (field) { field.disabled = charged; });
+        }
+        if (roomNote) {
+            roomNote.hidden = !charged;
+        }
+        if (lines && lines.paymentLines && !charged) {
+            lines.paymentLines.setDue(total);
+        }
+    };
+
+    form.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-qty-step]');
+        if (!button) {
+            return;
+        }
+        var input = button.parentElement.querySelector('[data-sale-qty]');
+        var max = parseInt(input.max, 10) || 999;
+        input.value = Math.min(max, Math.max(0, number(input.value) + parseInt(button.dataset.qtyStep, 10)));
+        refresh();
+    });
+    qtys.forEach(function (input) { input.addEventListener('input', refresh); });
+    if (discountInput) {
+        discountInput.addEventListener('input', refresh);
+    }
+    if (room) {
+        room.addEventListener('change', refresh);
+    }
+    refresh();
+})();
+
+// Room booking (meetings & events — events/form, form[data-event-form]): the venue's rate for the
+// chosen formula, its capacity, − / + on the services and the live total (pre-filling nothing:
+// the deposit is typed). Display only: the server prices everything and re-checks the capacity.
+(function () {
+    'use strict';
+
+    var form = document.querySelector('form[data-event-form]');
+    if (!form) {
+        return;
+    }
+    var venue = form.querySelector('[data-event-venue]');
+    var rateHint = form.querySelector('[data-event-rate]');
+    var participants = form.querySelector('[data-event-participants]');
+    var capacityHint = form.querySelector('[data-event-capacity]');
+    var discountInput = form.querySelector('[data-event-discount]');
+    var totalBox = form.querySelector('[data-event-total]');
+    var lines = form.querySelector('[data-payment-lines]');
+    var qtys = Array.prototype.slice.call(form.querySelectorAll('[data-event-qty]'));
+    var number = function (value) { return parseInt(String(value || '').replace(/\D/g, ''), 10) || 0; };
+    var fcfa = function (value) { return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' F'; };
+
+    var refresh = function () {
+        var option = venue && venue.value !== '' ? venue.options[venue.selectedIndex] : null;
+        var formula = form.querySelector('[data-event-formula]:checked');
+        var rate = option ? parseFloat(formula && formula.value === 'journee' ? option.dataset.day : option.dataset.half) || 0 : 0;
+        rateHint.textContent = option ? 'Salle : ' + fcfa(rate) : '';
+
+        var capacity = option ? parseInt(option.dataset.capacity, 10) || 0 : 0;
+        var tooMany = capacity > 0 && number(participants.value) > capacity;
+        capacityHint.textContent = capacity ? (tooMany ? 'Trop de participants : ' + capacity + ' au plus dans cette salle.' : 'Capacité : ' + capacity + ' personnes.') : '';
+        capacityHint.classList.toggle('text-danger', tooMany);
+
+        var services = qtys.reduce(function (sum, input) { return sum + Math.max(0, number(input.value)) * (parseFloat(input.dataset.price) || 0); }, 0);
+        var subtotal = rate + services;
+        var discount = Math.min(number(discountInput ? discountInput.value : 0), subtotal);
+        totalBox.textContent = 'Total : ' + fcfa(subtotal - discount) + (discount > 0 ? ' (remise de ' + fcfa(discount) + ' déduite)' : '');
+        if (lines && lines.paymentLines) {
+            lines.paymentLines.setDue(subtotal - discount);
+        }
+    };
+
+    form.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-qty-step]');
+        if (!button) {
+            return;
+        }
+        var input = button.parentElement.querySelector('[data-event-qty]');
+        input.value = Math.min(parseInt(input.max, 10) || 999, Math.max(0, number(input.value) + parseInt(button.dataset.qtyStep, 10)));
+        refresh();
+    });
+    form.addEventListener('input', refresh);
+    form.addEventListener('change', refresh);
+    refresh();
+})();
+

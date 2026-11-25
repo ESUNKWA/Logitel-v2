@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Department;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Configuration → Hôtel: identity and contact details. Field names are the setting keys
@@ -51,6 +53,9 @@ class HotelInfoRequest extends FormRequest
             'hotel_legal_other' => ['nullable', 'string', 'max:200'],
             'hotel_facebook' => $url,
             'hotel_instagram' => $url,
+            // Services offered besides the accommodation (unticked = not offered: hidden and blocked).
+            'services' => ['nullable', 'array', 'max:'.count(Department::salesServices())],
+            'services.*' => ['distinct', Rule::in(array_map(fn ($d) => $d->value, Department::salesServices()))],
             // A real, decodable raster image (no SVG: it could carry scripts).
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:1024', 'dimensions:min_width=50,min_height=20,max_width=4000,max_height=4000'],
             'remove_logo' => ['nullable', 'boolean'],
@@ -82,6 +87,8 @@ class HotelInfoRequest extends FormRequest
             'hotel_legal_other' => 'autres mentions',
             'hotel_facebook' => 'page Facebook',
             'hotel_instagram' => 'compte Instagram',
+            'services' => 'services proposés',
+            'services.*' => 'service',
             'logo' => 'logo',
             'login_background' => 'image de fond de la connexion',
         ];

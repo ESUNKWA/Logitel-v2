@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\Department;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\ReservationStatus;
 use App\Support\BusinessDay;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,12 +37,37 @@ class Invoice extends Model
             'issued_at' => 'date',
             'amount' => 'decimal:2',
             'status' => InvoiceStatus::class,
+            'department' => Department::class,
         ];
     }
 
+    /** The stay billed (hébergement). Exactly one of reservation / sale (other services). */
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    /** The sale billed (restaurant, beach & pool), when the invoice isn't a stay's. */
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class);
+    }
+
+    /**
+     * Invoices of live files: a stay or booking not cancelled, or a sale not cancelled (open
+     * balances, « À encaisser »).
+     */
+    public function scopeLive(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $w) => $w
+            ->whereHas('reservation', fn (Builder $r) => $r->where('status', '!=', ReservationStatus::Annulee))
+            ->orWhereHas('sale', fn (Builder $s) => $s->where('status', Sale::STATUS_VALID)));
+    }
+
+    /** The service the invoice bills (stays: hébergement). */
+    public function departmentEnum(): Department
+    {
+        return $this->department ?? Department::Hebergement;
     }
 
     public function payments(): HasMany
@@ -78,6 +106,12 @@ class Invoice extends Model
             }
 
             $invoice = static::query()->lockForUpdate()->findOrFail($this->getKey());
+
+            // A cancelled sale is never cashed. Its row is locked too, so a cancellation and an
+            // encaissement running at the same time can't both pass (Sale::cancel() locks it first).
+            if ($invoice->sale_id !== null && Sale::query()->lockForUpdate()->whereKey($invoice->sale_id)->value('status') === Sale::STATUS_CANCELLED) {
+                throw ValidationException::withMessages(['payments' => 'Cette vente est annulée : elle ne peut plus être encaissée.']);
+            }
 
             $total = array_reduce($lines, fn (string $sum, array $line) => bcadd($sum, (string) $line['amount'], 2), '0');
             $remaining = $invoice->remainingAmount();

@@ -167,7 +167,7 @@ class FrontDeskController extends Controller
     {
         return view('admin.front-desk.collect', [
             'invoices' => $this->toCollectQuery()
-                ->with(['reservation.guest', 'reservation.room'])
+                ->with(['reservation.guest', 'reservation.room', 'sale.reservation.room'])
                 ->withSum('payments', 'amount')
                 ->orderBy('issued_at')
                 ->orderBy('id')
@@ -238,6 +238,6 @@ class FrontDeskController extends Controller
     {
         return Invoice::query()
             ->where('status', '!=', InvoiceStatus::Payee)
-            ->whereHas('reservation', fn (Builder $r) => $r->where('status', '!=', ReservationStatus::Annulee));
+            ->live();
     }
 }

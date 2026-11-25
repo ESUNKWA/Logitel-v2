@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PricingMode;
-use App\Enums\ReservationStatus;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -114,7 +113,7 @@ class FinanceStats
     {
         $open = Invoice::query()
             ->where('status', '!=', InvoiceStatus::Payee)
-            ->whereHas('reservation', fn (Builder $r) => $r->where('status', '!=', ReservationStatus::Annulee))
+            ->live()
             ->withSum('payments', 'amount')
             ->get(['id', 'amount']);
 

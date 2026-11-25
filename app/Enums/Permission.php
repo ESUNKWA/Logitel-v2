@@ -27,6 +27,10 @@ enum Permission: string
     case InvoicesView = 'invoices.view';
     case PaymentsCreate = 'payments.create';
     case PaymentsDelete = 'payments.delete';
+    case SalesCreate = 'sales.create';
+    case SalesCancel = 'sales.cancel';
+    case CatalogManage = 'catalog.manage';
+    case EventsManage = 'events.manage';
     case ExpensesCreate = 'expenses.create';
     case ExpensesValidate = 'expenses.validate';
     case DashboardRevenue = 'dashboard.revenue';
@@ -60,6 +64,10 @@ enum Permission: string
             self::InvoicesView => 'Voir les factures',
             self::PaymentsCreate => 'Enregistrer un paiement',
             self::PaymentsDelete => 'Supprimer un paiement',
+            self::SalesCreate => 'Enregistrer des ventes (restauration, plage et piscine), y compris le report sur la chambre d\'un client hébergé, et voir les ventes',
+            self::SalesCancel => 'Annuler une vente (avec un motif ; une vente déjà encaissée doit d\'abord être remboursée)',
+            self::CatalogManage => 'Gérer le catalogue des prestations (plats, boissons, entrées, locations…), les salles et leurs prix',
+            self::EventsManage => 'Réserver les salles (réunions et événements) : devis, confirmation, modification, acompte, planning',
             self::ExpensesCreate => 'Demander une dépense (avec justificatif ; elle attend la validation du gérant) et voir ses propres dépenses',
             self::ExpensesValidate => 'Voir toutes les dépenses, les valider, les refuser ou les annuler, gérer leurs catégories (ses propres dépenses sont validées d\'office)',
             self::DashboardRevenue => "Voir le chiffre d'affaires sur le tableau de bord",
@@ -83,6 +91,8 @@ enum Permission: string
             self::AffectationsView, self::AffectationsManage, self::AffectationsCancel, self::AffectationsDelete => 'Affectations',
             self::ReservationsView, self::ReservationsManage, self::ReservationsCancel => 'Réservations',
             self::InvoicesView, self::PaymentsCreate, self::PaymentsDelete => 'Factures et paiements',
+            self::SalesCreate, self::SalesCancel, self::CatalogManage => 'Ventes (restauration, plage et piscine)',
+            self::EventsManage => 'Réunions et événements',
             self::ExpensesCreate, self::ExpensesValidate => 'Dépenses',
             self::DashboardRevenue => 'Tableau de bord',
             self::AlertsCheckout => 'Alertes',

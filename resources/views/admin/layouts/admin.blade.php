@@ -99,6 +99,24 @@
                             <i class="far fa-cash-register"></i> Recettes
                         </a>
                     @endcan
+                    {{-- Other services (restaurant, beach & pool): shown once the service has a catalogue. --}}
+                    @foreach (\App\Support\NavGroups::saleServices(auth()->user()) as $saleService)
+                        <a href="{{ route('admin.sales.index', $saleService->slug()) }}" class="{{ request()->routeIs('admin.sales.*') && request()->route('department') === $saleService->slug() ? 'active' : '' }}">
+                            <i class="far {{ $saleService->icon() }}"></i> {{ $saleService->getLabel() }}
+                        </a>
+                    @endforeach
+                    @if (\App\Enums\Department::Evenements->isOffered())
+                        @can('events.manage')
+                            <a href="{{ route('admin.events.index') }}" class="{{ request()->routeIs('admin.events.*') ? 'active' : '' }}">
+                                <i class="far fa-briefcase"></i> Réunions et événements
+                            </a>
+                        @endcan
+                    @endif
+                    @can('dashboard.revenue')
+                        <a href="{{ route('admin.pilotage.index') }}" class="{{ request()->routeIs('admin.pilotage.*') ? 'active' : '' }}">
+                            <i class="far fa-chart-line"></i> Pilotage
+                        </a>
+                    @endcan
                     @can('expenses.access')
                         <a href="{{ route('admin.expenses.index') }}" class="{{ request()->routeIs('admin.expenses.*', 'admin.expense-categories.*') ? 'active' : '' }}">
                             <i class="far fa-receipt"></i> Dépenses
@@ -153,12 +171,25 @@
                             </div>
                         </div>
                     @endcanany
-                    @canany(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view'])
+                    @canany(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view', 'catalog.manage'])
                         <div class="admin-sidebar__group" data-nav-group>
                             <button type="button" class="admin-sidebar__section admin-sidebar__group-toggle" data-nav-group-toggle aria-expanded="{{ $configOpen ? 'true' : 'false' }}" aria-controls="sidebar-group-config">
                                 Configuration <i class="far fa-chevron-down nav-group__chevron" aria-hidden="true"></i>
                             </button>
                             <div class="admin-sidebar__group-items" id="sidebar-group-config" @unless ($configOpen) hidden @endunless>
+                                @can('catalog.manage')
+                                    {{-- Only for the services the hotel offers (Configuration → Hôtel). --}}
+                                    @if (\App\Enums\Department::offeredSalesServices() !== [])
+                                        <a href="{{ route('admin.catalog.index') }}" class="{{ request()->routeIs('admin.catalog.*') ? 'active' : '' }}">
+                                            <i class="far fa-list"></i> Catalogue des prestations
+                                        </a>
+                                    @endif
+                                    @if (\App\Enums\Department::Evenements->isOffered())
+                                        <a href="{{ route('admin.venues.index') }}" class="{{ request()->routeIs('admin.venues.*') ? 'active' : '' }}">
+                                            <i class="far fa-door-open"></i> Salles
+                                        </a>
+                                    @endif
+                                @endcan
                                 @can('rooms.manage')
                                     <a href="{{ route('admin.room-types.index') }}" class="{{ request()->routeIs('admin.room-types.*') ? 'active' : '' }}">
                                         <i class="far fa-layer-group"></i> Types de chambre
