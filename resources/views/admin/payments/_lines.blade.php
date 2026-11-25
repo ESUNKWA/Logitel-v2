@@ -11,11 +11,12 @@
                       cash line's hidden payments[i][received]
     $afterActions   : HTML shown right under « Ajouter un mode » (the discount fields, at the desk)
     $idPrefix       : prefix for the shared field's id
+    $defaultAmount  : amount typed in the first line when the page opens (no old input), e.g. what is left to pay
 --}}
 @php
     $sharedReceived ??= false;
     $oldLines = old('payments');
-    $lines = is_array($oldLines) && $oldLines !== [] ? array_values($oldLines) : [['method' => 'especes', 'amount' => '', 'received' => '']];
+    $lines = is_array($oldLines) && $oldLines !== [] ? array_values($oldLines) : [['method' => 'especes', 'amount' => $defaultAmount ?? '', 'received' => '']];
 @endphp
 <div
     class="payment-lines {{ $sharedReceived ? 'has-shared-received' : '' }}"

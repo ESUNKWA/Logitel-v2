@@ -50,7 +50,7 @@ return [
     // receipt, back-office, guest request pages and the public site's contact blocks.
     // Empty values are simply not displayed.
     'info' => [
-        'name' => 'Hôtel Evasion',
+        'name' => 'Ekwatech Hôtel Management System',
         'tagline' => '',
         'phone' => '',
         'phone2' => '',
@@ -58,7 +58,7 @@ return [
         'email' => '',
         'website' => '',
         'address' => '',
-        'city' => 'Bouaké',
+        'city' => 'Abidjan',
         'country' => "Côte d'Ivoire",
         'rccm' => '',
         'ncc' => '',

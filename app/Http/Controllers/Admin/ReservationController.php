@@ -6,6 +6,7 @@ use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CheckInRequest;
 use App\Http\Requests\Admin\ReservationRequest;
 use App\Models\BookingRequest;
 use App\Models\Guest;
@@ -13,6 +14,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Support\BusinessDay;
+use App\Support\RoomAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -244,44 +246,117 @@ class ReservationController extends Controller
     {
         abort_unless($reservation->isBooking() && ! $reservation->hasStarted(), 404);
 
-        DB::transaction(function () use ($request, $reservation) {
+        // A further deposit needs the payment permission too.
+        abort_if($request->paymentLines() !== [] && $request->user()->cannot('payments.create'), 403);
+
+        $settled = collect();
+
+        DB::transaction(function () use ($request, $reservation, &$settled) {
             [$start, $end] = $request->period();
             Room::lockAvailable((int) $request->validated('room_id'), $start, $end, $reservation->id, 'room_id', null, $request->bookingsBlock());
 
+            // The booking's own client, corrected in place (before a possible replacement is resolved).
+            if ($client = $request->currentClientAttributes()) {
+                $reservation->guest->update($client);
+            }
+
             $reservation->update([...$request->reservationAttributes(), 'guest_id' => $request->resolveGuestId()]);
+
+            if ($request->paymentLines() !== []) {
+                $settled = $reservation->invoice->refresh()->settle($request->paymentLines(), now(), 'Acompte à la modification de la réservation');
+            }
         });
 
-        return redirect()
-            ->route('admin.reservations.index')
-            ->with('status', 'Réservation mise à jour.');
+        $deposit = (float) $settled->sum('amount');
+        $change = (float) $settled->sum('change_given');
+
+        $redirect = redirect()->route('admin.reservations.index');
+        if ($deposit > 0) {
+            $redirect->with('receipt', $reservation->id);
+        }
+
+        return $redirect
+            ->with('status', 'Réservation mise à jour.'
+                .($deposit > 0 ? ' Acompte encaissé : '.number_format($deposit, 0, ',', ' ').' FCFA.' : '')
+                .($change > 0 ? ' Monnaie à rendre : '.number_format($change, 0, ',', ' ').' FCFA.' : ''));
+    }
+
+    /**
+     * « Arrivée du client »: the file, its deposit and what is left to pay, with an optional
+     * encaissement posted together with the check-in (checkIn).
+     */
+    public function arrival(Reservation $reservation): View|RedirectResponse
+    {
+        abort_unless($this->canArrive($reservation), 404);
+
+        if ($error = $this->arrivalError($reservation)) {
+            return back()->withErrors($error);
+        }
+
+        $reservation->load(['guest', 'room.roomType', 'invoice']);
+
+        return view('admin.reservations.arrival', [
+            'reservation' => $reservation,
+            'invoice' => $reservation->invoice,
+        ]);
     }
 
     /**
      * The guest arrives: the réservation is checked in and becomes an affectation (the model
-     * event puts the room in "occupee").
+     * event puts the room in "occupee"). What is left after the deposit can be cashed at the same
+     * time — all, part or nothing — in the same transaction: a refused payment checks nothing in.
      */
-    public function checkIn(Reservation $reservation): RedirectResponse
+    public function checkIn(CheckInRequest $request, Reservation $reservation): RedirectResponse
     {
-        abort_unless($reservation->isBooking() && in_array($reservation->status, [ReservationStatus::EnAttente, ReservationStatus::Confirmee], true), 404);
+        abort_unless($this->canArrive($reservation), 404);
 
-        if ($reservation->check_out->lessThanOrEqualTo(now())) {
-            return back()->withErrors(['check_in' => 'La période réservée est déjà terminée : reportez la réservation à une nouvelle date avant d\'enregistrer l\'arrivée du client.']);
-        }
+        // Taking money at check-in needs the payment permission too (the route only checks reservations.manage).
+        abort_if($request->paymentLines() !== [] && $request->user()->cannot('payments.create'), 403);
 
-        if ($reservation->room->status !== RoomStatus::Disponible) {
-            return back()->withErrors(['room_id' => "La chambre N°{$reservation->room->number} est « {$reservation->room->status->getLabel()} » : elle doit être disponible pour accueillir le client."]);
+        if ($error = $this->arrivalError($reservation)) {
+            return back()->withErrors($error)->withInput();
         }
 
         // An unpaid booking doesn't hold its room: someone may have taken the slot meanwhile.
-        DB::transaction(function () use ($reservation) {
+        DB::transaction(function () use ($request, $reservation) {
             Room::lockAvailable($reservation->room_id, $reservation->check_in, $reservation->check_out, $reservation->id, 'room_id');
             $reservation->update(['status' => ReservationStatus::Enregistree]);
+
+            if ($request->paymentLines() !== []) {
+                $reservation->invoice->settle($request->paymentLines(), now(), 'Encaissement à l\'arrivée du client');
+            }
         });
 
         return redirect()
             ->route('admin.affectations.show', $reservation)
             ->with('receipt', $reservation->id)
-            ->with('status', 'Client arrivé : la réservation est devenue une affectation (check-in effectué).');
+            ->with('status', 'Client arrivé : la réservation est devenue une affectation (check-in effectué). '.RoomAssignment::paymentSummary($reservation));
+    }
+
+    /**
+     * Only a réservation still waiting for its guest can be checked in.
+     */
+    private function canArrive(Reservation $reservation): bool
+    {
+        return $reservation->isBooking() && in_array($reservation->status, [ReservationStatus::EnAttente, ReservationStatus::Confirmee], true);
+    }
+
+    /**
+     * Why the guest can't be checked in now ([field => message]), or null.
+     *
+     * @return array<string, string>|null
+     */
+    private function arrivalError(Reservation $reservation): ?array
+    {
+        if ($reservation->check_out->lessThanOrEqualTo(now())) {
+            return ['check_in' => 'La période réservée est déjà terminée : reportez la réservation à une nouvelle date avant d\'enregistrer l\'arrivée du client.'];
+        }
+
+        if ($reservation->room->status !== RoomStatus::Disponible) {
+            return ['room_id' => "La chambre N°{$reservation->room->number} est « {$reservation->room->status->getLabel()} » : elle doit être disponible pour accueillir le client."];
+        }
+
+        return null;
     }
 
     public function cancel(Reservation $reservation): RedirectResponse

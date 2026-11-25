@@ -1563,7 +1563,9 @@
             }
 
             if (bookingDeposit && bookingDeposit.paymentLines) {
-                bookingDeposit.paymentLines.setDue(total);
+                // Editing: only what is left after the deposits already cashed (data-deposit-paid).
+                var depositPaid = bookingForm.querySelector('[data-deposit-paid]');
+                bookingDeposit.paymentLines.setDue(Math.max(0, total - (depositPaid ? parseFloat(depositPaid.dataset.depositPaid) || 0 : 0)));
             }
 
             var typeSelect = bookingForm.querySelector('[data-booking-type]');
@@ -2269,10 +2271,18 @@
         var guestId = form.querySelector('[data-current-client-id]');
         var fields = form.querySelector('[data-new-client]');
         var phone = form.querySelector('[data-new-client-phone]');
+        // Editing: the current client's own fields, neither shown nor sent while replacing.
+        var currentFields = form.querySelector('[data-current-client-fields]');
         var apply = function () {
             guestId.disabled = box.checked;
             fields.hidden = !box.checked;
             phone.required = box.checked;
+            if (currentFields) {
+                currentFields.hidden = box.checked;
+                currentFields.querySelectorAll('[data-current-client-field]').forEach(function (field) {
+                    field.disabled = box.checked;
+                });
+            }
         };
         box.addEventListener('change', apply);
         apply();

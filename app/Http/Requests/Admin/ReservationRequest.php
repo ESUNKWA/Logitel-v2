@@ -74,6 +74,12 @@ class ReservationRequest extends FormRequest
             'new_company_name' => ['nullable', 'string', 'max:255'],
             'new_tax_id' => ['nullable', 'string', 'max:100'],
             'new_phone' => ['required_without:guest_id', 'nullable', 'string', 'max:50'],
+            // Editing: the booking's own client corrected in place (only used by editsCurrentClient()).
+            'client_phone' => ['sometimes', 'required', 'string', 'max:50'],
+            'client_first_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'client_last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'client_company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'client_tax_id' => ['sometimes', 'nullable', 'string', 'max:100'],
             'pricing_mode' => ['nullable', new Enum(PricingMode::class)],
             'arrival_date' => $this->sendsArrivalFields() ? ['required', 'date_format:Y-m-d'] : ['exclude'],
             'arrival_time' => $this->sendsArrivalFields() ? ['required', 'date_format:H:i'] : ['exclude'],
@@ -90,7 +96,7 @@ class ReservationRequest extends FormRequest
             // Created from an online booking request (« Demandes en ligne »), marked handled on save.
             'booking_request_id' => ['nullable', 'integer', 'exists:booking_requests,id'],
             ...$this->discountRules(),
-            // Deposit (acompte) at booking only; later payments go through the invoice.
+            // Deposit (acompte) when booking, or a further one when editing (also possible from the invoice).
             ...$this->paymentLineRules(required: false),
         ];
     }
@@ -138,6 +144,10 @@ class ReservationRequest extends FormRequest
                     if (bccomp($total, $paid, 2) < 0) {
                         $validator->errors()->add('duration', 'Le nouveau montant ('.number_format((float) $total, 0, ',', ' ').' FCFA) serait inférieur à l\'acompte déjà encaissé ('
                             .number_format((float) $paid, 0, ',', ' ').' FCFA).');
+                    } elseif ((array) $this->input('payments', []) !== []) {
+                        // A further deposit: never above what is left of the new total.
+                        $this->checkNotAboveDue($validator, bcsub($total, $paid, 2));
+                        $this->checkCashReceivedEntered($validator);
                     }
                 } else {
                     // Deposit optional (none, partial or full), never above the total.
@@ -233,6 +243,7 @@ class ReservationRequest extends FormRequest
         $data = collect($this->validated())->except([
             'check_out', 'payments', 'booking_request_id', 'discount_type', 'discount_value', 'discount_reason', 'arrival_date', 'arrival_time',
             'new_client_type', 'new_first_name', 'new_last_name', 'new_company_name', 'new_tax_id', 'new_phone',
+            'client_phone', 'client_first_name', 'client_last_name', 'client_company_name', 'client_tax_id',
         ])->all();
 
         return [...$data, ...$this->discountAttributes(), 'unit_rate' => $this->unitRate(), 'pricing_mode' => $this->pricingMode(), 'check_in' => $start, 'duration' => $duration];
@@ -260,6 +271,37 @@ class ReservationRequest extends FormRequest
         ])->id;
     }
 
+    /**
+     * Editing a booking whose client is kept: the corrected details of that client (company
+     * fields only for a company), or null — when no client field was sent, when the booking's
+     * client is replaced or switched (a guest_id other than the booking's own is never edited
+     * here), or without guests.manage.
+     *
+     * @return array<string, string|null>|null
+     */
+    public function currentClientAttributes(): ?array
+    {
+        $reservation = $this->route('reservation');
+        if (! $reservation instanceof Reservation || ! $this->has('client_phone')
+            || (int) $this->validated('guest_id') !== (int) $reservation->guest_id
+            || $this->user()?->cannot('guests.manage')) {
+            return null;
+        }
+
+        $attributes = [
+            'phone' => trim((string) $this->validated('client_phone')),
+            'first_name' => trim((string) $this->validated('client_first_name')),
+            'last_name' => trim((string) $this->validated('client_last_name')),
+        ];
+
+        if ($reservation->guest?->isCompany()) {
+            $attributes['company_name'] = filled($this->validated('client_company_name')) ? trim((string) $this->validated('client_company_name')) : null;
+            $attributes['tax_id'] = filled($this->validated('client_tax_id')) ? trim((string) $this->validated('client_tax_id')) : null;
+        }
+
+        return $attributes;
+    }
+
     public function messages(): array
     {
         return [
@@ -284,6 +326,11 @@ class ReservationRequest extends FormRequest
             'arrival_date' => "date d'arrivée",
             'arrival_time' => "heure d'arrivée",
             'new_phone' => 'téléphone du client',
+            'client_phone' => 'téléphone du client',
+            'client_first_name' => 'prénom',
+            'client_last_name' => 'nom',
+            'client_company_name' => 'raison sociale',
+            'client_tax_id' => 'n° RCCM / NCC',
             'new_company_name' => 'raison sociale',
             'new_tax_id' => 'n° RCCM / NCC',
             ...$this->discountAttributeNames(),

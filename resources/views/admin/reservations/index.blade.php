@@ -135,10 +135,15 @@
                                              assign straight from the list (same action as « Arrivée du client »). --}}
                                         @if ($reservation->isPendingBooking() && $reservation->check_in->lessThan($todayEnd)
                                             && $reservation->check_out->isFuture() && $reservation->room?->status === \App\Enums\RoomStatus::Disponible)
-                                            <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" data-confirm="La réservation deviendra une affectation et la chambre N°{{ $reservation->room->number }} passera en « occupée »." data-confirm-title="Le client est arrivé ?" data-confirm-button="Oui, affecter la chambre">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-sign-in-alt"></i> Affecter</button>
-                                            </form>
+                                            {{-- Something left to pay: the « Arrivée du client » page offers to cash it with the check-in. --}}
+                                            @if ($reservation->invoice && (float) $reservation->invoice->remainingAmount() > 0 && auth()->user()->can('payments.create'))
+                                                <a href="{{ route('admin.reservations.arrival', $reservation) }}" class="btn btn-sm btn-success"><i class="fas fa-sign-in-alt"></i> Affecter</a>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" data-confirm="La réservation deviendra une affectation et la chambre N°{{ $reservation->room->number }} passera en « occupée »." data-confirm-title="Le client est arrivé ?" data-confirm-button="Oui, affecter la chambre">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-sign-in-alt"></i> Affecter</button>
+                                                </form>
+                                            @endif
                                         @endif
                                         <a href="{{ route('admin.reservations.edit', $reservation) }}" class="btn btn-sm btn-outline-primary">Ouvrir</a>
                                         {{-- Cancel straight from the list (client request, 2026-11-10), same action as the booking's page. --}}

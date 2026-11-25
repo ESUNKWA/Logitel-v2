@@ -264,6 +264,9 @@ class SimpleModeTest extends TestCase
         $this->actingAs($user)->get('/admin/arrivees')->assertOk()
             ->assertSee('Jean Yao')->assertSee('14h00')->assertSee('À payer')
             ->assertDontSee('Ali Bamba')->assertDontSee('Eva Gnaoré')
+            ->assertSee(route('admin.reservations.arrival', $todayBooking), false);
+        // Unpaid: the « Arrivée du client » page offers the rest to cash and posts the check-in.
+        $this->actingAs($user)->get(route('admin.reservations.arrival', $todayBooking))->assertOk()
             ->assertSee(route('admin.reservations.check-in', $todayBooking), false);
 
         $this->travelTo('2026-10-08 14:05:00');

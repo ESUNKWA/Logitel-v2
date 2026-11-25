@@ -63,6 +63,7 @@ class HotelInfoTest extends TestCase
     public function test_hotel_information_is_validated(): void
     {
         $manager = User::factory()->create();
+        $default = config('hotel.info.name'); // whatever the shipped default is (config/hotel.php)
 
         $this->actingAs($manager)->put('/admin/hotel', $this->info(['hotel_name' => '']))->assertSessionHasErrors('hotel_name');
         $this->actingAs($manager)->put('/admin/hotel', $this->info(['hotel_phone' => '']))->assertSessionHasErrors('hotel_phone');
@@ -70,7 +71,7 @@ class HotelInfoTest extends TestCase
         $this->actingAs($manager)->put('/admin/hotel', $this->info(['hotel_email' => 'pas-un-mail']))->assertSessionHasErrors('hotel_email');
         $this->actingAs($manager)->put('/admin/hotel', $this->info(['hotel_facebook' => 'javascript:alert(1)']))->assertSessionHasErrors('hotel_facebook');
 
-        $this->assertSame('Hôtel Evasion', config('hotel.info.name')); // nothing saved
+        $this->assertSame($default, config('hotel.info.name')); // nothing saved
     }
 
     public function test_the_logo_is_uploaded_replaced_and_removed_safely(): void
@@ -162,7 +163,8 @@ class HotelInfoTest extends TestCase
     {
         // Nothing configured yet: no fake number, no empty "Appelez-nous" box, no dead social links.
         $this->get('/')->assertOk()->assertDontSee('Appelez-nous</span>', false)->assertSee('Contactez-nous');
-        $this->get('/contact')->assertOk()->assertDontSee('RÉSEAUX SOCIAUX')->assertDontSee('tel:', false)->assertSee("Bouaké, Côte d'Ivoire");
+        $this->get('/contact')->assertOk()->assertDontSee('RÉSEAUX SOCIAUX')->assertDontSee('tel:', false)
+            ->assertSee(config('hotel.info.city').", Côte d'Ivoire"); // the shipped default city
     }
 
     public function test_settings_saved_for_the_receipt_are_carried_over(): void
@@ -185,9 +187,10 @@ class HotelInfoTest extends TestCase
 
     public function test_only_settings_managers_can_edit_it(): void
     {
+        $default = config('hotel.info.name');
         $this->get('/admin/hotel')->assertRedirect(route('admin.login'));
         $this->actingAs(User::factory()->reception()->create())->get('/admin/hotel')->assertForbidden();
         $this->actingAs(User::factory()->reception()->create())->put('/admin/hotel', $this->info())->assertForbidden();
-        $this->assertSame('Hôtel Evasion', config('hotel.info.name'));
+        $this->assertSame($default, config('hotel.info.name')); // nothing saved
     }
 }

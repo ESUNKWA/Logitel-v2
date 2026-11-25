@@ -31,6 +31,9 @@
         $currentGuest = filled(old('guest_id')) ? \App\Models\Guest::find(old('guest_id')) : $reservation->guest;
         $replacing = $currentGuest && old('replace_client');
         $newType = old('new_client_type', \App\Models\Guest::TYPE_PERSON);
+        // Editing a booking: its own client's details are corrected right here (needs guests.manage).
+        $editClient = $reservation->exists && $currentGuest && (int) $currentGuest->id === (int) $reservation->guest_id
+            && auth()->user()->can('guests.manage');
     @endphp
     <div class="col-12">
         <div class="booking-client" data-client-form>
@@ -38,6 +41,36 @@
             @if ($currentGuest)
                 <div class="booking-current-client mb-2" data-current-client>
                     <div><i class="far fa-user me-1"></i> <strong>{{ $currentGuest->fullName() }}</strong>@if ($currentGuest->phone) — {{ \App\Support\PhoneFormat::display($currentGuest->phone) }}@endif</div>
+                    @if ($editClient)
+                        {{-- The booking's client, editable (disabled by admin.js while « Remplacer » is ticked). --}}
+                        <div class="row g-2 mt-1" data-current-client-fields @if ($replacing) hidden @endif>
+                            <div class="col-md-4">
+                                <input type="tel" class="form-control @error('client_phone') is-invalid @enderror" name="client_phone" value="{{ old('client_phone', $currentGuest->phone) }}" placeholder="Téléphone *" aria-label="Téléphone du client" data-current-client-field required @disabled($replacing)>
+                                @error('client_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            @if ($currentGuest->isCompany())
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control @error('client_company_name') is-invalid @enderror" name="client_company_name" value="{{ old('client_company_name', $currentGuest->company_name) }}" placeholder="Raison sociale" aria-label="Raison sociale du client" data-current-client-field @disabled($replacing)>
+                                    @error('client_company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control @error('client_tax_id') is-invalid @enderror" name="client_tax_id" value="{{ old('client_tax_id', $currentGuest->tax_id) }}" placeholder="N° RCCM / NCC" aria-label="N° RCCM / NCC du client" data-current-client-field @disabled($replacing)>
+                                    @error('client_tax_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            @endif
+                            <div class="col-md-4">
+                                <input type="text" class="form-control @error('client_first_name') is-invalid @enderror" name="client_first_name" value="{{ old('client_first_name', $currentGuest->first_name) }}" placeholder="Prénom" aria-label="Prénom du client" data-current-client-field @disabled($replacing)>
+                                @error('client_first_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control @error('client_last_name') is-invalid @enderror" name="client_last_name" value="{{ old('client_last_name', $currentGuest->last_name) }}" placeholder="Nom" aria-label="Nom du client" data-current-client-field @disabled($replacing)>
+                                @error('client_last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            @if ($currentGuest->isCompany())
+                                <div class="col-12 form-text mt-0">Prénom et nom de la personne à contacter.</div>
+                            @endif
+                        </div>
+                    @endif
                     <input type="hidden" name="guest_id" value="{{ $currentGuest->id }}" data-current-client-id @disabled($replacing)>
                     <div class="form-check mt-1">
                         <input class="form-check-input" type="checkbox" name="replace_client" value="1" id="replace-client" data-replace-client @checked($replacing)>
@@ -181,12 +214,20 @@
             <div class="assign-pay__total" data-booking-preview>—</div>
             @php
                 $discountFields = view('admin.partials._discount-fields', ['file' => $reservation->exists ? $reservation : null, 'idPrefix' => 'booking'])->render();
-                $withDeposit = ! $reservation->exists && auth()->user()->can('payments.create');
+                $withDeposit = auth()->user()->can('payments.create');
+                // Editing: a further deposit, on top of what was already cashed — never pre-filled,
+                // so changing a date or a note never cashes anything by mistake.
+                $alreadyPaid = $reservation->exists ? (float) ($reservation->invoice?->amountPaid() ?? 0) : 0;
             @endphp
             @if ($withDeposit)
                 {{-- Deposit lines, then — right under « Ajouter un mode » — the discount and the cash received. --}}
-                <div class="assign-pay__label">Acompte <span class="text-muted fw-normal">— facultatif : tout, une partie ou rien pour l'instant</span></div>
-                @include('admin.payments._lines', ['due' => null, 'required' => false, 'prefill' => true, 'cashReceivedRequired' => true,
+                @if ($reservation->exists)
+                    <div class="assign-pay__label" data-deposit-paid="{{ $alreadyPaid }}">Acompte supplémentaire
+                        <span class="text-muted fw-normal">— facultatif ; déjà encaissé : {{ number_format($alreadyPaid, 0, ',', ' ') }} FCFA</span></div>
+                @else
+                    <div class="assign-pay__label">Acompte <span class="text-muted fw-normal">— facultatif : tout, une partie ou rien pour l'instant</span></div>
+                @endif
+                @include('admin.payments._lines', ['due' => null, 'required' => false, 'prefill' => ! $reservation->exists, 'cashReceivedRequired' => true,
                     'sharedReceived' => true, 'idPrefix' => 'booking', 'afterActions' => $discountFields])
             @else
                 {!! $discountFields !!}

@@ -24,10 +24,15 @@
                 <a href="{{ route('admin.receipts.show', $reservation) }}" class="btn btn-outline-primary phone-hidden" target="_blank" rel="noopener"><i class="fas fa-print"></i> Imprimer le reçu</a>
             @endcan
             @if (in_array($reservation->status->value, ['en_attente', 'confirmee']))
-                <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" data-confirm="La réservation deviendra une affectation et la chambre passera en « occupée »." data-confirm-title="Le client est arrivé ?" data-confirm-button="Oui, enregistrer l'arrivée">
-                    @csrf
-                    <button type="submit" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</button>
-                </form>
+                {{-- Something left to pay: the « Arrivée du client » page offers to cash it with the check-in. --}}
+                @if ($reservation->invoice && (float) $reservation->invoice->remainingAmount() > 0 && auth()->user()->can('payments.create'))
+                    <a href="{{ route('admin.reservations.arrival', $reservation) }}" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</a>
+                @else
+                    <form method="POST" action="{{ route('admin.reservations.check-in', $reservation) }}" data-confirm="La réservation deviendra une affectation et la chambre passera en « occupée »." data-confirm-title="Le client est arrivé ?" data-confirm-button="Oui, enregistrer l'arrivée">
+                        @csrf
+                        <button type="submit" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</button>
+                    </form>
+                @endif
                 @can('reservations.cancel')
                     <form method="POST" action="{{ route('admin.reservations.cancel', $reservation) }}" data-confirm="La réservation sera annulée. Les acomptes déjà encaissés restent sur la facture." data-confirm-title="Annuler cette réservation ?" data-confirm-button="Oui, annuler la réservation" data-confirm-cancel="Non, la garder" data-confirm-danger>
                         @csrf

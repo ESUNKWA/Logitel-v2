@@ -52,10 +52,15 @@
                         @endcan
                     @endif
                     @can('reservations.manage')
-                        <form method="POST" action="{{ route('admin.reservations.check-in', $booking) }}" onsubmit="return confirm('Le client est arrivé ? La réservation devient une affectation (chambre N°{{ $booking->room?->number }}).');">
-                            @csrf
-                            <button type="submit" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</button>
-                        </form>
+                        {{-- Something left to pay: the « Arrivée du client » page offers to cash it with the check-in. --}}
+                        @if ($remaining > 0 && $booking->invoice && auth()->user()->can('payments.create'))
+                            <a href="{{ route('admin.reservations.arrival', $booking) }}" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</a>
+                        @else
+                            <form method="POST" action="{{ route('admin.reservations.check-in', $booking) }}" onsubmit="return confirm('Le client est arrivé ? La réservation devient une affectation (chambre N°{{ $booking->room?->number }}).');">
+                                @csrf
+                                <button type="submit" class="btn btn-success"><i class="fas fa-sign-in-alt"></i> Arrivée du client</button>
+                            </form>
+                        @endif
                     @endcan
                     <a href="{{ route('admin.reservations.edit', $booking) }}" class="btn btn-link">Ouvrir</a>
                 </div>
