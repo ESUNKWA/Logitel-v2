@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Exceptions\DeletionBlocked;
+use App\Models\Concerns\Audited;
 use App\Models\Concerns\RecordsCreator;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,36 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Guest extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['type' => 'Type', 'first_name' => 'Prénom', 'last_name' => 'Nom', 'company_name' => 'Raison sociale', 'tax_id' => 'RCCM / NCC',
+            'phone' => 'Téléphone', 'email' => 'E-mail', 'id_document_type' => 'Pièce d\'identité', 'id_document_number' => 'N° de pièce',
+            'nationality' => 'Nationalité', 'address' => 'Adresse', 'notes' => 'Notes'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'guest';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'client';
+    }
+
+    public function auditName(): string
+    {
+        return 'client « '.$this->fullName().' »';
+    }
+
+    /** Personal data: the journal says which fields changed, never their values. */
+    public function auditMasked(): bool
+    {
+        return true;
+    }
+
     use HasFactory, RecordsCreator;
 
     /**
@@ -23,6 +54,13 @@ class Guest extends Model
     public const TYPE_PERSON = 'physique';
 
     public const TYPE_COMPANY = 'morale';
+
+    /** Identity documents offered by the guest form (value stored => label). */
+    public const ID_DOCUMENT_TYPES = [
+        'cni' => "Carte Nationale d'Identité",
+        'passeport' => 'Passeport',
+        'permis' => 'Permis de conduire',
+    ];
 
     protected $fillable = [
         'first_name',

@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Expense;
 use App\Models\Guest;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -97,6 +98,8 @@ class FrontDeskController extends Controller
             'count' => FinanceStats::paymentsCountBetween($from, $to, $userId),
             'byMethod' => $byMethod,
             'cash' => (float) collect($byMethod)->firstWhere('method', PaymentMethod::Especes)['amount'],
+            // Validated expenses paid in cash from this till (V2): deducted from the cash to hand over.
+            'cashExpenses' => Expense::tillOutflows($day ?? BusinessDay::today(), $userId)[PaymentMethod::Especes->value],
         ];
     }
 

@@ -77,7 +77,7 @@ class BookingRequestTest extends TestCase
             ->getContent();
         $this->assertSame(1, substr_count($html, 'name="pricing_mode"'));
         $this->assertStringContainsString('"sejour":90000', html_entity_decode($html));
-        foreach (["À l'heure", 'Journée', 'Nuitée', '"heure"', '"journee"', '"nuitee"'] as $other) {
+        foreach (['Passage', 'Journée', 'Nuitée', '"heure"', '"journee"', '"nuitee"'] as $other) {
             $this->assertStringNotContainsString($other, html_entity_decode($html));
         }
     }

@@ -81,7 +81,7 @@ class PublicRoomsTest extends TestCase
             ->assertSee('Suite Lagune')->assertSee('Vue sur le jardin')
             ->assertSee('Une chambre lumineuse.')->assertSee('Avec un balcon.')
             ->assertSeeInOrder(['Tarifs', 'Séjour (24 h)', 'par période de 24 heures', '45 000 FCFA'], false)
-            ->assertDontSee("À l'heure", false)->assertDontSee('Journée')->assertDontSee('Nuitée')
+            ->assertDontSee('Passage', false)->assertDontSee('Journée')->assertDontSee('Nuitée')
             ->assertDontSee('15 000 FCFA')->assertDontSee('25 000 FCFA')
             ->assertSee('Wi-Fi gratuit')->assertSee('Climatisation')
             ->assertSee('Bouilloire')->assertSee('Non-fumeur')->assertSee('Annulation gratuite 24 h avant.')
@@ -97,7 +97,7 @@ class PublicRoomsTest extends TestCase
 
         $this->get('/chambres')->assertOk()->assertSee('Chambre express')->assertSee('Tarif sur demande')->assertDontSee('3 000 FCFA');
         $this->get($room->publicUrl())->assertOk()->assertSee('Tarif sur demande')
-            ->assertDontSee("À l'heure", false)->assertDontSee('Nuitée')->assertDontSee('20 000');
+            ->assertDontSee('Passage', false)->assertDontSee('Nuitée')->assertDontSee('20 000');
     }
 
     public function test_text_from_the_application_is_escaped(): void

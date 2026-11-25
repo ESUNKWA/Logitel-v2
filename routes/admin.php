@@ -6,12 +6,15 @@
  * Under /admin on a shared address, or at the root of its own sub-domain (config/routing.php).
  */
 
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AffectationController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BookingRequestController;
 use App\Http\Controllers\Admin\CheckoutAlertController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DutyController;
+use App\Http\Controllers\Admin\ExpenseCategoryController;
+use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\FrontDeskController;
 use App\Http\Controllers\Admin\GuestController;
 use App\Http\Controllers\Admin\HotelInfoController;
@@ -19,6 +22,7 @@ use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\LiveFiguresController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PerkController;
+use App\Http\Controllers\Admin\PlanningController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PwaController;
 use App\Http\Controllers\Admin\ReceiptController;
@@ -82,9 +86,13 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         // « Prise de service »: the receptionist of the business day (mandatory), every sale of the day is hers.
         Route::get('/prise-de-service', [DutyController::class, 'show'])->middleware('can:duty.take')->name('duty.show');
         Route::post('/prise-de-service', [DutyController::class, 'take'])->middleware('can:duty.take')->name('duty.take');
-        Route::post('/prise-de-service/plus-tard', [DutyController::class, 'defer'])->middleware('can:duty.take')->name('duty.defer');
+        // « Non, je viens en renfort »: works without relieving the colleague on duty (her till).
+        Route::post('/prise-de-service/renfort', [DutyController::class, 'decline'])->middleware('can:duty.take')->name('duty.decline');
+        Route::post('/prise-de-service/terminer', [DutyController::class, 'end'])->middleware('can:duty.take')->name('duty.end');
         Route::get('/prises-de-service', [DutyController::class, 'index'])->middleware('can:duty.manage')->name('duty.index');
         Route::post('/prises-de-service', [DutyController::class, 'assign'])->middleware('can:duty.manage')->name('duty.assign');
+        Route::post('/prises-de-service/{shift}/corriger', [DutyController::class, 'reassign'])->middleware('can:duty.manage')->whereNumber('shift')->name('duty.reassign');
+        Route::post('/prises-de-service/{shift}/clore', [DutyController::class, 'close'])->middleware('can:duty.manage')->whereNumber('shift')->name('duty.close');
 
         Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profil', [ProfileController::class, 'update'])->middleware('throttle:6,1')->name('profile.update');
@@ -182,6 +190,28 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
 
         Route::get('/hotel', [HotelInfoController::class, 'edit'])->middleware('can:settings.manage')->name('hotel.edit');
         Route::put('/hotel', [HotelInfoController::class, 'update'])->middleware('can:settings.manage')->name('hotel.update');
+
+        // « Dépenses » (V2): requested with a receipt, validated by the Gérant. Never deleted.
+        Route::get('/depenses', [ExpenseController::class, 'index'])->middleware('can:expenses.access')->name('expenses.index');
+        Route::get('/depenses/nouvelle', [ExpenseController::class, 'create'])->middleware('can:expenses.access')->name('expenses.create');
+        Route::post('/depenses', [ExpenseController::class, 'store'])->middleware(['can:expenses.access', 'throttle:30,1'])->name('expenses.store');
+        Route::get('/depenses/export', [ExpenseController::class, 'export'])->middleware('can:expenses.access')->name('expenses.export');
+        Route::get('/depenses/categories', [ExpenseCategoryController::class, 'index'])->middleware('can:expenses.validate')->name('expense-categories.index');
+        Route::post('/depenses/categories', [ExpenseCategoryController::class, 'store'])->middleware('can:expenses.validate')->name('expense-categories.store');
+        Route::put('/depenses/categories/{category}', [ExpenseCategoryController::class, 'update'])->middleware('can:expenses.validate')->name('expense-categories.update');
+        Route::delete('/depenses/categories/{category}', [ExpenseCategoryController::class, 'destroy'])->middleware('can:expenses.validate')->name('expense-categories.destroy');
+        Route::get('/depenses/{expense}', [ExpenseController::class, 'show'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.show');
+        Route::get('/depenses/{expense}/justificatif', [ExpenseController::class, 'receipt'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.receipt');
+        Route::post('/depenses/{expense}/valider', [ExpenseController::class, 'approve'])->middleware('can:expenses.validate')->whereNumber('expense')->name('expenses.approve');
+        Route::post('/depenses/{expense}/refuser', [ExpenseController::class, 'refuse'])->middleware('can:expenses.validate')->whereNumber('expense')->name('expenses.refuse');
+        Route::post('/depenses/{expense}/annuler', [ExpenseController::class, 'cancel'])->middleware('can:expenses.access')->whereNumber('expense')->name('expenses.cancel');
+
+        // « Planning » (V2): rooms × time, read only.
+        Route::get('/planning', [PlanningController::class, 'index'])->middleware('can:planning.view')->name('planning.index');
+
+        // « Journal d'activité » (V2): read only, no route changes or deletes a line.
+        Route::get('/journal', [ActivityLogController::class, 'index'])->middleware('can:activity.view')->name('activity.index');
+        Route::get('/journal/export', [ActivityLogController::class, 'export'])->middleware('can:activity.view')->name('activity.export');
 
         Route::get('/parametres', [SettingsController::class, 'edit'])->middleware('can:settings.manage')->name('settings.edit');
         Route::put('/parametres', [SettingsController::class, 'update'])->middleware('can:settings.manage')->name('settings.update');

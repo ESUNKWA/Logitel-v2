@@ -17,6 +17,7 @@ use App\Support\BusinessDay;
 use App\Support\RoomAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -119,7 +120,32 @@ class ReservationController extends Controller
             }
         }
 
+        // From the planning (V2): a free spot clicked → room, date and time pre-filled. The
+        // values only pre-fill the form; the usual checks run when it's sent.
+        $prefillRoomId = null;
+        $roomParam = $request->query('chambre');
+        if (! $bookingRequest && is_string($roomParam) && ctype_digit($roomParam)) {
+            $room = Room::query()->with('roomType')->whereKey((int) $roomParam)->where('status', '!=', RoomStatus::HorsService)->first();
+            if ($room && $room->roomType?->is_active) {
+                $reservation->setRelation('room', $room);
+                $prefillRoomId = $room->id;
+                $date = $request->query('date');
+                $time = $request->query('heure');
+                if (is_string($date) && is_string($time) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) && preg_match('/^\d{2}:\d{2}$/', $time)) {
+                    try {
+                        $arrival = Carbon::createFromFormat('Y-m-d H:i', $date.' '.$time);
+                        if ($arrival->isFuture()) {
+                            $reservation->check_in = $arrival;
+                        }
+                    } catch (\Throwable) {
+                        // ignored: the form simply starts without an arrival
+                    }
+                }
+            }
+        }
+
         return view('admin.reservations.create', [
+            'prefillRoomId' => $prefillRoomId,
             'reservation' => $reservation,
             'statuses' => [ReservationStatus::EnAttente, ReservationStatus::Confirmee],
             'bookingRequest' => $bookingRequest,

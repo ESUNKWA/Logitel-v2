@@ -27,6 +27,8 @@ enum Permission: string
     case InvoicesView = 'invoices.view';
     case PaymentsCreate = 'payments.create';
     case PaymentsDelete = 'payments.delete';
+    case ExpensesCreate = 'expenses.create';
+    case ExpensesValidate = 'expenses.validate';
     case DashboardRevenue = 'dashboard.revenue';
     case AlertsCheckout = 'alerts.checkout';
     case DutyTake = 'duty.take';
@@ -34,6 +36,7 @@ enum Permission: string
     case UsersManage = 'users.manage';
     case RolesManage = 'roles.manage';
     case SettingsManage = 'settings.manage';
+    case ActivityView = 'activity.view';
     case SiteManage = 'site.manage';
     case SiteStats = 'site.stats';
 
@@ -57,6 +60,8 @@ enum Permission: string
             self::InvoicesView => 'Voir les factures',
             self::PaymentsCreate => 'Enregistrer un paiement',
             self::PaymentsDelete => 'Supprimer un paiement',
+            self::ExpensesCreate => 'Demander une dépense (avec justificatif ; elle attend la validation du gérant) et voir ses propres dépenses',
+            self::ExpensesValidate => 'Voir toutes les dépenses, les valider, les refuser ou les annuler, gérer leurs catégories (ses propres dépenses sont validées d\'office)',
             self::DashboardRevenue => "Voir le chiffre d'affaires sur le tableau de bord",
             self::AlertsCheckout => "Recevoir l'alarme de fin de séjour (sonne en continu jusqu'à la sortie du client ou à la prolongation ; jamais pour le Gérant)",
             self::DutyTake => 'Prendre son service : réceptionniste du jour, à qui reviennent toutes les ventes de la journée (obligatoire avant de travailler ; jamais pour le Gérant)',
@@ -64,6 +69,7 @@ enum Permission: string
             self::UsersManage => 'Gérer les comptes du personnel',
             self::RolesManage => 'Gérer les rôles et leurs permissions',
             self::SettingsManage => "Modifier les paramètres de l'hôtel (journée commerciale, horaires des tarifs)",
+            self::ActivityView => "Consulter le journal d'activité (qui a fait quoi, quand) et l'exporter",
             self::SiteManage => 'Gérer le contenu du site web (accueil, services, galerie, événements)',
             self::SiteStats => 'Voir les statistiques de visite du site web',
         };
@@ -77,10 +83,11 @@ enum Permission: string
             self::AffectationsView, self::AffectationsManage, self::AffectationsCancel, self::AffectationsDelete => 'Affectations',
             self::ReservationsView, self::ReservationsManage, self::ReservationsCancel => 'Réservations',
             self::InvoicesView, self::PaymentsCreate, self::PaymentsDelete => 'Factures et paiements',
+            self::ExpensesCreate, self::ExpensesValidate => 'Dépenses',
             self::DashboardRevenue => 'Tableau de bord',
             self::AlertsCheckout => 'Alertes',
             self::DutyTake, self::DutyManage => 'Prise de service',
-            self::UsersManage, self::RolesManage, self::SettingsManage => 'Administration',
+            self::UsersManage, self::RolesManage, self::SettingsManage, self::ActivityView => 'Administration',
             self::SiteManage, self::SiteStats => 'Site web',
         };
     }

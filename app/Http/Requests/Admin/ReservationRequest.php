@@ -90,7 +90,7 @@ class ReservationRequest extends FormRequest
             'children' => ['required', 'integer', 'min:0'],
             'status' => ['required', Rule::in([ReservationStatus::EnAttente->value, ReservationStatus::Confirmee->value])],
             // The form's first choice (display aid): when sent, the room must be of that type.
-            'room_type_id' => ['nullable', 'integer'],
+            'room_type_id' => ['nullable', 'integer', 'exists:room_types,id'],
             'room_id' => ['required', 'exists:rooms,id', new RoomIsAvailableForDates($reservation?->id, fn () => $this->bookingsBlock())],
             'notes' => ['nullable', 'string'],
             // Created from an online booking request (« Demandes en ligne »), marked handled on save.

@@ -7,10 +7,14 @@
 @php
     $isActive = fn (string ...$patterns) => request()->routeIs(...$patterns) ? 'active' : '';
     $pendingBookings = auth()->user()->can('reservations.view') ? \App\Models\BookingRequest::query()->pending()->count() : 0;
-    $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage']);
+    $canConfigure = auth()->user()->canAny(['rooms.manage', 'settings.manage', 'users.manage', 'roles.manage', 'activity.view']);
     // The manager's « Plus » menu is long: on phones it drops the desk screens (client request,
     // 2026-10-17) — they stay on wider screens and by their address; the Réception keeps them.
     $deskOnWideScreens = auth()->user()->can('dashboard.revenue') ? 'simple-nav__wide-only' : '';
+    // « Site web » and « Configuration » are folding groups, one open at a time (admin.js
+    // [data-nav-group]); the group of the current page starts open (client request, 2026-11-24).
+    $siteOpen = request()->routeIs(...\App\Support\NavGroups::SITE);
+    $configOpen = request()->routeIs(...\App\Support\NavGroups::CONFIGURATION);
 @endphp
 
 <a href="{{ route('admin.dashboard') }}" class="simple-nav__brand" data-initials="{{ $hotelInfo->initials() }}">
@@ -55,6 +59,9 @@
             <li class="{{ $deskOnWideScreens }}"><a class="dropdown-item" href="{{ route('admin.stay-requests.index') }}"><i class="far fa-mobile-alt"></i> Demandes clients</a></li>
             <li><a class="dropdown-item" href="{{ route('admin.stay-requests.qr') }}"><i class="far fa-qrcode"></i> QR code client</a></li>
         @endcan
+        @can('planning.view')
+            <li><a class="dropdown-item" href="{{ route('admin.planning.index') }}"><i class="far fa-calendar-week"></i> Planning</a></li>
+        @endcan
         @can('reservations.view')
             <li><a class="dropdown-item" href="{{ route('admin.booking-requests.index') }}"><i class="far fa-globe"></i> Demandes en ligne @if ($pendingBookings)<span class="badge bg-warning text-dark">{{ $pendingBookings }}</span>@endif</a></li>
         @endcan
@@ -65,6 +72,10 @@
         @can('payments.create')
             {{-- Not on phones: the tab bar has it (client request, 2026-11-09). --}}
             <li class="simple-nav__wide-only"><a class="dropdown-item" href="{{ route('admin.revenue.index') }}"><i class="far fa-cash-register"></i> Recettes</a></li>
+        @endcan
+        @can('expenses.access')
+            @php($pendingExpenses = auth()->user()->can('expenses.validate') ? \App\Models\Expense::query()->pending()->count() : 0)
+            <li><a class="dropdown-item" href="{{ route('admin.expenses.index') }}"><i class="far fa-receipt"></i> Dépenses @if ($pendingExpenses)<span class="badge bg-warning text-dark" title="Dépenses à valider">{{ $pendingExpenses }}</span>@endif</a></li>
         @endcan
         @can('duty.manage')
             <li><a class="dropdown-item" href="{{ route('admin.duty.index') }}"><i class="far fa-user-clock"></i> Prises de service</a></li>
@@ -80,37 +91,52 @@
         @endif
         @canany(['site.manage', 'site.stats'])
             <li><hr class="dropdown-divider"></li>
-            <li><h6 class="dropdown-header"><i class="far fa-globe"></i> Site web</h6></li>
+            <li class="nav-group" data-nav-group>
+                <button type="button" class="dropdown-item nav-group__toggle" data-nav-group-toggle aria-expanded="{{ $siteOpen ? 'true' : 'false' }}" aria-controls="plus-group-site">
+                    <i class="far fa-globe"></i> Site web <i class="far fa-chevron-down nav-group__chevron" aria-hidden="true"></i>
+                </button>
+                <ul class="nav-group__items list-unstyled" id="plus-group-site" @unless ($siteOpen) hidden @endunless>
+                    @can('site.stats')
+                        <li><a class="dropdown-item" href="{{ route('admin.site.stats') }}"><i class="far fa-chart-bar"></i> Statistiques du site</a></li>
+                    @endcan
+                    @can('site.manage')
+                        <li><a class="dropdown-item" href="{{ route('admin.site.home.edit') }}"><i class="far fa-home"></i> Accueil du site</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.site.services.index') }}"><i class="far fa-concierge-bell"></i> Services</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.site.events.index') }}"><i class="far fa-calendar-star"></i> Événements</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.site.gallery.index') }}"><i class="far fa-images"></i> Galerie</a></li>
+                    @endcan
+                </ul>
+            </li>
         @endcanany
-        @can('site.stats')
-            <li><a class="dropdown-item" href="{{ route('admin.site.stats') }}"><i class="far fa-chart-bar"></i> Statistiques du site</a></li>
-        @endcan
-        @can('site.manage')
-            <li><a class="dropdown-item" href="{{ route('admin.site.home.edit') }}"><i class="far fa-home"></i> Accueil du site</a></li>
-            <li><a class="dropdown-item" href="{{ route('admin.site.services.index') }}"><i class="far fa-concierge-bell"></i> Services</a></li>
-            <li><a class="dropdown-item" href="{{ route('admin.site.events.index') }}"><i class="far fa-calendar-star"></i> Événements</a></li>
-            <li><a class="dropdown-item" href="{{ route('admin.site.gallery.index') }}"><i class="far fa-images"></i> Galerie</a></li>
-        @endcan
         @if ($canConfigure)
             <li><hr class="dropdown-divider"></li>
-            <li><h6 class="dropdown-header"><i class="far fa-cog"></i> Configuration</h6></li>
-            @can('settings.manage')
-                <li><a class="dropdown-item" href="{{ route('admin.hotel.edit') }}"><i class="far fa-building"></i> Hôtel</a></li>
-            @endcan
-            @can('rooms.manage')
-                <li><a class="dropdown-item" href="{{ route('admin.room-types.index') }}"><i class="far fa-layer-group"></i> Types de chambre</a></li>
-                <li><a class="dropdown-item" href="{{ route('admin.special-rates.index') }}"><i class="far fa-tags"></i> Tarifs spéciaux</a></li>
-                <li><a class="dropdown-item" href="{{ route('admin.perks.index') }}"><i class="far fa-gift"></i> Avantages inclus</a></li>
-            @endcan
-            @can('settings.manage')
-                <li><a class="dropdown-item" href="{{ route('admin.settings.edit') }}"><i class="far fa-sliders-h"></i> Paramètres</a></li>
-            @endcan
-            @can('users.manage')
-                <li><a class="dropdown-item" href="{{ route('admin.users.index') }}"><i class="far fa-user-tie"></i> Personnel</a></li>
-            @endcan
-            @can('roles.manage')
-                <li><a class="dropdown-item" href="{{ route('admin.roles.index') }}"><i class="far fa-user-shield"></i> Rôles</a></li>
-            @endcan
+            <li class="nav-group" data-nav-group>
+                <button type="button" class="dropdown-item nav-group__toggle" data-nav-group-toggle aria-expanded="{{ $configOpen ? 'true' : 'false' }}" aria-controls="plus-group-config">
+                    <i class="far fa-cog"></i> Configuration <i class="far fa-chevron-down nav-group__chevron" aria-hidden="true"></i>
+                </button>
+                <ul class="nav-group__items list-unstyled" id="plus-group-config" @unless ($configOpen) hidden @endunless>
+                    @can('settings.manage')
+                        <li><a class="dropdown-item" href="{{ route('admin.hotel.edit') }}"><i class="far fa-building"></i> Hôtel</a></li>
+                    @endcan
+                    @can('rooms.manage')
+                        <li><a class="dropdown-item" href="{{ route('admin.room-types.index') }}"><i class="far fa-layer-group"></i> Types de chambre</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.special-rates.index') }}"><i class="far fa-tags"></i> Tarifs spéciaux</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.perks.index') }}"><i class="far fa-gift"></i> Avantages inclus</a></li>
+                    @endcan
+                    @can('settings.manage')
+                        <li><a class="dropdown-item" href="{{ route('admin.settings.edit') }}"><i class="far fa-sliders-h"></i> Paramètres</a></li>
+                    @endcan
+                    @can('users.manage')
+                        <li><a class="dropdown-item" href="{{ route('admin.users.index') }}"><i class="far fa-user-tie"></i> Personnel</a></li>
+                    @endcan
+                    @can('roles.manage')
+                        <li><a class="dropdown-item" href="{{ route('admin.roles.index') }}"><i class="far fa-user-shield"></i> Rôles</a></li>
+                    @endcan
+                    @can('activity.view')
+                        <li><a class="dropdown-item" href="{{ route('admin.activity.index') }}"><i class="far fa-history"></i> Journal d'activité</a></li>
+                    @endcan
+                </ul>
+            </li>
         @endif
     </ul>
 </div>

@@ -7,6 +7,7 @@ use App\Enums\PricingMode;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Audit;
 use App\Support\BusinessDay;
 use App\Support\FinanceStats;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,6 +68,7 @@ class RevenueController extends Controller
         $payments = $this->query($request, $filters)
             ->with(['creator', 'attributedTo', 'invoice.reservation.guest', 'invoice.reservation.room', 'invoice.reservation.attributedTo', 'invoice.reservation.checkedInBy', 'invoice.reservation.creator'])
             ->orderBy('paid_at')->orderBy('id');
+        Audit::record('export.revenue', 'export', 'Export Excel des recettes du '.$filters['from']->format('d/m/Y').($filters['single'] ? '' : ' au '.$filters['to']->format('d/m/Y')));
         $name = 'recettes-'.$filters['from']->format('Y-m-d').($filters['from']->equalTo($filters['to']) ? '' : '-au-'.$filters['to']->format('Y-m-d')).'.csv';
 
         // Text typed by people (guest names…) must never be read by Excel as a formula

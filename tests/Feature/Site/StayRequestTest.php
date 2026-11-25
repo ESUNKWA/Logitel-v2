@@ -69,7 +69,7 @@ class StayRequestTest extends TestCase
         $this->get('/demande')->assertOk()
             ->assertSee('N°DM-1')
             ->assertDontSee('N°DM-OCC')->assertDontSee('N°DM-HS')->assertDontSee('N°DM-NET')->assertDontSee('N°DM-OFF')
-            ->assertSee("À l'heure")
+            ->assertSee('Passage')
             ->assertDontSee('Nuitée'); // 14:00: the nuitée window (22:00 → 12:00) is closed
 
         $this->get('/demande/chambre/'.$this->room->id)->assertOk()->assertSee('Envoyer ma demande');

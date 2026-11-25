@@ -7,6 +7,7 @@ use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Reservation;
@@ -169,10 +170,17 @@ class DashboardController extends Controller
             ->where('check_in', '<', $monthEnd)
             ->where('status', '!=', ReservationStatus::Annulee);
 
+        $revenueMonth = (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->sum('amount');
+        // Validated expenses of the business month (V2) and the simple result = cash − expenses.
+        $expensesMonth = (float) Expense::query()->validated()->betweenDates($today->copy()->startOfMonth(), $today)->sum('amount');
+
         return [
+            'expensesMonth' => $expensesMonth,
+            'resultMonth' => $revenueMonth - $expensesMonth,
+            'pendingExpenses' => Expense::query()->pending()->count(),
             // Cash actually received (payments), per business day / month.
             'revenueToday' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->sum('amount'),
-            'revenueMonth' => (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->sum('amount'),
+            'revenueMonth' => $revenueMonth,
             // … of which réservation payments (recorded before the guest arrived — option B).
             'revenueTodayBooking' => (float) Payment::query()->where('paid_at', '>=', $dayStart)->where('paid_at', '<', $dayEnd)->bookingPayments()->sum('amount'),
             'revenueMonthBooking' => (float) Payment::query()->where('paid_at', '>=', $monthStart)->where('paid_at', '<', $monthEnd)->bookingPayments()->sum('amount'),

@@ -6,7 +6,9 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PricingMode;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
+use App\Models\Concerns\Audited;
 use App\Models\Concerns\RecordsCreator;
+use App\Support\Audit;
 use App\Support\BusinessDay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +28,88 @@ use Illuminate\Support\Facades\DB;
  */
 class Reservation extends Model
 {
-    use HasFactory, RecordsCreator;
+    use Audited, HasFactory, RecordsCreator;
+
+    public function auditFields(): array
+    {
+        return ['status' => 'Statut', 'room_id' => 'Chambre', 'guest_id' => 'Client', 'pricing_mode' => 'Formule', 'duration' => 'Durée',
+            'check_in' => 'Entrée', 'check_out' => 'Sortie prévue', 'unit_rate' => 'Tarif', 'discount_amount' => 'Remise',
+            'discount_reason' => 'Motif de la remise', 'total_amount' => 'Total', 'adults' => 'Adultes', 'children' => 'Enfants', 'notes' => 'Notes'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'reservation';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'dossier';
+    }
+
+    public function auditName(): string
+    {
+        return mb_strtolower($this->kindLabel()).' '.$this->reference();
+    }
+
+    public function auditReference(): ?string
+    {
+        return $this->reference();
+    }
+
+    public function auditMoneyFields(): array
+    {
+        return ['unit_rate', 'discount_amount', 'total_amount'];
+    }
+
+    public function auditDisplay(string $field, mixed $value): ?string
+    {
+        return match ($field) {
+            'room_id' => $value ? 'N°'.(Room::query()->whereKey($value)->value('number') ?? $value) : null,
+            'guest_id' => $value ? (Guest::query()->find($value)?->fullName() ?? '#'.$value) : null,
+            'duration' => $value !== null && $this->pricing_mode ? $this->pricing_mode->durationLabel((int) $value, $this->stay_until) : null,
+            'status' => $value instanceof ReservationStatus ? ($this->isStay() ? $value->affectationLabel() : $value->reservationLabel()) : null,
+            default => null,
+        };
+    }
+
+    /**
+     * Check-in, check-out, cancellation, extension and discount get their own wording; the
+     * other changes are a plain « Modification ».
+     */
+    public function auditAction(string $event, array $changes, array $dirty): ?array
+    {
+        $ref = $this->reference();
+        $summary = ' — chambre N°'.($this->room?->number ?? '?').', '.$this->modeLabel().', '
+            .($this->pricing_mode?->durationLabel((int) $this->duration, $this->stay_until) ?? '').', total '.Audit::money($this->total_amount);
+
+        if ($event === 'created') {
+            return $this->origin === self::ORIGIN_AFFECTATION
+                ? ['affectation.created', 'Affectation '.$ref.' créée'.$summary]
+                : ['reservation.created', 'Réservation '.$ref.' créée'.$summary.', arrivée le '.$this->check_in?->format('d/m/Y H\hi')];
+        }
+        if ($event === 'deleted') {
+            return ['reservation.deleted', 'Suppression : '.$this->auditName()];
+        }
+        if (in_array('status', $dirty, true)) {
+            return match ($this->status) {
+                ReservationStatus::Enregistree => ['affectation.check_in', ($this->origin === self::ORIGIN_AFFECTATION ? 'Mise en chambre : ' : 'Arrivée du client (réservation '.$this->bookingReference().') : ').$ref.$summary],
+                ReservationStatus::Terminee => ['affectation.check_out', 'Sortie : '.$ref.' — chambre N°'.($this->room?->number ?? '?')],
+                ReservationStatus::Annulee => [$this->isStay() ? 'affectation.cancelled' : 'reservation.cancelled', 'Annulation : '.$this->auditName()],
+                default => ['reservation.updated', 'Modification : '.$this->auditName()],
+            };
+        }
+        if (in_array('duration', $dirty, true) && $this->status === ReservationStatus::Enregistree) {
+            $longer = (int) $this->duration > (int) $this->getOriginal('duration');
+
+            return [$longer ? 'affectation.extended' : 'affectation.shortened', ($longer ? 'Prolongation : ' : 'Durée réduite : ').$ref.$summary];
+        }
+        if (array_intersect($dirty, ['discount_amount', 'discount_reason']) !== [] && array_diff($dirty, ['discount_amount', 'discount_reason', 'total_amount']) === []) {
+            return ['reservation.discount', 'Remise modifiée : '.$this->auditName().' ('.Audit::money($this->discount_amount).')'];
+        }
+
+        return null;
+    }
 
     public const ORIGIN_RESERVATION = 'reservation';
 
@@ -474,9 +557,9 @@ class Reservation extends Model
                     $reservation->{$stamp.'_at'} = now();
                     $reservation->{$stamp.'_by'} = Auth::id();
                 }
-                // The stay is the sale of the receptionist of the day (« prise de service »), else of whoever checked it in.
+                // The stay is the sale of the receptionist on duty (« prise de service »), else of whoever checked it in.
                 if ($stamp === 'checked_in') {
-                    $reservation->attributed_to = DutyDay::attributeeAt(now()) ?? Auth::id() ?? $reservation->created_by;
+                    $reservation->attributed_to = DutyShift::attributeeAt(now()) ?? Auth::id() ?? $reservation->created_by;
                 }
             }
 
@@ -547,14 +630,15 @@ class Reservation extends Model
             $reservation->refreshGuarantee();
 
             match ($reservation->status) {
-                ReservationStatus::Enregistree => $reservation->room->update(['status' => RoomStatus::Occupee]),
+                // Automatic room states are consequences of the journal line of the stay itself.
+                ReservationStatus::Enregistree => Audit::muted(fn () => $reservation->room->update(['status' => RoomStatus::Occupee])),
                 // Check-out, or cancelling a stay in progress, frees the room straight away
                 // ("Libre", client request — no cleaning step). Only an occupied room is touched: one
                 // put hors service meanwhile stays so. A booking cancelled before arrival never held
                 // the room physically.
                 ReservationStatus::Terminee, ReservationStatus::Annulee => $reservation->getOriginal('status') === ReservationStatus::Enregistree
                     && $reservation->room->status === RoomStatus::Occupee
-                        ? $reservation->room->update(['status' => RoomStatus::Disponible])
+                        ? Audit::muted(fn () => $reservation->room->update(['status' => RoomStatus::Disponible]))
                         : null,
                 default => null,
             };

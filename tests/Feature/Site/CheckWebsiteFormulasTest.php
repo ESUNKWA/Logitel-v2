@@ -20,10 +20,10 @@ class CheckWebsiteFormulasTest extends TestCase
 
     public function test_it_lists_texts_mentioning_another_formula(): void
     {
-        foreach (['Tarif nuitée avantageux', "Disponible à l'heure", 'A l’heure aussi', '5 000 F / heure', 'Forfait journée', 'NUITEE'] as $text) {
+        foreach (['Tarif nuitée avantageux', "Disponible à l'heure", 'A l’heure aussi', '5 000 F / heure', 'Forfait journée', 'NUITEE', 'Formule passage disponible', 'Tarif Passage : 3 000 F', 'Chambre en passage'] as $text) {
             $this->assertTrue(CheckWebsiteFormulas::mentions($text), $text);
         }
-        foreach (['Une belle nuit de repos', 'Séjour de 24 h', 'Horaires d\'ouverture : 8h-20h', 'Petit-déjeuner à 7 heures', 'Belle journées'] as $text) {
+        foreach (['Une belle nuit de repos', 'Séjour de 24 h', 'Horaires d\'ouverture : 8h-20h', 'Petit-déjeuner à 7 heures', 'Belle journées', 'Passage piéton devant l\'hôtel'] as $text) {
             $this->assertFalse(CheckWebsiteFormulas::mentions($text), $text);
         }
 

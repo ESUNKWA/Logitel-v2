@@ -88,6 +88,24 @@
                     @endcan
                 </div>
             </div>
+            {{-- V2: validated expenses of the month and the simple result (cash received − expenses). --}}
+            <div class="dash-tile">
+                <span class="dash-tile__icon dash-tile__icon--danger"><i class="fas fa-receipt"></i></span>
+                <div class="dash-tile__label">Dépenses du mois</div>
+                <div class="dash-tile__value"><span data-live-value="expensesMonth">{{ $fcfa($expensesMonth) }}</span> <small>FCFA</small></div>
+                <div class="dash-tile__hint">
+                    Validées depuis le début du mois
+                    @can('expenses.access')
+                        · <a href="{{ route('admin.expenses.index') }}">{{ $pendingExpenses ? $pendingExpenses.' à valider' : 'voir le détail' }}</a>
+                    @endcan
+                </div>
+            </div>
+            <div class="dash-tile">
+                <span class="dash-tile__icon dash-tile__icon--primary"><i class="fas fa-balance-scale"></i></span>
+                <div class="dash-tile__label">Résultat du mois</div>
+                <div class="dash-tile__value {{ $resultMonth < 0 ? 'text-danger' : '' }}"><span data-live-value="resultMonth">{{ $fcfa($resultMonth) }}</span> <small>FCFA</small></div>
+                <div class="dash-tile__hint">Recettes encaissées − dépenses validées</div>
+            </div>
         </div>
     @endcan
 

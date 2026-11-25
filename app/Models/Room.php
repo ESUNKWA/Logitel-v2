@@ -7,6 +7,7 @@ use App\Enums\ReservationStatus;
 use App\Enums\RoomAmenity;
 use App\Enums\RoomStatus;
 use App\Exceptions\DeletionBlocked;
+use App\Models\Concerns\Audited;
 use App\Support\BusinessDay;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,6 +24,33 @@ use Illuminate\Validation\ValidationException;
 
 class Room extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['number' => 'Numéro', 'room_type_id' => 'Type', 'floor' => 'Étage', 'status' => 'Statut', 'is_published' => 'Publiée sur le site', 'public_name' => 'Nom affiché'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'room';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'configuration';
+    }
+
+    public function auditName(): string
+    {
+        return 'chambre N°'.$this->number;
+    }
+
+    public function auditDisplay(string $field, mixed $value): ?string
+    {
+        return $field === 'room_type_id' && $value ? (RoomType::query()->whereKey($value)->value('name') ?? '#'.$value) : null;
+    }
+
     use HasFactory;
 
     /**

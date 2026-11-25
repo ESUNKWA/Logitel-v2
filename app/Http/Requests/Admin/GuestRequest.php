@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\Guest;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class GuestRequest extends FormRequest
 {
@@ -26,7 +27,12 @@ class GuestRequest extends FormRequest
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
-            'id_document_type' => ['nullable', 'string', 'max:100'],
+            // One of the offered documents — or the value a guest already has (older free-text data
+            // must not block editing the rest of the file).
+            'id_document_type' => ['nullable', 'string', 'max:100', Rule::in(array_filter([
+                ...array_keys(Guest::ID_DOCUMENT_TYPES),
+                $this->route('guest')?->id_document_type,
+            ]))],
             'id_document_number' => ['nullable', 'string', 'max:100'],
             'nationality' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string'],

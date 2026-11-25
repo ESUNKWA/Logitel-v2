@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PricingMode;
+use App\Models\Concerns\Audited;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,6 +17,28 @@ use Illuminate\Support\Collection;
  */
 class Perk extends Model
 {
+    use Audited;
+
+    public function auditFields(): array
+    {
+        return ['label' => 'Avantage', 'all_room_types' => 'Tous les types', 'modes' => 'Formules', 'is_active' => 'Actif'];
+    }
+
+    public function auditKey(): string
+    {
+        return 'perk';
+    }
+
+    public function auditCategory(): string
+    {
+        return 'configuration';
+    }
+
+    public function auditName(): string
+    {
+        return 'avantage inclus « '.$this->label.' »';
+    }
+
     protected $fillable = [
         'label',
         'all_room_types',

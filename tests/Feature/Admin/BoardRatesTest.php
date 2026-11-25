@@ -36,7 +36,7 @@ class BoardRatesTest extends TestCase
         $this->assertSame(1, substr_count($html, 'class="room-card__rates"'));
         $card = substr($html, strpos($html, 'N°L-1'));
         $card = substr($card, 0, strpos($card, '</ul>'));
-        $this->assertStringContainsString("À l'heure", html_entity_decode($card, ENT_QUOTES));
+        $this->assertStringContainsString('Passage', html_entity_decode($card, ENT_QUOTES));
         $this->assertStringContainsString('5 000', $card);
         $this->assertStringContainsString('15 000', $card);
         $this->assertStringContainsString('25 000', $card);

@@ -397,7 +397,7 @@
                 radio.checked = false;
                 if (!radio.disabled) {
                     firstEnabled = firstEnabled || radio;
-                    // « À l'heure » is preselected at any time of day (client request, 2026-11-13);
+                    // « Passage » (formerly « À l'heure ») is preselected at any time of day (client request, 2026-11-13);
                     // a type without an hourly rate starts on its first formula.
                     if (radio.value === 'heure') {
                         preferred = radio;
@@ -2463,5 +2463,453 @@
             window.jQuery(document).on('draw.dt', refresh);
         }
         refresh();
+    });
+})();
+
+// « Dépenses » (V2): the mandatory receipt. Phone photos are often 3–6 Mo while the server takes
+// 2 Mo: an image is re-encoded in the browser (JPEG, ≤ 1600 px, which also drops EXIF/GPS) and
+// put back in the file input; a PDF over 2 Mo is flagged at once. The server checks everything again.
+(function () {
+    'use strict';
+
+    var MAX = 2 * 1024 * 1024;
+    document.querySelectorAll('input[data-receipt-input]').forEach(function (input) {
+        var form = input.form;
+        var status = form ? form.querySelector('[data-receipt-status]') : null;
+        var preview = form ? form.querySelector('[data-receipt-preview]') : null;
+        var previewUrl = null;
+        var say = function (text, bad) {
+            if (status) {
+                status.textContent = text;
+                status.className = 'small mt-1 ' + (bad ? 'text-danger' : 'text-muted');
+            }
+        };
+        var show = function (file) {
+            if (!preview) {
+                return;
+            }
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+            if (file && /^image\//.test(file.type)) {
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.hidden = false;
+            } else {
+                preview.hidden = true;
+                preview.removeAttribute('src');
+            }
+        };
+        var size = function (bytes) {
+            return (bytes / 1024 / 1024).toFixed(1).replace('.', ',') + ' Mo';
+        };
+        var replace = function (file) {
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                return true;
+            } catch (e) {
+                return false;
+            }
+        };
+        var shrink = function (file) {
+            return new Promise(function (resolve, reject) {
+                var img = new Image();
+                var url = URL.createObjectURL(file);
+                img.onload = function () {
+                    URL.revokeObjectURL(url);
+                    var scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+                    var canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+                    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(function (blob) {
+                        blob ? resolve(new File([blob], 'justificatif.jpg', { type: 'image/jpeg' })) : reject(new Error('encode'));
+                    }, 'image/jpeg', 0.82);
+                };
+                img.onerror = function () {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('decode'));
+                };
+                img.src = url;
+            });
+        };
+
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            show(null);
+            if (!file) {
+                say('', false);
+                return;
+            }
+            if (file.type === 'application/pdf') {
+                say(file.size > MAX ? 'Ce PDF fait ' + size(file.size) + ' : 2 Mo au maximum.' : 'PDF prêt (' + size(file.size) + ').', file.size > MAX);
+                return;
+            }
+            if (!/^image\//.test(file.type)) {
+                say('Choisissez une photo (JPG, PNG, WebP) ou un PDF.', true);
+                return;
+            }
+            if (file.size <= MAX && file.type !== 'image/heic') {
+                say('Photo prête (' + size(file.size) + ').', false);
+                show(file);
+                return;
+            }
+            say('Réduction de la photo…', false);
+            shrink(file).then(function (small) {
+                if (small.size <= MAX && replace(small)) {
+                    say('Photo réduite et prête (' + size(small.size) + ').', false);
+                    show(small);
+                } else {
+                    say('Photo trop lourde (' + size(file.size) + ') : 2 Mo au maximum. Reprenez-la de plus loin ou envoyez un PDF.', true);
+                }
+            }).catch(function () {
+                say('Cette photo ne peut pas être lue ici : prenez-la en JPG ou envoyez un PDF.', true);
+            });
+        });
+    });
+})();
+
+// « Planning » (V2): a click on a free spot of a room's line opens the existing screens —
+// the réservation form pre-filled (room, date, time) for a future slot, or the board's
+// assignment modal for a room free right now. Display only: those screens re-check everything.
+(function () {
+    'use strict';
+
+    var box = document.querySelector('[data-planning]');
+    if (!box) {
+        return;
+    }
+    var start = parseInt(box.dataset.start, 10);
+    var end = parseInt(box.dataset.end, 10);
+    var now = parseInt(box.dataset.now, 10);
+    var offset = parseInt(box.dataset.offset || '0', 10); // server time zone, in seconds
+    var view = box.dataset.view;
+    var dayStart = parseInt(box.dataset.dayStart || '21600', 10); // business day start, seconds after midnight
+    var bookUrl = box.dataset.bookUrl;
+    var assignUrl = box.dataset.assignUrl;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    // Date / time as the server sees them (its own time zone, whatever the browser's).
+    var parts = function (ts) {
+        var d = new Date((ts + offset) * 1000);
+        return { date: d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()), time: pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) };
+    };
+    var nextHour = function (ts) { return Math.ceil((ts + 60) / 3600) * 3600; };
+
+    // Open on the « now » line when the timeline is wider than the screen (phones, day view).
+    var nowLine = box.querySelector('.plan-now');
+    if (nowLine && box.scrollWidth > box.clientWidth) {
+        var roomCol = box.querySelector('.plan-room');
+        box.scrollLeft = Math.max(0, nowLine.offsetLeft + (roomCol ? roomCol.offsetWidth : 0) - box.clientWidth / 3);
+    }
+
+    box.addEventListener('click', function (event) {
+        var track = event.target.closest('[data-plan-track]');
+        if (!track || event.target.closest('.plan-block') || track.hasAttribute('data-out')) {
+            return;
+        }
+        var rect = track.getBoundingClientRect();
+        var ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+        var at = start + ratio * (end - start);
+        // The clicked column: one hour (Jour) or one business day (Semaine / Mois).
+        var step = view === 'jour' ? 3600 : 86400;
+        var colStart = start + Math.floor((at - start) / step) * step;
+        var colEnd = colStart + step;
+
+        if (colStart <= now && now < colEnd && track.hasAttribute('data-free-now') && assignUrl) {
+            window.location.href = assignUrl + '?affecter=' + encodeURIComponent(track.dataset.room) + '#disponible';
+            return;
+        }
+        if (colEnd <= now || !bookUrl) {
+            return;
+        }
+        // Future slot: the hour clicked (Jour), else 14:00 that day — never in the past.
+        var arrival = view === 'jour' ? colStart : colStart + (14 * 3600 - dayStart);
+        if (arrival <= now) {
+            arrival = nextHour(now);
+        }
+        var p = parts(arrival);
+        window.location.href = bookUrl + '?chambre=' + encodeURIComponent(track.dataset.room) + '&date=' + p.date + '&heure=' + encodeURIComponent(p.time);
+    });
+})();
+
+// Folding menu groups (client request, 2026-11-24): « Site web » and « Configuration » in the
+// sidebar (mode complet) and the « Plus » menu (mode simple). One group open at a time.
+// - Computers with a mouse (hover + fine pointer, wider than 860 px): « fly-out » — the group's
+//   links open in a panel right next to the menu on hover (to the right, or to the left when the
+//   screen has no room), also on click / Enter / → ; Échap or ← closes it. The panel is
+//   position: fixed (placed here), so neither the sidebar's nor the « Plus » menu's scrolling
+//   clips it; the « Plus » menu stops scrolling while a panel is open (.has-flyout).
+// - Phones / tablets (no hover): the group unfolds in place on tap, as before; the group of the
+//   current page is rendered open by the server. Display only: every link stays as it was.
+(function () {
+    'use strict';
+
+    var groups = Array.prototype.slice.call(document.querySelectorAll('[data-nav-group]'));
+    if (!groups.length) {
+        return;
+    }
+
+    var flyoutQuery = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 861px)') : null;
+    var flyout = false;
+    var closeTimer = null;
+    var CLOSE_DELAY = 300; // lets the pointer cross the gap between the line and its panel
+
+    var parts = function (group) {
+        var toggle = group.querySelector('[data-nav-group-toggle]');
+        var items = toggle ? document.getElementById(toggle.getAttribute('aria-controls')) : null;
+        return { toggle: toggle, items: items };
+    };
+    var isOpen = function (group) {
+        var p = parts(group);
+        return !!p.toggle && p.toggle.getAttribute('aria-expanded') === 'true';
+    };
+    // The menu the group belongs to: the « Plus » dropdown or the sidebar.
+    var menuOf = function (group) {
+        return group.closest('.simple-nav__menu') || group.closest('.admin-sidebar') || group.parentElement;
+    };
+
+    // Fly-out panel: right next to the menu, to the right when it fits, otherwise to the left;
+    // kept inside the screen vertically. Fixed coordinates are corrected by the panel's real
+    // containing block (a transformed / filtered ancestor, e.g. the « Plus » menu).
+    var place = function (group) {
+        var p = parts(group);
+        var items = p.items;
+        var menuBox = menuOf(group).getBoundingClientRect();
+        var lineBox = p.toggle.getBoundingClientRect();
+        var gap = 6;
+        var margin = 8;
+
+        items.style.left = '0px';
+        items.style.top = '0px';
+        var origin = items.getBoundingClientRect();
+        var width = items.offsetWidth;
+        var height = items.offsetHeight;
+
+        var left = menuBox.right + gap;
+        if (left + width > window.innerWidth - margin && menuBox.left - gap - width >= margin) {
+            left = menuBox.left - gap - width;
+        }
+        var top = Math.max(margin, Math.min(lineBox.top - 8, window.innerHeight - margin - height));
+
+        items.style.left = (left - origin.left) + 'px';
+        items.style.top = (top - origin.top) + 'px';
+        items.dataset.side = left < menuBox.left ? 'left' : 'right';
+    };
+
+    var setOpen = function (group, open) {
+        var p = parts(group);
+        if (!p.toggle || !p.items) {
+            return;
+        }
+        p.toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        p.items.hidden = !open;
+        if (flyout) {
+            var menu = group.closest('.simple-nav__menu');
+            if (open) {
+                if (menu) {
+                    menu.classList.add('has-flyout');
+                }
+                place(group);
+            } else {
+                p.items.style.left = '';
+                p.items.style.top = '';
+                if (menu && !groups.some(function (g) { return g !== group && isOpen(g) && g.closest('.simple-nav__menu') === menu; })) {
+                    menu.classList.remove('has-flyout');
+                }
+            }
+        }
+    };
+
+    var closeSiblings = function (group) {
+        if (!group.parentElement) {
+            return;
+        }
+        Array.prototype.forEach.call(group.parentElement.children, function (other) {
+            if (other !== group && other.hasAttribute('data-nav-group')) {
+                setOpen(other, false);
+            }
+        });
+    };
+    var open = function (group) {
+        clearTimeout(closeTimer);
+        closeSiblings(group);
+        if (!isOpen(group)) {
+            setOpen(group, true);
+        }
+    };
+    var closeAll = function () {
+        clearTimeout(closeTimer);
+        groups.forEach(function (group) {
+            if (isOpen(group)) {
+                setOpen(group, false);
+            }
+        });
+    };
+
+    // Switching between the two behaviours (window resized, mouse plugged…).
+    var applyMode = function () {
+        var wanted = !!(flyoutQuery && flyoutQuery.matches);
+        if (wanted === flyout && document.documentElement.hasAttribute('data-nav-mode')) {
+            return;
+        }
+        if (wanted) {
+            // A panel never floats open on its own: all closed, the current page's line stays marked.
+            closeAll();
+            flyout = true;
+        } else {
+            closeAll();
+            flyout = false;
+            groups.forEach(function (group) {
+                if (parts(group).toggle.classList.contains('is-current')) {
+                    setOpen(group, true);
+                }
+            });
+        }
+        document.documentElement.setAttribute('data-nav-mode', flyout ? 'flyout' : 'fold');
+        document.documentElement.classList.toggle('nav-flyout', flyout);
+    };
+
+    groups.forEach(function (group) {
+        var p = parts(group);
+        if (!p.toggle || !p.items) {
+            return;
+        }
+
+        p.toggle.addEventListener('click', function (event) {
+            // Inside the « Plus » dropdown, opening a group must not close the menu.
+            event.stopPropagation();
+            if (flyout) {
+                open(group); // hover already opened it: a click never closes it by surprise
+                return;
+            }
+            var opening = !isOpen(group);
+            if (opening) {
+                closeSiblings(group);
+            }
+            setOpen(group, opening);
+        });
+
+        // The panel stays a DOM child of its group: leaving the group = leaving line and panel.
+        group.addEventListener('mouseenter', function () {
+            if (flyout) {
+                open(group);
+            }
+        });
+        group.addEventListener('mouseleave', function () {
+            if (flyout) {
+                clearTimeout(closeTimer);
+                closeTimer = setTimeout(function () { setOpen(group, false); }, CLOSE_DELAY);
+            }
+        });
+
+        group.addEventListener('keydown', function (event) {
+            if (!flyout) {
+                return;
+            }
+            if (event.key === 'ArrowRight' && event.target === p.toggle) {
+                event.preventDefault();
+                open(group);
+                var first = p.items.querySelector('a');
+                if (first) {
+                    first.focus();
+                }
+            }
+        });
+    });
+
+    // Échap / ← inside an open panel: closes that panel only and returns to its line. Listened on
+    // window in the capture phase, before Bootstrap's own (delegated, capture) Échap handler,
+    // which would otherwise close the whole « Plus » menu.
+    window.addEventListener('keydown', function (event) {
+        if (!flyout || (event.key !== 'Escape' && event.key !== 'ArrowLeft')) {
+            return;
+        }
+        var group = groups.filter(function (g) { return isOpen(g) && parts(g).items.contains(event.target); })[0];
+        if (!group) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(group, false);
+        parts(group).toggle.focus();
+    }, true);
+
+    // Panels follow their menu: closed when the « Plus » menu closes, the page / sidebar
+    // scrolls or the window is resized.
+    document.addEventListener('hide.bs.dropdown', function () {
+        if (flyout) {
+            closeAll();
+        }
+    });
+    var closeOnMove = function (event) {
+        if (!flyout) {
+            return;
+        }
+        // Scrolling inside an open panel itself is fine.
+        if (event && event.target && event.target.nodeType === 1 && groups.some(function (g) { return parts(g).items && parts(g).items.contains(event.target); })) {
+            return;
+        }
+        closeAll();
+    };
+    window.addEventListener('scroll', closeOnMove, true);
+    window.addEventListener('resize', function () {
+        closeOnMove();
+        applyMode();
+    });
+    if (flyoutQuery && flyoutQuery.addEventListener) {
+        flyoutQuery.addEventListener('change', applyMode);
+    }
+    // The current page's group is the one the server rendered open: remembered once, so it is
+    // unfolded again in the « fold » mode (phones) and its line marked in the fly-out mode.
+    groups.forEach(function (group) {
+        if (isOpen(group)) {
+            parts(group).toggle.classList.add('is-current');
+        }
+    });
+    applyMode();
+})();
+
+// Log-out of the receptionist on duty (client request, 2026-11-25): « Terminer aussi votre service ? »
+// — yes: her period ends (the next receptionist takes the service when she logs in); no: she only
+// logs out and stays on duty. Sent as end_duty (AuthController@logout). Without SweetAlert: confirm().
+(function () {
+    'use strict';
+
+    document.querySelectorAll('form[data-logout-duty]').forEach(function (form) {
+        var field = form.querySelector('[data-end-duty]');
+        form.addEventListener('submit', function (event) {
+            if (form.dataset.answered === '1' || !field) {
+                return;
+            }
+            event.preventDefault();
+            var send = function (endDuty) {
+                field.value = endDuty ? '1' : '0';
+                form.dataset.answered = '1';
+                form.submit();
+            };
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire({
+                    title: 'Terminer aussi votre service ?',
+                    text: 'Si vous partez, terminez votre service : la prochaine réceptionniste le prendra à sa connexion.',
+                    icon: 'question',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, terminer mon service',
+                    denyButtonText: 'Non, me déconnecter seulement',
+                    cancelButtonText: 'Annuler',
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        send(true);
+                    } else if (result.isDenied) {
+                        send(false);
+                    }
+                });
+                return;
+            }
+            send(window.confirm('Terminer aussi votre service ?\n\nOK : terminer mon service et me déconnecter.\nAnnuler : me déconnecter seulement.'));
+        });
     });
 })();

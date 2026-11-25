@@ -23,7 +23,7 @@
 
 <div class="row g-3">
     <div class="col-md-6 col-xl-3">
-        <label class="form-label" for="hourly_rate">Tarif à l'heure</label>
+        <label class="form-label" for="hourly_rate">Tarif passage (par heure)</label>
         <input type="text" inputmode="numeric" autocomplete="off" data-money class="form-control" id="hourly_rate" name="hourly_rate" value="{{ old('hourly_rate', $roomType->hourly_rate !== null ? number_format((float) $roomType->hourly_rate, 0, ',', ' ') : null) }}">
         <div class="form-text">Prix d'une heure.</div>
     </div>

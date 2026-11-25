@@ -47,7 +47,7 @@ class HomeOfferTest extends TestCase
         $this->assertStringContainsString('Ce que nous vous offrons', $block);
         $this->assertStringContainsString('dès <strong>40 000 F</strong>', $block);
         $this->assertStringContainsString('Par période de 24 h', $block);
-        foreach (["À l'heure", 'Journée', 'Nuitée', '22h00', '3 000 F'] as $other) {
+        foreach (['Passage', 'Journée', 'Nuitée', '22h00', '3 000 F'] as $other) {
             $this->assertStringNotContainsString($other, html_entity_decode($block));
         }
         $this->assertStringContainsString('Climatisation', $block);
