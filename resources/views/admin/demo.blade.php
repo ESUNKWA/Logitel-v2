@@ -94,6 +94,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .demo-note svg { color: #a47e26; margin-top: 3px; flex-shrink: 0; }
 .demo-note strong { color: #3f2f0a; }
 .hide-notes .demo-note { display: none; }
+/* Spoken explanations (browser speech synthesis) */
+.demo-note { flex-wrap: wrap; }
+.demo-note > div { flex: 1 1 220px; min-width: 0; }
+.listen { align-self: center; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(var(--ek-gold-rgb), .7); background: var(--ek-surface); color: #5d4614; font-size: .8rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+.listen:hover { background: rgba(var(--ek-gold-rgb), .18); }
+.listen svg { color: #a47e26; margin: 0; }
+.l-stop, .s-off { display: none; }
+.is-speaking .l-play { display: none; }
+.is-speaking .l-stop { display: inline-flex; align-items: center; gap: 6px; }
+.sound-off .s-on { display: none; }
+.sound-off .s-off { display: inline; }
+.is-speaking #soundToggle { background: var(--ek-gold); border-color: var(--ek-gold); color: var(--ek-sidebar-from); animation: speak-pulse 1.4s ease-in-out infinite; }
+@keyframes speak-pulse { 50% { box-shadow: 0 0 0 5px rgba(var(--ek-gold-rgb), .3); } }
+.no-voice .voice-ui { display: none !important; }
 .phone-only { display: none; }
 @media (max-width: 600px) {
   .hide-phone { display: none; }
@@ -498,6 +512,7 @@ body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important
   <div class="demo-strip__in">
     <span class="demo-strip__tag">Démo</span>
     <span class="demo-strip__text"><span class="hide-phone">Hôtel fictif et données d'exemple. Vous êtes connecté en tant que réceptionniste ; rien de ce que vous faites n'est enregistré.</span><span class="phone-only">Données fictives, rien n'est enregistré.</span></span>
+    <button type="button" id="soundToggle" class="voice-ui" aria-pressed="true" title="Explications audio au clic sur un menu"><span class="s-on"><i class="fas fa-volume-high"></i><span class="hide-phone"> Son activé</span></span><span class="s-off"><i class="fas fa-volume-xmark"></i><span class="hide-phone"> Son coupé</span></span></button>
     <button type="button" id="toggleNotes" title="Masquer ou afficher les explications"><i class="fas fa-circle-info"></i> <span id="toggleNotesLbl">Masquer les explications</span></button>
     <button type="button" id="resetDemo" title="Réinitialiser la démo"><i class="fas fa-rotate-left"></i><span class="hide-phone"> Réinitialiser</span></button>
   </div>
@@ -744,7 +759,58 @@ function renderChrome(r) {
   $('#tabbar').innerHTML = NAV.filter(Boolean).map(function (n) { return '<a href="#' + n[0] + '" class="' + (section === n[0] ? 'active' : '') + '"><i class="fas ' + n[1] + '"></i><span>' + n[3] + '</span></a>'; }).join('');
   $('#dutySince').textContent = ' depuis ' + hm(atTime(DAY_START, 6, 58));
 }
-function note(html) { return '<div class="demo-note"><i class="fas fa-circle-info"></i><div>' + html + '</div></div>'; }
+function note(html) { return '<div class="demo-note"><i class="fas fa-circle-info"></i><div>' + html + '</div><button type="button" class="listen voice-ui" data-act="listen"><span class="l-play"><i class="fas fa-volume-high"></i> Écouter</span><span class="l-stop"><i class="fas fa-stop"></i> Arrêter</span></button></div>'; }
+
+/* ------------------------------------------------------------ spoken explanations (browser speech synthesis) */
+var SALE_TEXT = "Pour une nouvelle vente, ajoutez les prestations avec les boutons plus : le total se calcule tout seul. Choisissez ensuite le mode de paiement, espèces, Orange Money ou Wave. Pour un client de l'hôtel, la note peut aussi être reportée sur sa chambre.";
+var VOICE_TEXT = {
+  accueil: "Voici l'écran d'accueil de la réceptionniste. En haut, sa recette du jour, détaillée par mode de paiement : espèces, Orange Money et Wave. Les tuiles indiquent les actions du moment : affecter une chambre, les sorties à traiter et les arrivées du jour. Les chambres libres sont classées par type. Un clic sur un numéro suffit pour installer un client.",
+  chambres: "Le tableau des chambres montre l'état de chaque chambre en temps réel : occupée, libre, réservée ou en nettoyage. Cliquez sur une chambre libre pour l'affecter à un client. La date de sortie et le montant du séjour se calculent automatiquement, puis le reçu s'affiche. Une chambre occupée s'ouvre pour valider la sortie, ou prolonger le séjour.",
+  reservations: "La page des réservations regroupe les séjours réservés à l'avance, par téléphone ou depuis le site internet. Une réservation soldée garantit sa chambre. Le jour de l'arrivée, le bouton Affecter installe le client en un clic. Les demandes envoyées depuis le site internet arrivent aussi ici, pour être rappelées, puis converties en réservation.",
+  restauration: "Le module restauration enregistre les ventes du restaurant et du bar. Chaque vente se compose à partir du catalogue, sans jamais saisir de prix. Elle peut être encaissée tout de suite, ou reportée sur la chambre d'un client, qui la réglera à son départ.",
+  plage: "Le module plage et piscine vend les entrées, les locations et les activités. Les entrées sont comptées automatiquement, pour suivre la fréquentation de la journée.",
+  evenements: "Le module réunions et événements gère la location des salles. Une réservation commence en option, avec un devis. Elle devient confirmée au premier acompte, puis se solde le jour de l'événement. Le matériel et les services s'ajoutent depuis le catalogue.",
+  'vente-restauration': SALE_TEXT,
+  'vente-plage': SALE_TEXT
+};
+var Voice = (function () {
+  var synth = window.speechSynthesis, ok = !!(synth && window.SpeechSynthesisUtterance), voice = null, token = 0;
+  function pick() {
+    if (!ok) { return; }
+    var list = synth.getVoices().filter(function (v) { return /^fr([-_]|$)/i.test(v.lang); });
+    if (!list.length) { return; }
+    var score = function (v) { return (/fr[-_]FR/i.test(v.lang) ? 4 : 0) + (/(premium|enhanced|natural|neural|online|google|am[ée]lie|audrey|aurelie|thomas|denise|henri|eloise|julie|hortense|virginie)/i.test(v.name) ? 3 : 0) + (v.localService ? 1 : 0); };
+    list.sort(function (a, b) { return score(b) - score(a); });
+    voice = list[0];
+  }
+  if (ok) { pick(); if ('onvoiceschanged' in synth) { synth.addEventListener('voiceschanged', pick); } }
+  function setSpeaking(on) { document.body.classList.toggle('is-speaking', on); }
+  function stop() { token++; api.route = null; if (ok) { synth.cancel(); } setSpeaking(false); }
+  function speak(text, forRoute) {
+    if (!ok || !text) { return; }
+    var my = ++token; synth.cancel();
+    api.route = forRoute;
+    // One utterance per sentence: Chrome stops long utterances after about 15 seconds.
+    var parts = text.match(/[^.!?:]+[.!?:]*/g) || [text];
+    parts.forEach(function (part, i) {
+      var u = new window.SpeechSynthesisUtterance(part.trim());
+      u.lang = 'fr-FR'; if (voice) { u.voice = voice; } u.rate = 1; u.pitch = 1;
+      if (i === 0) { u.onstart = function () { if (my === token) { setSpeaking(true); } }; }
+      if (i === parts.length - 1) { u.onend = u.onerror = function () { if (my === token) { setSpeaking(false); api.route = null; } }; }
+      synth.speak(u);
+    });
+    setSpeaking(true);
+  }
+  var api = { ok: ok, speak: speak, stop: stop, route: null };
+  return api;
+})();
+var soundOn = true, played = {};
+function applySound() {
+  soundOn = store('ekw-demo-sound') !== 'off';
+  document.body.classList.toggle('sound-off', !soundOn);
+  document.body.classList.toggle('no-voice', !Voice.ok);
+  var b = $('#soundToggle'); if (b) { b.setAttribute('aria-pressed', String(soundOn)); }
+}
 
 /* ------------------------------------------------------------ page: accueil */
 function pageHome() {
@@ -1318,16 +1384,26 @@ function render() {
   if (r.indexOf('vente-') === 0) { saleRefresh(); }
 }
 var lastRoute = null;
-window.addEventListener('hashchange', function () { closeModal(); render(); if (lastRoute !== route()) { window.scrollTo(0, 0); } lastRoute = route(); });
+window.addEventListener('hashchange', function () { if (Voice.route && Voice.route !== route()) { Voice.stop(); } closeModal(); render(); if (lastRoute !== route()) { window.scrollTo(0, 0); } lastRoute = route(); });
 
 /* ------------------------------------------------------------ events (delegation) */
 document.addEventListener('click', function (ev) {
+  var menu = ev.target.closest('#nav a, #tabbar a');
+  if (menu) {
+    var target = menu.getAttribute('href').slice(1);
+    if (soundOn && !played[target] && VOICE_TEXT[target]) { played[target] = true; Voice.speak(VOICE_TEXT[target], target); }
+    else if (target !== Voice.route) { Voice.stop(); }
+    return;
+  }
   var root = ev.target.closest('[data-modal-root]');
   if (root && ev.target === root) { closeModal(); return; }
   var el = ev.target.closest('[data-act]'); if (!el) { return; }
   var act = el.dataset.act, num = el.dataset.room;
   switch (act) {
     case 'close-modal': closeModal(); break;
+    case 'listen':
+      if (document.body.classList.contains('is-speaking')) { Voice.stop(); } else { played[route()] = true; Voice.speak(VOICE_TEXT[route()], route()); }
+      break;
     case 'goto-rooms': S.roomTab = el.dataset.state; go('chambres'); break;
     case 'room-tab': S.roomTab = el.dataset.state; render(); break;
     case 'assign': assignModal(num); break;
@@ -1435,9 +1511,11 @@ document.addEventListener('submit', function (ev) {
 /* demo controls */
 function applyNotes() { var hidden = store('ekw-demo-notes') === 'off'; document.body.classList.toggle('hide-notes', hidden); $('#toggleNotesLbl').textContent = (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) ? 'Aide' : (hidden ? 'Afficher les explications' : 'Masquer les explications'); }
 $('#toggleNotes').addEventListener('click', function () { store('ekw-demo-notes', document.body.classList.contains('hide-notes') ? 'on' : 'off'); applyNotes(); });
-$('#resetDemo').addEventListener('click', function () { S = seed(); closeModal(); render(); toast('Démo réinitialisée : les données d\'exemple sont revenues.'); });
+$('#soundToggle').addEventListener('click', function () { store('ekw-demo-sound', soundOn ? 'off' : 'on'); applySound(); if (!soundOn) { Voice.stop(); } else { played[route()] = true; Voice.speak(VOICE_TEXT[route()], route()); } });
+$('#resetDemo').addEventListener('click', function () { Voice.stop(); played = {}; S = seed(); closeModal(); render(); toast('Démo réinitialisée : les données d\'exemple sont revenues.'); });
 
 applyNotes();
+applySound();
 lastRoute = route();
 render();
 setInterval(function () { if (!$('[data-modal-root]') && route() === 'accueil') { render(); } }, 60000);
