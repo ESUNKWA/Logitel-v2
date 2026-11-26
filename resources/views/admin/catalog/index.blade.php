@@ -79,43 +79,44 @@
 
     <div class="admin-card p-0">
         <div class="table-responsive">
-            <table class="table align-middle mb-0 catalog-table">
+            {{-- One cell per column; each line's fields belong to its form through form="…" (a form
+                 can't wrap a table row). Kept out of DataTables / phone cards (.table-keep). --}}
+            <table class="table align-middle mb-0 catalog-table table-keep">
                 <thead>
                     <tr>
                         <th>Nom</th>
                         <th>Catégorie</th>
-                        <th>Prix</th>
-                        <th>Ordre</th>
-                        @if ($department->countsEntries())<th>Entrée</th>@endif
-                        <th>Active</th>
-                        <th></th>
+                        <th class="catalog-table__price">Prix (F)</th>
+                        <th class="catalog-table__small">Ordre</th>
+                        @if ($department->countsEntries())<th class="text-center">Entrée</th>@endif
+                        <th class="text-center">Active</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($items as $item)
-                        <tr class="{{ $item->is_active ? '' : 'text-muted' }}">
-                            <td colspan="{{ $department->countsEntries() ? 6 : 5 }}">
-                                <form method="POST" action="{{ route('admin.catalog.update', $item) }}" class="row g-2 align-items-center catalog-row" id="item-form-{{ $item->id }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="name" maxlength="120" value="{{ $item->name }}" aria-label="Nom" required></div>
-                                    <div class="col-md-3"><input type="text" class="form-control form-control-sm" name="category" maxlength="60" list="catalog-categories" value="{{ $item->category }}" aria-label="Catégorie"></div>
-                                    <div class="col-md-2"><input type="text" inputmode="numeric" data-money class="form-control form-control-sm" name="price" value="{{ $fcfa($item->price) }}" aria-label="Prix" required></div>
-                                    <div class="col-md-1"><input type="number" class="form-control form-control-sm" name="position" min="0" max="9999" value="{{ $item->position }}" aria-label="Ordre"></div>
-                                    @if ($department->countsEntries())
-                                        <div class="col-auto">
-                                            <input type="hidden" name="counts_entry" value="0">
-                                            <input class="form-check-input" type="checkbox" name="counts_entry" value="1" @checked($item->counts_entry) aria-label="Compte une entrée">
-                                        </div>
-                                    @endif
-                                    <div class="col-auto">
-                                        <input type="hidden" name="is_active" value="0">
-                                        <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($item->is_active) aria-label="Active">
-                                    </div>
-                                </form>
+                        @php($f = 'item-form-'.$item->id)
+                        <tr class="{{ $item->is_active ? '' : 'catalog-table__inactive' }}">
+                            <td><input type="text" class="form-control form-control-sm" form="{{ $f }}" name="name" maxlength="120" value="{{ $item->name }}" aria-label="Nom" required></td>
+                            <td><input type="text" class="form-control form-control-sm" form="{{ $f }}" name="category" maxlength="60" list="catalog-categories" value="{{ $item->category }}" aria-label="Catégorie"></td>
+                            <td><input type="text" inputmode="numeric" data-money class="form-control form-control-sm text-end" form="{{ $f }}" name="price" value="{{ $fcfa($item->price) }}" aria-label="Prix" required></td>
+                            <td><input type="number" class="form-control form-control-sm" form="{{ $f }}" name="position" min="0" max="9999" value="{{ $item->position }}" aria-label="Ordre"></td>
+                            @if ($department->countsEntries())
+                                <td class="text-center">
+                                    <input type="hidden" form="{{ $f }}" name="counts_entry" value="0">
+                                    <input class="form-check-input" type="checkbox" form="{{ $f }}" name="counts_entry" value="1" @checked($item->counts_entry) aria-label="Compte une entrée">
+                                </td>
+                            @endif
+                            <td class="text-center">
+                                <input type="hidden" form="{{ $f }}" name="is_active" value="0">
+                                <input class="form-check-input" type="checkbox" form="{{ $f }}" name="is_active" value="1" @checked($item->is_active) aria-label="Active">
                             </td>
                             <td class="text-end text-nowrap">
-                                <button type="submit" form="item-form-{{ $item->id }}" class="btn btn-sm btn-outline-primary">Enregistrer</button>
+                                <form method="POST" action="{{ route('admin.catalog.update', $item) }}" id="{{ $f }}" class="d-inline">
+                                    @csrf
+                                    @method('PUT')
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Enregistrer</button>
+                                </form>
                                 <form method="POST" action="{{ route('admin.catalog.destroy', $item) }}" class="d-inline" data-confirm="La prestation « {{ $item->name }} » sera supprimée." data-confirm-button="Oui, supprimer" data-confirm-danger>
                                     @csrf
                                     @method('DELETE')
@@ -124,7 +125,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="text-center text-muted py-4">Aucune prestation pour ce service : ajoutez la première ci-dessus.</td></tr>
+                        <tr><td colspan="{{ $department->countsEntries() ? 7 : 6 }}" class="text-center text-muted py-4">Aucune prestation pour ce service : ajoutez la première ci-dessus.</td></tr>
                     @endforelse
                 </tbody>
             </table>

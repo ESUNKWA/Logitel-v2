@@ -49,28 +49,39 @@
     <div class="admin-card p-0">
         <div class="table-responsive">
             <table class="table align-middle mb-0 table-keep">
-                <thead><tr><th>Nom</th><th>Capacité</th><th>Demi-journée</th><th>Journée</th><th>Ordre</th><th>Active</th><th></th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th class="catalog-table__small">Capacité</th>
+                        <th class="catalog-table__price">Demi-journée (F)</th>
+                        <th class="catalog-table__price">Journée (F)</th>
+                        <th class="catalog-table__small">Ordre</th>
+                        <th class="text-center">Active</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @forelse ($venues as $venue)
-                        <tr>
-                            <td colspan="6">
-                                <form method="POST" action="{{ route('admin.venues.update', $venue) }}" class="row g-2 align-items-center" id="venue-form-{{ $venue->id }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="col-md-3"><input type="text" class="form-control form-control-sm" name="name" maxlength="120" value="{{ $venue->name }}" aria-label="Nom" required></div>
-                                    <div class="col-md-2"><input type="number" class="form-control form-control-sm" name="capacity" min="1" max="10000" value="{{ $venue->capacity }}" aria-label="Capacité" required></div>
-                                    <div class="col-md-2"><input type="text" inputmode="numeric" data-money class="form-control form-control-sm" name="half_day_rate" value="{{ $fcfa($venue->half_day_rate) }}" aria-label="Tarif demi-journée" required></div>
-                                    <div class="col-md-2"><input type="text" inputmode="numeric" data-money class="form-control form-control-sm" name="day_rate" value="{{ $fcfa($venue->day_rate) }}" aria-label="Tarif journée" required></div>
-                                    <div class="col-md-1"><input type="number" class="form-control form-control-sm" name="position" min="0" max="9999" value="{{ $venue->position }}" aria-label="Ordre"></div>
-                                    <div class="col-auto">
-                                        <input type="hidden" name="is_active" value="0">
-                                        <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($venue->is_active) aria-label="Active">
-                                    </div>
-                                    <input type="hidden" name="description" value="{{ $venue->description }}">
-                                </form>
+                        @php($f = 'venue-form-'.$venue->id)
+                        <tr class="{{ $venue->is_active ? '' : 'catalog-table__inactive' }}">
+                            <td>
+                                <input type="text" class="form-control form-control-sm" form="{{ $f }}" name="name" maxlength="120" value="{{ $venue->name }}" aria-label="Nom" required>
+                                <input type="hidden" form="{{ $f }}" name="description" value="{{ $venue->description }}">
+                            </td>
+                            <td><input type="number" class="form-control form-control-sm" form="{{ $f }}" name="capacity" min="1" max="10000" value="{{ $venue->capacity }}" aria-label="Capacité" required></td>
+                            <td><input type="text" inputmode="numeric" data-money class="form-control form-control-sm text-end" form="{{ $f }}" name="half_day_rate" value="{{ $fcfa($venue->half_day_rate) }}" aria-label="Tarif demi-journée" required></td>
+                            <td><input type="text" inputmode="numeric" data-money class="form-control form-control-sm text-end" form="{{ $f }}" name="day_rate" value="{{ $fcfa($venue->day_rate) }}" aria-label="Tarif journée" required></td>
+                            <td><input type="number" class="form-control form-control-sm" form="{{ $f }}" name="position" min="0" max="9999" value="{{ $venue->position }}" aria-label="Ordre"></td>
+                            <td class="text-center">
+                                <input type="hidden" form="{{ $f }}" name="is_active" value="0">
+                                <input class="form-check-input" type="checkbox" form="{{ $f }}" name="is_active" value="1" @checked($venue->is_active) aria-label="Active">
                             </td>
                             <td class="text-end text-nowrap">
-                                <button type="submit" form="venue-form-{{ $venue->id }}" class="btn btn-sm btn-outline-primary">Enregistrer</button>
+                                <form method="POST" action="{{ route('admin.venues.update', $venue) }}" id="{{ $f }}" class="d-inline">
+                                    @csrf
+                                    @method('PUT')
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Enregistrer</button>
+                                </form>
                                 <form method="POST" action="{{ route('admin.venues.destroy', $venue) }}" class="d-inline" data-confirm="La salle « {{ $venue->name }} » sera supprimée." data-confirm-button="Oui, supprimer" data-confirm-danger>
                                     @csrf
                                     @method('DELETE')

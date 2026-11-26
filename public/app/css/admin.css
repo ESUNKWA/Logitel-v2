@@ -3655,3 +3655,8 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .venue-slot small { color: var(--bs-secondary-color); }
 .venue-slot__add { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 1px dashed var(--ek-border); color: var(--bs-secondary-color); text-decoration: none; }
 .venue-slot__add:hover { color: var(--ek-primary); border-color: var(--ek-primary); }
+/* Catalogue / Salles: one input per column, columns sized to their content. */
+.catalog-table td, .catalog-table th { vertical-align: middle; }
+.catalog-table__price { width: 150px; }
+.catalog-table__small { width: 100px; }
+.catalog-table__inactive input:not([type="checkbox"]) { color: var(--bs-secondary-color); }
