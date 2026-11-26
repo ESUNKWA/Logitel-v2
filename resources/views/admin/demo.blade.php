@@ -547,13 +547,13 @@ var MODES = {
   nuitee:  { label: 'Nuitée', icon: 'fa-moon', unit: '/ nuit', units: 'nuits' },
   sejour:  { label: 'Séjour (24 h)', icon: 'fa-calendar-days', unit: '/ 24 h', units: 'périodes de 24 h' }
 };
-var MODE_ORDER = ['heure', 'journee', 'nuitee', 'sejour'];
+var MODE_ORDER = ['sejour']; // demo configured with the « Séjour » formula only
 var METHODS = { especes: { label: 'Espèces', icon: 'fa-money-bill-wave' }, orange_money: { label: 'Orange Money', icon: 'fa-mobile-screen' }, wave: { label: 'Wave', icon: 'fa-mobile-screen' } };
 var TYPES = {
-  std: { name: 'Chambre Standard', adults: 2, children: 0, rates: { heure: 5000, journee: 12000, nuitee: 15000, sejour: 20000 } },
-  dlx: { name: 'Chambre Deluxe', adults: 2, children: 1, until: '12h00', rates: { heure: 7000, journee: 18000, nuitee: 25000, sejour: 35000 } },
-  ste: { name: 'Suite Signature', adults: 2, children: 2, until: '12h00', rates: { journee: 30000, nuitee: 45000, sejour: 60000 } },
-  fam: { name: 'Chambre Familiale', adults: 4, children: 2, rates: { journee: 25000, nuitee: 40000, sejour: 55000 } }
+  std: { name: 'Chambre Standard', adults: 2, children: 0, rates: { sejour: 20000 } },
+  dlx: { name: 'Chambre Deluxe', adults: 2, children: 1, until: '12h00', rates: { sejour: 35000 } },
+  ste: { name: 'Suite Signature', adults: 2, children: 2, until: '12h00', rates: { sejour: 60000 } },
+  fam: { name: 'Chambre Familiale', adults: 4, children: 2, rates: { sejour: 55000 } }
 };
 function modeLabel(mode, type) { return mode === 'sejour' && type && type.until ? "Séjour (jusqu'à " + type.until + ')' : MODES[mode].label; }
 function modeUnit(mode, type) { return mode === 'sejour' && type && type.until ? '/ séjour' : MODES[mode].unit; }
@@ -621,15 +621,15 @@ function seed() {
     reservations.push(z); return z;
   }
   var r203 = res('Fatou Bamba', '07 48 22 19 03', 203, 'dlx', NOW.getHours() >= 6 && NOW.getHours() < 14 ? atTime(NOW, 15, 0) : addMin(atTime(NOW, NOW.getHours(), 0), 90), 'sejour', 2, 'all', 'wave', 'confirmee', 'Koffi Brou');
-  var r303 = res('Société Ivoire Conseil', '27 22 41 55 60', 303, 'ste', NOW.getHours() >= 6 && NOW.getHours() < 17 ? atTime(NOW, 18, 30) : addMin(atTime(NOW, NOW.getHours(), 0), 150), 'nuitee', 2, 0, null, 'en_attente');
-  res('Salif Cissé', '05 06 71 88 42', 102, 'std', addH(NOW, -3) < DAY_START ? addMin(DAY_START, 30) : addH(NOW, -3), 'journee', 1, 0, null, 'en_attente', 'Koffi Brou');
+  var r303 = res('Société Ivoire Conseil', '27 22 41 55 60', 303, 'ste', NOW.getHours() >= 6 && NOW.getHours() < 17 ? atTime(NOW, 18, 30) : addMin(atTime(NOW, NOW.getHours(), 0), 150), 'sejour', 2, 0, null, 'en_attente');
+  res('Salif Cissé', '05 06 71 88 42', 102, 'std', addH(NOW, -3) < DAY_START ? addMin(DAY_START, 30) : addH(NOW, -3), 'sejour', 1, 0, null, 'en_attente', 'Koffi Brou');
   res('Serge Kouadio', '07 07 31 26 90', 202, 'dlx', atTime(NOW, 14, 0, 1), 'sejour', 1, 15000, 'orange_money', 'confirmee');
-  res('Nadia Brou', '01 02 44 57 11', 107, 'std', atTime(NOW, 22, 0, 2), 'nuitee', 1, 0, null, 'en_attente');
+  res('Nadia Brou', '01 02 44 57 11', 107, 'std', atTime(NOW, 16, 0, 2), 'sejour', 1, 0, null, 'en_attente');
   res('Hervé Kacou', '07 59 12 03 66', 302, 'ste', atTime(NOW, 12, 0, 5), 'sejour', 3, 'all', 'wave', 'confirmee', 'Koffi Brou');
   res('Ama Kra', '05 44 90 27 18', 305, 'fam', atTime(NOW, 13, 0, 7), 'sejour', 2, 50000, 'especes', 'confirmee');
   res('Jean-Marc Kouassi', '07 11 63 40 25', 201, 'dlx', addMin(NOW, -26 * 60), 'sejour', 3, 'all', 'orange_money', 'honoree', 'Koffi Brou');
   res('Didier Gnagne', '01 40 18 77 32', 301, 'ste', addMin(NOW, -20 * 60), 'sejour', 2, 'all', 'wave', 'honoree');
-  res('Yves Lago', '05 75 30 64 09', 104, 'std', atTime(NOW, 20, 0, -1), 'nuitee', 1, 0, null, 'annulee', 'Koffi Brou');
+  res('Yves Lago', '05 75 30 64 09', 104, 'std', atTime(NOW, 14, 0, -1), 'sejour', 1, 0, null, 'annulee', 'Koffi Brou');
 
   // Online requests sent from the website (« Réserver »): the réception calls back and books.
   var webRequests = [
@@ -644,12 +644,12 @@ function seed() {
     if (overdueMin) { out = addMin(NOW, -overdueMin); }
     return { guest: guest, phone: '', mode: mode, dur: dur, in: inAt, out: out, amount: t.rates[mode] * dur, method: method, adults: 2, children: 0 };
   }
-  room(101, 'std', 'occupee', { stay: stay('Konan Yao', 'nuitee', 1, 11 * 60, 'std', 'especes') });
+  room(101, 'std', 'occupee', { stay: stay('Konan Yao', 'sejour', 1, 11 * 60, 'std', 'especes') });
   room(102, 'std', 'libre');
-  room(103, 'std', 'occupee', { stay: stay('Client de passage', 'heure', 3, 150, 'std', 'especes', 25) });
+  room(103, 'std', 'occupee', { stay: stay('Moussa Koné', 'sejour', 1, 24 * 60 + 25, 'std', 'especes') });
   room(104, 'std', 'libre');
   room(105, 'std', 'nettoyage');
-  room(106, 'std', 'occupee', { stay: stay('Mariam Diallo', 'journee', 1, 95, 'std', 'wave') });
+  room(106, 'std', 'occupee', { stay: stay('Mariam Diallo', 'sejour', 1, 95, 'std', 'wave') });
   room(107, 'std', 'libre');
   room(108, 'std', 'hors_service', { note: 'Climatisation en réparation' });
   room(201, 'dlx', 'occupee', { stay: stay('Jean-Marc Kouassi', 'sejour', 3, 26 * 60, 'dlx', 'orange_money') });
@@ -665,8 +665,7 @@ function seed() {
   room(305, 'fam', 'libre');
 
   // Payments cashed by Aïcha since the start of the business day (rooms checked in today).
-  pay(TYPES.std.rates.heure * 3, 'especes', 'hebergement', 'Chambre N°103 — Passage', ago(150));
-  pay(TYPES.std.rates.journee, 'wave', 'hebergement', 'Chambre N°106 — Journée', ago(95));
+  pay(TYPES.std.rates.sejour, 'wave', 'hebergement', 'Chambre N°106 — Séjour', ago(95));
   pay(TYPES.dlx.rates.sejour, 'especes', 'hebergement', 'Chambre N°204 — Séjour', ago(300));
 
   var sales = [];
@@ -997,7 +996,7 @@ function assignModal(num) {
     body: '<form id="assignForm" data-room="' + r.num + '" novalidate><div class="assign-grid"><div>'
       + '<p class="section-label">Client <span style="text-transform:none;font-weight:400">(facultatif)</span></p><p class="small muted" style="margin:0 0 8px">Tout est facultatif ; sans nom, la fiche est créée en « Client de passage », à compléter plus tard.</p>'
       + '<div class="grid g2"><input class="input" id="aFirst" placeholder="Prénom" autocomplete="off"><input class="input" id="aLast" placeholder="Nom" autocomplete="off"></div><div style="margin-top:12px"><input class="input" id="aPhone" placeholder="Téléphone" inputmode="tel" autocomplete="off"></div>'
-      + '<p class="section-label" style="margin-top:22px">Séjour</p><label class="label">Mode</label><div class="modes" role="radiogroup">' + modes.map(function (m) { return '<button type="button" role="radio" aria-checked="false" class="mode-btn mode--' + m + '" data-act="pick-mode" data-mode="' + m + '"><i class="fas ' + MODES[m].icon + '"></i> ' + modeLabel(m, t) + '</button>'; }).join('') + '</div>'
+      + '<p class="section-label" style="margin-top:22px">Séjour</p><label class="label">Formule</label><div class="modes" role="radiogroup">' + modes.map(function (m) { return '<button type="button" role="radio" aria-checked="' + (modes.length === 1) + '" class="mode-btn mode--' + m + (modes.length === 1 ? ' is-on' : '') + '" data-act="pick-mode" data-mode="' + m + '"><i class="fas ' + MODES[m].icon + '"></i> ' + modeLabel(m, t) + '</button>'; }).join('') + '</div>'
       + '<div class="grid g3" style="margin-top:14px"><div><label class="label" for="aDur" id="aDurLabel">Durée</label><input class="input" type="number" min="1" max="30" id="aDur" value="1"></div><div><label class="label" for="aAdults">Adultes</label><input class="input" type="number" min="1" id="aAdults" value="' + Math.min(2, t.adults) + '"></div><div><label class="label" for="aKids">Enfants</label><input class="input" type="number" min="0" id="aKids" value="0"></div></div>'
       + '<div style="margin-top:14px"><label class="label" for="aRate">Tarif <span id="aRateUnit"></span> (FCFA)</label><input class="input" id="aRate" readonly tabindex="-1" placeholder="Choisissez un mode"><div class="form-text">Tarif du type de chambre (non modifiable). Pour une réduction, utilisez la remise.</div></div>'
       + '</div><div><div class="pay-box"><p class="section-label">Règlement</p><div class="pay-total" id="aTotal">Choisissez un mode.</div>'
@@ -1020,7 +1019,7 @@ function assignState() {
 }
 function assignRefresh() {
   var s = assignState(), box = $('#aTotal');
-  $('#aDurLabel').textContent = s.mode ? 'Durée (' + (s.mode === 'sejour' && s.type.until ? 'séjours' : MODES[s.mode].units) + ')' : 'Durée';
+  $('#aDurLabel').textContent = s.mode === 'sejour' ? 'Nb de séjours' : 'Durée';
   $('#aRate').value = s.mode ? fcfa(s.rate) : '';
   $('#aRateUnit').textContent = s.mode ? modeUnit(s.mode, s.type) : '';
   var colors = { heure: ['var(--ek-mode-heure)', '#fff'], journee: ['var(--ek-mode-journee)', '#2e2300'], nuitee: ['var(--ek-mode-nuitee)', '#fff'], sejour: ['var(--ek-mode-sejour)', '#fff'] };
@@ -1034,7 +1033,7 @@ function assignRefresh() {
 }
 function assignSubmit() {
   var s = assignState(), err = $('#aError');
-  var msg = !s.mode ? 'Choisissez un mode (Passage, Journée, Nuitée ou Séjour).' : (s.method === 'especes' && s.received && s.received < s.total) ? 'Les espèces reçues ne couvrent pas le total.' : '';
+  var msg = !s.mode ? 'Choisissez la formule.' : (s.method === 'especes' && s.received && s.received < s.total) ? 'Les espèces reçues ne couvrent pas le total.' : '';
   if (msg) { err.textContent = msg; err.hidden = false; return; }
   var name = [$('#aFirst').value.trim(), $('#aLast').value.trim()].filter(Boolean).join(' ') || 'Client de passage';
   var r = s.room;
@@ -1178,7 +1177,7 @@ function newResModal(web) {
       + '<p class="section-label">Client</p><div class="grid g2"><input class="input" id="nrFirst" placeholder="Prénom" value="' + esc(names[0] || '') + '" autocomplete="off"><input class="input" id="nrLast" placeholder="Nom" value="' + esc(names.slice(1).join(' ')) + '" autocomplete="off"></div><div style="margin-top:12px"><input class="input" id="nrPhone" placeholder="Téléphone" inputmode="tel" value="' + esc(web ? web.phone : '') + '" autocomplete="off"></div>'
       + '<p class="section-label" style="margin-top:22px">Séjour</p><div class="grid g2"><div><label class="label" for="nrDate">Arrivée le</label><input class="input" type="date" id="nrDate" value="' + dateVal(arr) + '" min="' + dateVal(NOW) + '"></div><div><label class="label" for="nrTime">à</label><input class="input" type="time" id="nrTime" value="' + pad(arr.getHours()) + ':' + pad(arr.getMinutes()) + '"></div>'
       + '<div><label class="label" for="nrType">Type de chambre</label><select class="select" id="nrType">' + Object.keys(TYPES).map(function (k) { return '<option value="' + k + '"' + (k === typeKey ? ' selected' : '') + '>' + TYPES[k].name + '</option>'; }).join('') + '</select></div><div><label class="label" for="nrRoom">Chambre</label><select class="select" id="nrRoom"></select></div></div>'
-      + '<label class="label" style="margin-top:14px">Mode</label><div class="modes" id="nrModes" role="radiogroup"></div>'
+      + '<label class="label" style="margin-top:14px">Formule</label><div class="modes" id="nrModes" role="radiogroup"></div>'
       + '<div class="grid g2" style="margin-top:14px"><div><label class="label" for="nrDur" id="nrDurLabel">Durée</label><input class="input" type="number" min="1" max="30" id="nrDur" value="' + (web ? web.dur : 1) + '"></div></div>'
       + '</div><div><div class="pay-box"><p class="section-label">Règlement</p><div class="pay-total" id="nrTotal">Choisissez un mode.</div>'
       + '<label class="label" for="nrPaid">Acompte versé <span>(facultatif : soldée, la chambre est garantie)</span></label><input class="input" id="nrPaid" inputmode="numeric" placeholder="0"><div class="grid g2" style="margin-top:10px"><div><label class="label" for="nrMethod">Mode de paiement</label><select class="select" id="nrMethod">' + Object.keys(METHODS).map(function (m) { return '<option value="' + m + '">' + METHODS[m].label + '</option>'; }).join('') + '</select></div></div>'
@@ -1190,6 +1189,7 @@ function newResModal(web) {
 function resArrival() { var d = $('#nrDate').value, t = $('#nrTime').value || '14:00'; if (!d) { return null; } var p = d.split('-'), h = t.split(':'); return new Date(+p[0], +p[1] - 1, +p[2], +h[0], +h[1]); }
 function resTypeChanged(preMode) {
   var k = $('#nrType').value, t = TYPES[k], keep = $('#nrRoom').value;
+  var avail = MODE_ORDER.filter(function (m) { return t.rates[m] != null; }); if (avail.length === 1) { preMode = avail[0]; }
   $('#nrModes').innerHTML = MODE_ORDER.filter(function (m) { return t.rates[m] != null; }).map(function (m) { return '<button type="button" role="radio" aria-checked="' + (m === preMode) + '" class="mode-btn mode--' + m + (m === preMode ? ' is-on' : '') + '" data-act="nr-mode" data-mode="' + m + '"><i class="fas ' + MODES[m].icon + '"></i> ' + modeLabel(m, t) + '</button>'; }).join('');
   resRoomsRefresh(keep);
 }
@@ -1217,7 +1217,7 @@ function resRefresh() {
 }
 function resSubmit() {
   var s = resState(), err = $('#nrError'), name = [$('#nrFirst').value.trim(), $('#nrLast').value.trim()].filter(Boolean).join(' '), phone = $('#nrPhone').value.trim();
-  var msg = !name ? 'Indiquez le nom du client.' : !phone ? 'Indiquez le téléphone du client, pour le rappeler.' : !s.arrival ? 'Choisissez la date d\'arrivée.' : s.arrival < addMin(new Date(), -5) ? 'L\'arrivée doit être dans le futur.' : !s.mode ? 'Choisissez un mode (Passage, Journée, Nuitée ou Séjour).' : !s.room || !roomFreeFor(s.room, s.arrival, s.out) ? 'Aucune chambre de ce type n\'est libre sur cette période : changez de type ou de dates.' : '';
+  var msg = !name ? 'Indiquez le nom du client.' : !phone ? 'Indiquez le téléphone du client, pour le rappeler.' : !s.arrival ? 'Choisissez la date d\'arrivée.' : s.arrival < addMin(new Date(), -5) ? 'L\'arrivée doit être dans le futur.' : !s.mode ? 'Choisissez la formule.' : !s.room || !roomFreeFor(s.room, s.arrival, s.out) ? 'Aucune chambre de ce type n\'est libre sur cette période : changez de type ou de dates.' : '';
   if (msg) { err.textContent = msg; err.hidden = false; return; }
   var z = { id: 'R' + Date.now(), ref: 'RES-' + String(++S.seq.resa).padStart(5, '0'), guest: name, phone: phone, room: s.room, arrival: s.arrival, out: s.out, mode: s.mode, dur: s.dur, total: s.total, paid: s.paid, method: s.paid ? $('#nrMethod').value : null, status: s.paid ? 'confirmee' : 'en_attente', by: 'Aïcha Koné' };
   S.reservations.push(z);
