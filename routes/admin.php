@@ -70,6 +70,10 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('login.attempt');
 
+    // Presentation demo: standalone page with fictitious data, no database access; public so the
+    // link can be shared with prospects.
+    Route::view('/demo', 'admin.demo')->name('demo');
+
     Route::middleware(['auth', EnsureStaffAccountIsUsable::class, EnsureDutyTaken::class, NormalizeMoneyInputs::class])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

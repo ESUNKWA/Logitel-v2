@@ -35,6 +35,7 @@ class PermissionTest extends TestCase
         'admin.pwa.service-worker',
         'admin.pwa.offline',
         'admin.pwa.asset-links',    // Android APK verification (no data)
+        'admin.demo',               // presentation demo: fictitious data only, public link
     ];
 
     public function test_every_admin_route_requires_a_permission(): void
