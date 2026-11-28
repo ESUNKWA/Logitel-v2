@@ -119,4 +119,24 @@ class FinanceStats
 
         return [(float) $open->sum(fn (Invoice $i) => max(0, (float) $i->amount - (float) $i->payments_sum_amount)), $open->count()];
     }
+
+    /**
+     * What is due by the end of the business day (`$dayEnd`, see Invoice::scopeDueBy), for the
+     * réception's « Reste à encaisser » card (client request, 2026-11-28).
+     *
+     * @return array{0: float, 1: int} amount, number of invoices
+     */
+    public static function outstandingDueBy(CarbonInterface $dayEnd): array
+    {
+        $open = Invoice::query()
+            ->where('status', '!=', InvoiceStatus::Payee)
+            ->live()
+            ->dueBy($dayEnd)
+            ->withSum('payments', 'amount')
+            ->get(['id', 'amount']);
+
+        $due = $open->filter(fn (Invoice $i) => (float) $i->amount - (float) $i->payments_sum_amount > 0);
+
+        return [(float) $due->sum(fn (Invoice $i) => (float) $i->amount - (float) $i->payments_sum_amount), $due->count()];
+    }
 }

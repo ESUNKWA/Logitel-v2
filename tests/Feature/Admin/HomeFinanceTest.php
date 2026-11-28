@@ -2,13 +2,18 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\Department;
 use App\Enums\ReservationStatus;
 use App\Enums\RoomStatus;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Models\Sale;
 use App\Models\User;
+use App\Models\Venue;
+use App\Models\VenueBooking;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
@@ -60,6 +65,85 @@ class HomeFinanceTest extends TestCase
             ->assertSeeInOrder(['Recette du mois', '34 000'])
             ->assertSeeInOrder(['Reste à encaisser', '21 000', '2 facture(s)'])
             ->assertSeeInOrder(['Recette du jour par mode de paiement', 'Espèces', '15 000 F', '50 %', 'Orange Money', '10 000 F', '33 %', 'Wave', '5 000 F', '17 %']);
+    }
+
+    private function book(string $number, string $checkIn): Reservation
+    {
+        $room = Room::factory()->create(['number' => $number, 'room_type_id' => $this->type->id, 'status' => RoomStatus::Disponible]);
+
+        return Reservation::factory()->create(['room_id' => $room->id, 'pricing_mode' => 'heure', 'unit_rate' => 5000,
+            'check_in' => $checkIn, 'duration' => 2, 'status' => 'confirmee']);
+    }
+
+    private function venueBooking(Venue $venue, string $start, string $end): VenueBooking
+    {
+        return VenueBooking::book(['venue_id' => $venue->id, 'start_at' => Carbon::parse($start), 'end_at' => Carbon::parse($end),
+            'formula' => VenueBooking::FORMULA_HALF, 'participants' => 10, 'client_name' => 'M. Test', 'client_phone' => '0700000000',
+            'status' => VenueBooking::STATUS_CONFIRMED, 'quantities' => [], 'discount' => '0'], User::factory()->create());
+    }
+
+    public function test_the_reception_sees_what_is_due_by_the_end_of_the_business_day(): void
+    {
+        $this->stay('101', 4, [['method' => 'especes', 'amount' => 5000, 'received' => 5000]]); // in-house: 15 000 left
+        $this->stay('102', 2, [['method' => 'wave', 'amount' => 10000]]); // settled: nothing
+        $this->book('103', '2026-10-08 18:00'); // arrival today: 10 000
+        $this->book('104', '2026-10-12 14:00'); // future booking: left out
+        Sale::record(Department::Restauration, [], 'Table 4', null, '0', null, [['label' => 'Poulet braisé', 'unit_price' => '6000', 'quantity' => 1]]); // 6 000
+        $hall = Venue::create(['name' => 'Salle Baobab', 'capacity' => 50, 'half_day_rate' => 100000, 'day_rate' => 180000]);
+        $this->venueBooking($hall, '2026-10-08 14:00', '2026-10-08 19:00'); // event today: 100 000
+        $this->venueBooking($hall, '2026-10-15 08:00', '2026-10-15 13:00'); // future event: left out
+
+        $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()
+            ->assertViewHas('dueToday', [131000.0, 4])
+            ->assertSeeInOrder(['Reste à encaisser', '131 000', '4 factures à régler aujourd\'hui']);
+
+        // Same card in the live refresh of the home figures.
+        $this->getJson('/admin/chiffres-en-direct?blocs=home-figures')->assertOk()
+            ->assertJsonPath('blocks.home-figures', fn (string $html) => str_contains($html, 'data-due-today') && str_contains($html, '131 000'));
+    }
+
+    public function test_the_collect_page_filters_what_is_due_today(): void
+    {
+        $inHouse = $this->stay('101', 4, []); // due today
+        $arrival = $this->book('103', '2026-10-08 18:00'); // due today
+        $future = $this->book('104', '2026-10-12 14:00'); // later
+        $hall = Venue::create(['name' => 'Salle Baobab', 'capacity' => 50, 'half_day_rate' => 100000, 'day_rate' => 180000]);
+        $laterEvent = $this->venueBooking($hall, '2026-10-15 08:00', '2026-10-15 13:00'); // later
+        $reception = User::factory()->reception()->simpleUi()->create();
+
+        // The home card opens the « Aujourd'hui » tab.
+        $this->actingAs($reception)->get('/admin')->assertSee(route('admin.front-desk.collect', ['periode' => 'aujourdhui']), false);
+
+        $today = $this->get('/admin/a-encaisser?periode=aujourdhui')->assertOk()
+            ->assertViewHas('period', 'aujourdhui')
+            ->assertViewHas('counts', ['aujourdhui' => 2, 'tout' => 4])
+            ->assertSee($inHouse->invoice->number)->assertSee($arrival->invoice->number)
+            ->assertDontSee($future->invoice->number)->assertDontSee($laterEvent->sale->invoice->number);
+        $today->assertSeeInOrder(['Aujourd\'hui', '2', 'Tout', '4']);
+
+        $this->get('/admin/a-encaisser')->assertOk()
+            ->assertViewHas('period', 'tout')
+            ->assertSee($future->invoice->number)->assertSee($laterEvent->sale->invoice->number);
+    }
+
+    public function test_the_due_today_card_says_when_nothing_is_left(): void
+    {
+        $this->stay('101', 2, [['method' => 'wave', 'amount' => 10000]]);
+        $this->book('104', '2026-10-12 14:00');
+
+        $this->actingAs(User::factory()->reception()->simpleUi()->create())->get('/admin')->assertOk()
+            ->assertViewHas('dueToday', [0.0, 0])
+            ->assertSeeInOrder(['Reste à encaisser', '0', 'Rien à encaisser aujourd\'hui']);
+    }
+
+    public function test_the_manager_keeps_the_full_balance_instead(): void
+    {
+        $this->book('104', '2026-10-12 14:00');
+
+        $this->actingAs(User::factory()->simpleUi()->create())->get('/admin')->assertOk()
+            ->assertViewHas('dueToday', null)
+            ->assertDontSee('data-due-today', false)
+            ->assertSeeInOrder(['Reste à encaisser', '10 000', '1 facture(s)']);
     }
 
     public function test_todays_discounts_are_mentioned(): void

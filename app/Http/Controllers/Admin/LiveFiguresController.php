@@ -30,7 +30,7 @@ class LiveFiguresController extends Controller
                 'my-cash' => $data['myCash'] ? view('admin.partials._my-cash', ['myCash' => $data['myCash']])->render() : null,
                 'staff-cash' => $data['staffCash'] !== null ? view('admin.partials._staff-cash', ['staffCash' => $data['staffCash']])->render() : null,
                 'free-rooms' => $data['freeRooms'] !== null ? view('admin.partials._free-rooms', ['freeRooms' => $data['freeRooms']])->render() : null,
-                'home-figures' => view('admin.partials._home-figures', ['finance' => $data['finance'], 'roomCounts' => $data['roomCounts']])->render(),
+                'home-figures' => view('admin.partials._home-figures', ['finance' => $data['finance'], 'roomCounts' => $data['roomCounts'], 'dueToday' => $data['dueToday']])->render(),
             };
             if ($html !== null) {
                 $blocks[$name] = $html;

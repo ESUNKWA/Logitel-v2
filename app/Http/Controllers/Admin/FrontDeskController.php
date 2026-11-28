@@ -52,7 +52,7 @@ class FrontDeskController extends Controller
      * room counts, the hotel's money (manager), every staff member's takings (manager) and
      * the user's own takings (anyone else who cashes), and the free rooms (réception only).
      *
-     * @return array{roomCounts: array<string, int>|null, finance: array<string, mixed>|null, staffCash: list<array<string, mixed>>|null, myCash: array<string, mixed>|null, freeRooms: Collection<string, Collection<int, Room>>|null}
+     * @return array{roomCounts: array<string, int>|null, finance: array<string, mixed>|null, staffCash: list<array<string, mixed>>|null, myCash: array<string, mixed>|null, freeRooms: Collection<string, Collection<int, Room>>|null, dueToday: array{0: float, 1: int}|null}
      */
     public static function moneyBlocks(User $user): array
     {
@@ -64,6 +64,8 @@ class FrontDeskController extends Controller
             'myCash' => $user->can('payments.create') && $user->cannot('dashboard.revenue') ? self::myCash($user->id) : null,
             // Receptionists (not the manager) see the free rooms themselves on their home (client request).
             'freeRooms' => $user->can('rooms.view') && $user->cannot('dashboard.revenue') ? self::freeRooms() : null,
+            // Réception: what is still to cash by the end of the business day (the manager has the full balance in `finance`).
+            'dueToday' => $user->can('invoices.view') && $user->cannot('dashboard.revenue') ? FinanceStats::outstandingDueBy(BusinessDay::current()[1]) : null,
         ];
     }
 
@@ -162,16 +164,28 @@ class FrontDeskController extends Controller
 
     /**
      * Open balances of live files (stays in progress or finished, bookings not cancelled).
+     * « Aujourd'hui » (?periode=aujourdhui, the home card's link): only what is due by the end
+     * of the business day (Invoice::scopeDueBy); « Tout » (default): every open balance.
      */
-    public function collect(): View
+    public function collect(Request $request): View
     {
+        $dayEnd = BusinessDay::current()[1];
+        $period = $request->query('periode') === 'aujourdhui' ? 'aujourdhui' : 'tout';
+
         return view('admin.front-desk.collect', [
+            'period' => $period,
+            'counts' => [
+                'aujourdhui' => $this->toCollectQuery()->dueBy($dayEnd)->count(),
+                'tout' => $this->toCollectQuery()->count(),
+            ],
             'invoices' => $this->toCollectQuery()
+                ->when($period === 'aujourdhui', fn (Builder $q) => $q->dueBy($dayEnd))
                 ->with(['reservation.guest', 'reservation.room', 'sale.reservation.room'])
                 ->withSum('payments', 'amount')
                 ->orderBy('issued_at')
                 ->orderBy('id')
-                ->paginate(30),
+                ->paginate(30)
+                ->withQueryString(),
         ]);
     }
 

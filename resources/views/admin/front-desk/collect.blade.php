@@ -10,10 +10,27 @@
     <div class="admin-page-header">
         <div>
             <h1>À encaisser</h1>
-            <div class="dash-subtitle">Séjours et réservations dont la facture n'est pas soldée (les annulations sont exclues).</div>
+            <div class="dash-subtitle">
+                @if ($period === 'aujourdhui')
+                    Ce qui doit être réglé aujourd'hui : clients installés, sorties non soldées, arrivées et événements du jour, ventes des services.
+                @else
+                    Séjours et réservations dont la facture n'est pas soldée (les annulations sont exclues).
+                @endif
+            </div>
         </div>
         <a href="{{ route('admin.invoices.index') }}" class="btn btn-outline-primary">Toutes les factures</a>
     </div>
+
+    {{-- « Aujourd'hui » = due by the end of the business day (Invoice::scopeDueBy), the home card's link. --}}
+    <ul class="nav nav-pills mb-3 reservation-tabs">
+        @foreach (['aujourdhui' => 'Aujourd\'hui', 'tout' => 'Tout'] as $key => $label)
+            <li class="nav-item">
+                <a href="{{ route('admin.front-desk.collect', $key === 'tout' ? [] : ['periode' => $key]) }}" class="nav-link {{ $period === $key ? 'active' : '' }}" @if ($period === $key) aria-current="page" @endif>
+                    {{ $label }} <span class="badge bg-light text-dark">{{ $counts[$key] }}</span>
+                </a>
+            </li>
+        @endforeach
+    </ul>
 
     <div class="fd-list">
         @forelse ($invoices as $invoice)
@@ -67,7 +84,7 @@
                 </div>
             </div>
         @empty
-            <div class="fd-empty"><i class="far fa-check-circle"></i> Tout est réglé : aucune facture en attente de paiement.</div>
+            <div class="fd-empty"><i class="far fa-check-circle"></i> {{ $period === 'aujourdhui' ? 'Rien à encaisser aujourd\'hui.' : 'Tout est réglé : aucune facture en attente de paiement.' }}</div>
         @endforelse
     </div>
 

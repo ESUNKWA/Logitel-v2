@@ -64,6 +64,23 @@ class Invoice extends Model
             ->orWhereHas('sale', fn (Builder $s) => $s->where('status', Sale::STATUS_VALID)));
     }
 
+    /**
+     * Invoices due by `$dayEnd` (end of the business day — « Reste à encaisser » card and the
+     * « Aujourd'hui » filter of « À encaisser », client request 2026-11-28): stays and bookings
+     * whose arrival is before then (in-house, departures not settled, today's arrivals), counter
+     * sales (restaurant, beach & pool, also charged to a room) and venue bookings whose event
+     * starts before then. A venue booking's sale is created when the room is booked, hence the
+     * event's start rather than `sold_at`. Future bookings and events are left out.
+     */
+    public function scopeDueBy(Builder $query, CarbonInterface $dayEnd): Builder
+    {
+        return $query->where(fn (Builder $due) => $due
+            ->whereHas('reservation', fn (Builder $r) => $r->where('check_in', '<', $dayEnd))
+            ->orWhereHas('sale', fn (Builder $s) => $s->where(fn (Builder $w) => $w
+                ->whereDoesntHave('venueBooking')
+                ->orWhereHas('venueBooking', fn (Builder $v) => $v->where('start_at', '<', $dayEnd)))));
+    }
+
     /** The service the invoice bills (stays: hébergement). */
     public function departmentEnum(): Department
     {

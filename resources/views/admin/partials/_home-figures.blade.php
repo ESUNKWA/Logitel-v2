@@ -1,6 +1,6 @@
 {{-- Home « figures band »: occupancy for rooms.view, the hotel's money for dashboard.revenue.
      Rendered by the home page and re-rendered by LiveFiguresController (live refresh). --}}
-@if ($finance || $roomCounts)
+@if ($finance || $roomCounts || ($dueToday ?? null))
     @php
         $fcfa = fn ($v) => number_format((float) $v, 0, ',', ' ');
         $occupied = $roomCounts['occupee'] ?? 0;
@@ -27,6 +27,19 @@
                 <span class="home-stat__value">{{ $occupied }} <small>/ {{ $sellable }}</small></span>
                 <span class="home-stat__hint">Taux d'occupation {{ $occupancy }} % · {{ $roomCounts['disponible'] ?? 0 }} libre(s)</span>
             </div>
+        @endif
+        @if ($dueToday ?? null)
+            {{-- Réception (client request, 2026-11-28): only what is due by the end of the business day
+                 (FinanceStats::outstandingDueBy) — future bookings and events are left out. --}}
+            @php
+                $dueAmount = $dueToday[0];
+                $dueCount = $dueToday[1];
+            @endphp
+            <a href="{{ route('admin.front-desk.collect', ['periode' => 'aujourdhui']) }}" class="home-stat {{ $dueAmount > 0 ? 'home-stat--danger' : '' }}" data-due-today>
+                <span class="home-stat__label"><i class="fas fa-hand-holding-usd"></i> Reste à encaisser</span>
+                <span class="home-stat__value">{{ $fcfa($dueAmount) }} <small>FCFA</small></span>
+                <span class="home-stat__hint">{{ $dueCount ? $dueCount.' facture'.($dueCount > 1 ? 's' : '').' à régler aujourd\'hui' : 'Rien à encaisser aujourd\'hui' }}</span>
+            </a>
         @endif
         @if ($finance)
             <div class="home-stat">
