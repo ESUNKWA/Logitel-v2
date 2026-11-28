@@ -12,6 +12,8 @@ enum Department: string
 {
     case Hebergement = 'hebergement';
     case Restauration = 'restauration';
+    // Drinks, apart from the restaurant's food (client request, 2026-11-28).
+    case Bar = 'bar';
     case PlagePiscine = 'plage_piscine';
     case Evenements = 'evenements';
 
@@ -20,6 +22,7 @@ enum Department: string
         return match ($this) {
             self::Hebergement => 'Hébergement',
             self::Restauration => 'Restauration',
+            self::Bar => 'Bar',
             self::PlagePiscine => 'Plage et piscine',
             self::Evenements => 'Réunions et événements',
         };
@@ -30,6 +33,7 @@ enum Department: string
         return match ($this) {
             self::Hebergement => 'fa-bed',
             self::Restauration => 'fa-utensils',
+            self::Bar => 'fa-glass-martini-alt',
             self::PlagePiscine => 'fa-swimmer',
             self::Evenements => 'fa-briefcase',
         };
@@ -41,6 +45,7 @@ enum Department: string
         return match ($this) {
             self::Hebergement => 'hebergement',
             self::Restauration => 'restauration',
+            self::Bar => 'bar',
             self::PlagePiscine => 'plage-piscine',
             self::Evenements => 'evenements',
         };
@@ -63,13 +68,13 @@ enum Department: string
      */
     public static function salesServices(): array
     {
-        return [self::Restauration, self::PlagePiscine, self::Evenements];
+        return [self::Restauration, self::Bar, self::PlagePiscine, self::Evenements];
     }
 
-    /** Services sold over the counter (« Nouvelle vente » pages): restaurant, beach & pool. */
+    /** Services sold over the counter (« Nouvelle vente » pages): restaurant, bar, beach & pool. */
     public static function counterServices(): array
     {
-        return [self::Restauration, self::PlagePiscine];
+        return [self::Restauration, self::Bar, self::PlagePiscine];
     }
 
     /**
@@ -101,6 +106,12 @@ enum Department: string
     public static function offeredCounterServices(): array
     {
         return array_values(array_filter(self::counterServices(), fn (self $d) => $d->isOffered()));
+    }
+
+    /** Only the restaurant has a menu by day (client request, 2026-11-28): CatalogItem::$days. */
+    public function servesByDay(): bool
+    {
+        return $this === self::Restauration;
     }
 
     /** Only for the beach / pool: a catalogue item may count as one entry (attendance). */

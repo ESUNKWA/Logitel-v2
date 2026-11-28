@@ -76,6 +76,8 @@ class CatalogItemController extends Controller
             'position' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'counts_entry' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
+            'days' => ['nullable', 'array', 'max:7'],
+            'days.*' => ['integer', 'between:1,7'],
         ], [
             'name.unique' => 'Ce service a déjà une prestation de ce nom.',
         ], ['name' => 'nom', 'category' => 'catégorie', 'price' => 'prix', 'position' => 'ordre']);
@@ -88,7 +90,21 @@ class CatalogItemController extends Controller
             // Only the beach / pool counts entries.
             'counts_entry' => $department->countsEntries() && $request->boolean('counts_entry'),
             'is_active' => $request->has('is_active') ? $request->boolean('is_active') : ($item?->is_active ?? true),
+            // Restaurant only: the days the dish is served (none, or all seven: every day).
+            'days' => $department->servesByDay() ? self::days($data['days'] ?? []) : null,
         ];
+    }
+
+    /**
+     * @param  array<int, mixed>  $days
+     * @return list<int>|null sorted ISO days, null for every day
+     */
+    private static function days(array $days): ?array
+    {
+        $days = array_values(array_unique(array_map('intval', $days)));
+        sort($days);
+
+        return $days === [] || count($days) === 7 ? null : $days;
     }
 
     /** A service the hotel offers (whitelist), else 404. */

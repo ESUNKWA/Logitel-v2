@@ -36,13 +36,16 @@ class CatalogExampleSeederTest extends TestCase
         $this->assertSame(0, CatalogItem::query()->where('department', '!=', 'plage_piscine')->where('counts_entry', true)->count());
         $this->assertSame(2, Venue::count());
 
-        // Each catalogue reflects its service: food and drinks in Restauration only.
+        // Each catalogue reflects its service: food in Restauration, drinks in Bar.
         foreach ([Department::PlagePiscine, Department::Evenements] as $service) {
             $this->assertSame(0, CatalogItem::query()->ofDepartment($service)
                 ->where(fn ($q) => $q->whereIn('category', ['Boissons', 'Bar', 'Restauration', 'Plats'])
                     ->orWhere('name', 'like', '%Eau%')->orWhere('name', 'like', '%Cocktail%')->orWhere('name', 'like', '%Déjeuner%')->orWhere('name', 'like', '%Pause-café%'))
                 ->count(), $service->getLabel());
         }
-        $this->assertTrue(CatalogItem::query()->ofDepartment(Department::Restauration)->where('name', 'Eau minérale 50 cl')->exists());
+        // Drinks at the bar, food at the restaurant (client request, 2026-11-28).
+        $this->assertTrue(CatalogItem::query()->ofDepartment(Department::Bar)->where('name', 'Eau minérale 50 cl')->exists());
+        $this->assertFalse(CatalogItem::query()->ofDepartment(Department::Restauration)->where('name', 'like', '%Eau%')->exists());
+        $this->assertTrue(CatalogItem::query()->ofDepartment(Department::Restauration)->where('name', 'Garba')->exists());
     }
 }

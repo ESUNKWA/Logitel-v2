@@ -95,7 +95,7 @@ Route::domain(config('routing.admin_domain'))->prefix(config('routing.admin_pref
         Route::get('/pilotage', [PilotageController::class, 'index'])->middleware('can:dashboard.revenue')->name('pilotage.index');
         Route::get('/pilotage/export', [PilotageController::class, 'export'])->middleware('can:dashboard.revenue')->name('pilotage.export');
         // Sales of the other services (restaurant, beach & pool), whitelisted in the URL.
-        Route::prefix('/ventes/{department}')->where(['department' => 'restauration|plage-piscine'])->middleware(EnsureServiceOffered::class)->group(function () {
+        Route::prefix('/ventes/{department}')->where(['department' => 'restauration|bar|plage-piscine'])->middleware(EnsureServiceOffered::class)->group(function () {
             Route::get('/', [SaleController::class, 'index'])->middleware('can:sales.create')->name('sales.index');
             Route::get('/nouvelle', [SaleController::class, 'create'])->middleware('can:sales.create')->name('sales.create');
             Route::post('/', [SaleController::class, 'store'])->middleware('can:sales.create')->name('sales.store');

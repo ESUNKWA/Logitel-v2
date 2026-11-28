@@ -7,6 +7,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\CatalogItem;
 use App\Models\Expense;
 use App\Models\Guest;
 use App\Models\Invoice;
@@ -59,7 +60,7 @@ class FrontDeskController extends Controller
      * entries) and a direct « Nouvelle vente » button; the venue bookings with today's and
      * upcoming events. Réception only: null for the manager (dashboard.revenue).
      *
-     * @return array{sales: list<array{department: Department, count: int, amount: float, entries: int|null}>, events: array{today: int, upcoming: int, canBook: bool}|null}|null
+     * @return array{sales: list<array{department: Department, count: int, amount: float, entries: int|null, menu: list<string>}>, events: array{today: int, upcoming: int, canBook: bool}|null}|null
      */
     public static function otherServices(User $user): ?array
     {
@@ -75,7 +76,8 @@ class FrontDeskController extends Controller
             ->with('lines')->get()
             ->groupBy(fn (Sale $sale) => $sale->department instanceof Department ? $sale->department->value : (string) $sale->department);
 
-        $sales = array_map(function (Department $department) use ($sold) {
+        $today = BusinessDay::today();
+        $sales = array_map(function (Department $department) use ($sold, $today) {
             $day = $sold->get($department->value, collect());
 
             return [
@@ -83,6 +85,9 @@ class FrontDeskController extends Controller
                 'count' => $day->count(),
                 'amount' => (float) $day->sum('total_amount'),
                 'entries' => $department->countsEntries() ? (int) $day->sum(fn (Sale $sale) => $sale->entries()) : null,
+                // Restaurant: today's dishes of the weekly menu (client request, 2026-11-28).
+                'menu' => $department->servesByDay() ? CatalogItem::query()->ofDepartment($department)->active()->ordered()->get()
+                    ->filter(fn (CatalogItem $i) => $i->isOnWeeklyMenu() && $i->servedOn($today))->pluck('name')->values()->all() : [],
             ];
         }, $departments);
 

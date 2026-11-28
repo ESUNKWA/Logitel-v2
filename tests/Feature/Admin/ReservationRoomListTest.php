@@ -90,12 +90,13 @@ class ReservationRoomListTest extends TestCase
         $this->assertNotNull($booking->fresh()->takenBy());
     }
 
-    public function test_the_form_puts_type_and_room_on_the_same_row(): void
+    public function test_the_form_puts_type_and_room_on_the_same_row_from_tablets_up(): void
     {
         $this->room('1');
 
+        // Side by side from 576 px (col-sm-6), stacked on phones (client request, 2026-11-28).
         $this->get(route('admin.reservations.create'))->assertOk()
-            ->assertSeeInOrder(['<div class="col-6">', 'for="booking_room_type">Type de chambre<', '<div class="col-6">', 'for="room_id">Chambre<', 'data-room-hint', 'Mode'], false);
+            ->assertSeeInOrder(['<div class="col-12 col-sm-6">', 'for="booking_room_type">Type de chambre<', '<div class="col-12 col-sm-6">', 'for="room_id">Chambre<', 'data-room-hint', 'Mode'], false);
     }
 
     public function test_a_form_sent_back_keeps_the_chosen_room(): void

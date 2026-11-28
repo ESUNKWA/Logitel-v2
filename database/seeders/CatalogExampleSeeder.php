@@ -8,8 +8,8 @@ use App\Models\Venue;
 use Illuminate\Database\Seeder;
 
 /**
- * Each catalogue only holds what its service sells (client request, 2026-11-27): food and drinks
- * in Restauration only; beach & pool = access, rentals, activities; meetings & events = room
+ * Each catalogue only holds what its service sells (client request, 2026-11-27): food in
+ * Restauration, drinks in Bar (client request, 2026-11-28); beach & pool = access, rentals, activities; meetings & events = room
  * equipment and event services (an event's catering is a Restauration sale).
  *
  * Example catalogue of the other services (restaurant, beach & pool, meetings & events) and two
@@ -33,16 +33,19 @@ class CatalogExampleSeeder extends Seeder
             ['Plats', 'Brochettes de bœuf', 4000, false],
             ['Desserts', 'Salade de fruits', 1500, false],
             ['Desserts', 'Dêguê', 1000, false],
-            ['Boissons', 'Eau minérale 1,5 L', 1000, false],
-            ['Boissons', 'Jus de bissap', 1000, false],
-            ['Boissons', 'Jus de gingembre (gnamakoudji)', 1000, false],
-            ['Boissons', 'Soda (Coca, Fanta, Sprite)', 1000, false],
-            ['Boissons', 'Bière (Flag, Bock)', 1500, false],
-            ['Boissons', 'Café ou thé', 500, false],
-            ['Boissons', 'Eau minérale 50 cl', 500, false],
-            ['Boissons', 'Cocktail sans alcool', 2000, false],
             ['Petit-déjeuner', 'Petit-déjeuner continental', 3500, false],
             ['Petit-déjeuner', 'Petit-déjeuner ivoirien', 4000, false],
+        ],
+        // Drinks: the bar's own catalogue (client request, 2026-11-28 — food in Restauration).
+        'bar' => [
+            ['Eaux et jus', 'Eau minérale 1,5 L', 1000, false],
+            ['Eaux et jus', 'Eau minérale 50 cl', 500, false],
+            ['Eaux et jus', 'Jus de bissap', 1000, false],
+            ['Eaux et jus', 'Jus de gingembre (gnamakoudji)', 1000, false],
+            ['Sodas', 'Soda (Coca, Fanta, Sprite)', 1000, false],
+            ['Bières', 'Bière (Flag, Bock)', 1500, false],
+            ['Boissons chaudes', 'Café ou thé', 500, false],
+            ['Cocktails', 'Cocktail sans alcool', 2000, false],
         ],
         'plage_piscine' => [
             ['Accès', 'Entrée adulte (journée)', 3000, true],

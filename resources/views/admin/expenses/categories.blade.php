@@ -31,7 +31,7 @@
     </form>
 
     <div class="admin-card">
-        <table class="table align-middle table-keep">
+        <table class="table align-middle table-keep table-stack">
             <thead>
                 <tr><th>Nom</th><th>Ordre</th><th>Active</th><th>Dépenses</th><th class="text-end">Actions</th></tr>
             </thead>

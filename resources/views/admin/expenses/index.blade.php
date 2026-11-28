@@ -32,11 +32,12 @@
             <input type="hidden" name="onglet" value="{{ $filters['tab'] }}">
         @endif
         <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-2">
+            {{-- Dates need ~140 px: a quarter of the row on tablets, a sixth on wide screens. --}}
+            <div class="col-6 col-md-3 col-xl-2">
                 <label class="form-label small" for="du">Du</label>
                 <input type="date" class="form-control form-control-sm" id="du" name="du" value="{{ $period['du'] }}">
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-3 col-xl-2">
                 <label class="form-label small" for="au">Au</label>
                 <input type="date" class="form-control form-control-sm" id="au" name="au" value="{{ $period['au'] }}">
             </div>
@@ -58,7 +59,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 col-md-2 d-flex gap-2">
+            <div class="col-12 col-xl-2 d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="far fa-filter"></i> Filtrer</button>
                 <a href="{{ route('admin.expenses.index') }}" class="btn btn-outline-secondary btn-sm" title="Réinitialiser"><i class="far fa-undo"></i></a>
             </div>

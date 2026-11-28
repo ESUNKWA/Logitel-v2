@@ -87,6 +87,10 @@
                                     @endif
                                 </span>
                                 <span class="home-service__hint">aujourd'hui</span>
+                                @if ($service['menu'])
+                                    {{-- Restaurant: today's dishes of the weekly menu (client request, 2026-11-28). --}}
+                                    <span class="home-service__menu"><i class="far fa-utensils"></i> Menu du jour : {{ implode(', ', array_slice($service['menu'], 0, 3)) }}{{ count($service['menu']) > 3 ? ' +'.(count($service['menu']) - 3) : '' }}</span>
+                                @endif
                             </span>
                         </a>
                         <a href="{{ route('admin.sales.create', $slug) }}" class="btn btn-primary home-service__action"><i class="far fa-plus"></i> Nouvelle vente</a>

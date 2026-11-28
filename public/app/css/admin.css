@@ -2918,18 +2918,18 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
     .revenue-table a { color: inherit; text-decoration: none; }
 }
 
-/* ================================================================== Tables as cards on phones
-   admin.js adds .table-cards (+ data-label on every cell) to the application's list tables.
-   Desktop and tablet: unchanged. Under 768 px: one card per row, label on the left, value on
-   the right; the title cell heads the card and the actions sit at the bottom. */
-@media (max-width: 767.98px) {
-    .admin-card:has(> .table-responsive > .table-cards),
-    .admin-card:has(> .table-cards) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
-    .table-responsive:has(> .table-cards) { overflow: visible; }
+/* ================================================================== Tables as cards when they don't fit
+   admin.js adds .table-cards (+ data-label on every cell) to the application's list tables, and
+   .as-cards to those wider than their box or in a box under 560 px (phones, tablets, the manager's
+   sidebar on a small screen — client request 2026-11-28). One card per row, label on the left,
+   value on the right; the title cell heads the card and the actions sit at the bottom. */
+    .admin-card:has(> .table-responsive > .table-cards.as-cards),
+    .admin-card:has(> .table-cards.as-cards) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
+    .table-responsive:has(> .table-cards.as-cards) { overflow: visible; }
 
-    .table-cards, .table-cards tbody, .table-cards tfoot { display: block; width: 100%; }
-    .table-cards thead { display: none; }
-    .table-cards tr {
+    .table-cards.as-cards, .table-cards.as-cards tbody, .table-cards.as-cards tfoot { display: block; width: 100%; }
+    .table-cards.as-cards thead { display: none; }
+    .table-cards.as-cards tr {
         display: flex;
         flex-direction: column;
         margin: 0 0 12px;
@@ -2939,8 +2939,8 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
         border-radius: var(--ek-radius);
         box-shadow: var(--ek-shadow);
     }
-    .table-cards tr.table-active { border-color: var(--ek-primary); }
-    .table-cards td, .table-cards th {
+    .table-cards.as-cards tr.table-active { border-color: var(--ek-primary); }
+    .table-cards.as-cards td, .table-cards.as-cards th {
         display: block;
         position: relative;
         min-height: 2.1em;
@@ -2953,7 +2953,7 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
         overflow-wrap: anywhere;
         box-shadow: none !important;
     }
-    .table-cards td::before, .table-cards th::before {
+    .table-cards.as-cards td::before, .table-cards.as-cards th::before {
         content: attr(data-label);
         position: absolute;
         left: 0;
@@ -2966,14 +2966,14 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
         letter-spacing: .02em;
         color: var(--ek-muted);
     }
-    .table-cards td[data-label=""], .table-cards th[data-label=""] { padding-left: 0 !important; }
-    .table-cards td[data-label=""]::before, .table-cards th[data-label=""]::before { content: none; }
-    .table-cards td:last-child, .table-cards th:last-child { border-bottom: 0; }
-    .table-cards tr.row-full td:last-child { border-bottom: 0; }
-    .table-cards .cell-empty { display: none; }
+    .table-cards.as-cards td[data-label=""], .table-cards.as-cards th[data-label=""] { padding-left: 0 !important; }
+    .table-cards.as-cards td[data-label=""]::before, .table-cards.as-cards th[data-label=""]::before { content: none; }
+    .table-cards.as-cards td:last-child, .table-cards.as-cards th:last-child { border-bottom: 0; }
+    .table-cards.as-cards tr.row-full td:last-child { border-bottom: 0; }
+    .table-cards.as-cards .cell-empty { display: none; }
 
     /* Card heading */
-    .table-cards .cell-title {
+    .table-cards.as-cards .cell-title {
         order: -1;
         padding: 12px 0 10px !important;
         border-bottom: 1px solid var(--ek-border) !important;
@@ -2981,12 +2981,12 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
         font-weight: 700;
         color: var(--ek-ink);
     }
-    .table-cards .cell-title .small, .table-cards .cell-title small { font-weight: 400; }
-    .table-cards .cell-title::before { content: none; }
-    .table-cards .cell-title strong, .table-cards .cell-title > a:first-child { font-size: 1.05rem; }
+    .table-cards.as-cards .cell-title .small, .table-cards.as-cards .cell-title small { font-weight: 400; }
+    .table-cards.as-cards .cell-title::before { content: none; }
+    .table-cards.as-cards .cell-title strong, .table-cards.as-cards .cell-title > a:first-child { font-size: 1.05rem; }
 
     /* Buttons at the bottom, easy to tap */
-    .table-cards .cell-actions {
+    .table-cards.as-cards .cell-actions {
         order: 99;
         display: flex;
         flex-wrap: wrap;
@@ -2995,26 +2995,33 @@ a.file-ref:hover { color: var(--ek-primary); text-decoration: underline; }
         border-top: 1px solid var(--ek-border);
         border-bottom: 0;
     }
-    .table-cards .cell-actions::before { content: none; }
-    .table-cards .cell-actions > *, .table-cards .cell-actions form { flex: 1 1 0; min-width: 30%; margin: 0 !important; }
-    .table-cards .cell-actions .btn { width: 100%; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
-    .table-cards .cell-actions .d-inline, .table-cards .cell-actions .d-flex { display: flex !important; }
+    .table-cards.as-cards .cell-actions::before { content: none; }
+    .table-cards.as-cards .cell-actions > *, .table-cards.as-cards .cell-actions form { flex: 1 1 0; min-width: 30%; margin: 0 !important; }
+    .table-cards.as-cards .cell-actions .btn { width: 100%; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+    .table-cards.as-cards .cell-actions .d-inline, .table-cards.as-cards .cell-actions .d-flex { display: flex !important; }
 
     /* A row of one wide cell: a group heading or "nothing yet" */
-    .table-cards tr.row-full { background: transparent; border: 0; box-shadow: none; padding: 0; }
-    .table-cards tr.row-full td, .table-cards tr.row-full th { padding: 10px 2px !important; border: 0; text-align: center !important; }
-    .table-cards tr.row-full th { text-align: left !important; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ek-muted); padding-top: 14px !important; }
-    .table-cards tr.row-full td::before, .table-cards tr.row-full th::before { content: none; }
+    .table-cards.as-cards tr.row-full { background: transparent; border: 0; box-shadow: none; padding: 0; }
+    .table-cards.as-cards tr.row-full td, .table-cards.as-cards tr.row-full th { padding: 10px 2px !important; border: 0; text-align: center !important; }
+    .table-cards.as-cards tr.row-full th { text-align: left !important; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ek-muted); padding-top: 14px !important; }
+    .table-cards.as-cards tr.row-full td::before, .table-cards.as-cards tr.row-full th::before { content: none; }
 
     /* Totals line (tfoot) */
-    .table-cards tfoot tr { background: var(--ek-bg); }
+    .table-cards.as-cards tfoot tr { background: var(--ek-bg); }
 
     /* Hide a secondary column on phones */
-    .table-cards .cell-hide-sm { display: none; }
-}
+    .table-cards.as-cards .cell-hide-sm { display: none; }
+
+/* Tablets: two cards per line (.as-cards-2, box of 640 px or more). */
+.table-cards.as-cards.as-cards-2 tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.table-cards.as-cards.as-cards-2 tr { margin: 0; }
+.table-cards.as-cards.as-cards-2 tr.row-full, .table-cards.as-cards.as-cards-2 tr.dtrg-group,
+.table-cards.as-cards.as-cards-2 tr:has(> td.dt-empty) { grid-column: 1 / -1; }
+/* Tables kept as tables scroll inside their own box: the page itself never scrolls sideways. */
+.dt-container .dt-layout-table > div:has(> table:not(.as-cards)) { overflow-x: auto; }
 /* The other way round: a column shown only on phones (e.g. « Téléphone » on the réservations, the
    Formule / « Détails » columns of Recettes) — PC tables and printouts keep their own columns. */
-@media (min-width: 768px) { .cell-show-sm { display: none; } }
+table:not(.as-cards) .cell-show-sm { display: none; }
 @media print { .cell-show-sm { display: none !important; } }
 
 /* Room board, « Libres » tab: one block per room type */
@@ -3125,10 +3132,10 @@ table.dataTable th.text-end, table.dataTable td.text-end { text-align: right; }
     div.dt-container div.dt-search, div.dt-container div.dt-length { text-align: left; }
     div.dt-container div.dt-search input { display: block; width: 100%; min-width: 0; }
     div.dt-container div.dt-paging ul.pagination { flex-wrap: wrap; }
-    .table-cards tr:has(> td.dt-empty) { background: transparent; border: 0; box-shadow: none; padding: 0; }
-    .table-cards td.dt-empty { padding: 10px 2px !important; border: 0; text-align: center !important; }
-    .table-cards td.dt-empty::before { content: none; }
 }
+.table-cards.as-cards tr:has(> td.dt-empty) { background: transparent; border: 0; box-shadow: none; padding: 0; }
+.table-cards.as-cards td.dt-empty { padding: 10px 2px !important; border: 0; text-align: center !important; }
+.table-cards.as-cards td.dt-empty::before { content: none; }
 @media print {
     .dt-container .dt-layout-row:not(.dt-layout-table) { display: none !important; }
 }
@@ -3370,16 +3377,12 @@ a.duty-pill:not(.duty-pill--none):hover { color: #0e5a3c; background: rgba(var(-
 .duty-assign .btn, .duty-close .btn { white-space: nowrap; }
 .duty-day-repeat { display: none; }
 @media (max-width: 991.98px) { .duty-th-long { display: none; } }
-@media (max-width: 767.98px) {
-    .duty-table .duty-day-repeat { display: inline; }
-    .duty-actions__group, .duty-actions .duty-assign, .duty-actions .duty-close { width: 100%; }
-    .duty-assign { flex-wrap: nowrap; }
-    .duty-assign .form-select { flex: 1 1 auto; min-height: 38px; }
-    .duty-assign .btn, .duty-close .btn { min-height: 38px; }
-    .duty-close .btn { width: 100%; }
-    /* The table sits in DataTables' wrapper: drop the outer card like the other card tables. */
-    .admin-card:has(.duty-table.table-cards) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
-}
+.duty-table.as-cards .duty-day-repeat { display: inline; }
+.duty-table.as-cards .duty-actions__group, .duty-table.as-cards .duty-assign, .duty-table.as-cards .duty-close { width: 100%; }
+.duty-table.as-cards .duty-assign { flex-wrap: nowrap; }
+.duty-table.as-cards .duty-assign .form-select { flex: 1 1 auto; min-height: 38px; }
+.duty-table.as-cards .duty-assign .btn, .duty-table.as-cards .duty-close .btn { min-height: 38px; }
+.duty-table.as-cards .duty-close .btn { width: 100%; }
 /* The page's own pill shows the whole text (the top bar's one is the one shortened). */
 .admin-page-header .duty-pill { max-width: none; }
 .admin-page-header .duty-pill .duty-pill__text { white-space: normal; }
@@ -3620,7 +3623,7 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .nav-flyout .simple-nav__menu .nav-group__toggle.is-current { color: var(--ek-primary); }
 .nav-flyout .admin-sidebar__group-toggle.is-current { color: #ecd08a; }
 
-/* ================================================================== Ventes (restauration, plage et piscine) */
+/* ================================================================== Ventes (restauration, bar, plage et piscine) */
 .sale-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
 .sale-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--ek-border); border-radius: 10px; background: #fff; }
 .sale-item__name { display: flex; flex-direction: column; font-weight: 600; margin: 0; min-width: 0; overflow-wrap: anywhere; }
@@ -3629,7 +3632,7 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .sale-item__qty .form-control { padding-left: 2px; padding-right: 2px; }
 
 /* ================================================================== Pilotage (CA par service) */
-:root { --pilot-hebergement: #1f3a68; --pilot-restauration: #d9822b; --pilot-plage_piscine: #1aa3b8; --pilot-evenements: #7a4fb5; }
+:root { --pilot-hebergement: #1f3a68; --pilot-restauration: #d9822b; --pilot-bar: #b03a5b; --pilot-plage_piscine: #1aa3b8; --pilot-evenements: #7a4fb5; }
 .pilot-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .pilot-kpi { margin-bottom: 0; border-top: 4px solid var(--ek-border); }
 .pilot-kpi--total { border-top-color: var(--ek-gold, #c9a24b); }
@@ -3637,6 +3640,7 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .pilot-kpi--restauration { border-top-color: var(--pilot-restauration); }
 .pilot-kpi--plage_piscine { border-top-color: var(--pilot-plage_piscine); }
 .pilot-kpi--evenements { border-top-color: var(--pilot-evenements); }
+.pilot-kpi--bar { border-top-color: var(--pilot-bar); }
 .pilot-kpi__label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color); }
 .pilot-kpi__value { font-size: 1.6rem; font-weight: 800; }
 .pilot-kpi__value small { font-size: .55em; font-weight: 600; color: var(--bs-secondary-color); }
@@ -3650,6 +3654,7 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .pilot-dot--restauration, .pilot-fill--restauration { background: var(--pilot-restauration); }
 .pilot-dot--plage_piscine, .pilot-fill--plage_piscine { background: var(--pilot-plage_piscine); }
 .pilot-dot--evenements, .pilot-fill--evenements { background: var(--pilot-evenements); }
+.pilot-dot--bar, .pilot-fill--bar { background: var(--pilot-bar); }
 .pilot-bar { height: 8px; border-radius: 999px; background: var(--bs-tertiary-bg, #eef1f5); overflow: hidden; }
 .pilot-bar__fill { height: 100%; border-radius: 999px; }
 .pilot-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .82rem; }
@@ -3702,3 +3707,99 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .home-service__figures strong { color: var(--ek-ink); }
 .home-service__hint { font-size: .78rem; color: var(--ek-muted); }
 .home-service__action { margin-top: auto; width: 100%; font-weight: 600; }
+
+
+/* ================================================================== Responsive pass (client request, 2026-11-28)
+   Every screen usable on phones, tablets and computers, for the réception and the manager. */
+
+/* Lists shown as cards: the outer white card goes (DataTables' wrapper sits between them). */
+.admin-card:has(table.as-cards) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
+
+/* Editing grids (.table-stack: catalogue, venues, expense categories) as stacked forms when they
+   don't fit: each line a card, each field with its label above, the buttons at the bottom. */
+.table-stack.as-cards, .table-stack.as-cards tbody { display: block; width: 100%; }
+.table-stack.as-cards thead { display: none; }
+.table-responsive:has(> .table-stack.as-cards) { overflow: visible; }
+.table-stack.as-cards tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 0 0 12px; padding: 14px; background: var(--ek-surface); border: 1px solid var(--ek-border); border-radius: var(--ek-radius); box-shadow: var(--ek-shadow); }
+.table-stack.as-cards.as-cards-2 tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.table-stack.as-cards.as-cards-2 tr { margin: 0; }
+.table-stack.as-cards td { width: auto !important; display: block; padding: 0 !important; border: 0; text-align: left !important; white-space: normal !important; min-width: 0; }
+.table-stack.as-cards td::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: .75rem; font-weight: 600; color: var(--ek-muted); }
+.table-stack.as-cards td[data-label=""]::before { content: none; }
+.table-stack.as-cards td:first-child, .table-stack.as-cards td.cell-actions, .table-stack.as-cards tr.row-full td { grid-column: 1 / -1; }
+.table-stack.as-cards td.cell-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px !important; border-top: 1px solid var(--ek-border); }
+.table-stack.as-cards td.cell-actions::before { content: none; }
+.table-stack.as-cards td.cell-actions form { display: flex !important; flex: 1 1 auto; }
+.table-stack.as-cards td.cell-actions form:first-child { flex: 1 1 60%; }
+.table-stack.as-cards td.cell-actions .btn { width: 100%; min-height: 40px; }
+.table-stack.as-cards .form-control, .table-stack.as-cards .form-select { min-height: 38px; }
+.table-stack.as-cards tr.row-full { display: block; background: transparent; border: 0; box-shadow: none; padding: 0; }
+.table-stack.as-cards tr.row-full td::before { content: none; }
+.table-stack.as-cards tr.row-full td { text-align: center !important; padding: 10px 2px !important; }
+
+/* Pricing-mode choices (Passage / Journée / Nuitée / Séjour, and the other radio button groups
+   of the forms): a grid that goes 4 → 2 per line instead of squashing the labels. */
+.btn-group:has(> .btn-check + .mode-btn) { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+.btn-group:has(> .btn-check + .mode-btn) > .btn { border-radius: var(--bs-border-radius) !important; margin: 0 !important; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+@media (max-width: 575.98px) {
+    .btn-group:has(> .btn-check + .btn:not(.mode-btn)) { display: flex; flex-direction: column; width: 100%; gap: 6px; }
+    .btn-group:has(> .btn-check + .btn:not(.mode-btn)) > .btn { border-radius: var(--bs-border-radius) !important; margin: 0 !important; width: 100%; text-align: left; }
+}
+
+/* Payment lines (method, amount, cash received, remove): fit the width of their own block —
+   a narrow column of a two-column page, a modal or a phone — instead of the screen's. */
+.payment-lines { container-type: inline-size; }
+@container (max-width: 560px) {
+    .payment-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto; }
+    .payment-line__received { grid-column: 1 / 3; grid-row: 2; }
+    .payment-line__received[hidden] { display: none !important; }
+}
+@container (max-width: 330px) {
+    .payment-line { grid-template-columns: minmax(0, 1fr) auto; }
+    .payment-line > :nth-child(2) { grid-column: 1; grid-row: 2; }
+    .payment-line__received { grid-column: 1 / -1; grid-row: 3; }
+}
+
+/* Venue planning: the week grid (venues × 7 days) needs ~1040 px; below that, one card per day
+   (resources/views/admin/events/planning.blade.php, .venue-days). */
+.venue-days { display: none; }
+@media (max-width: 1099.98px) {
+    html[data-ui="simple"] .venue-planning-grid { display: none; }
+    html[data-ui="simple"] .venue-days { display: grid; }
+}
+@media (max-width: 1359.98px) {
+    html[data-ui="complet"] .venue-planning-grid { display: none; }
+    html[data-ui="complet"] .venue-days { display: grid; }
+}
+.venue-days { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.venue-day { padding: 14px 16px; }
+.venue-day.is-today { border-color: rgba(var(--ek-gold-rgb), .7); box-shadow: 0 0 0 3px rgba(var(--ek-gold-rgb), .15); }
+.venue-day__title { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--ek-ink); margin: 0 0 8px; font-size: 1rem; }
+.venue-day__venue { display: grid; gap: 6px; padding: 8px 0; border-top: 1px solid var(--ek-border); }
+.venue-day__name { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 700; color: var(--ek-ink); font-size: .9rem; }
+.venue-day__name small { font-weight: 400; color: var(--ek-muted); }
+.venue-day .venue-slot { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.venue-day__add { justify-self: start; }
+
+/* Restaurant menu by day (client request, 2026-11-28): day toggles (catalogue) and the week. */
+.menu-days { display: flex; flex-wrap: wrap; gap: 4px; }
+.menu-days__day { min-width: 46px; padding: 4px 6px; border: 1px solid #c9d1dd; background: var(--ek-surface); color: var(--ek-text); font-size: .78rem; font-weight: 600; }
+.menu-days__day:hover { border-color: var(--ek-primary); color: var(--ek-primary); }
+.btn-check:checked + .menu-days__day { background: var(--ek-primary); border-color: var(--ek-primary); color: #fff; }
+.btn-check:focus-visible + .menu-days__day { box-shadow: 0 0 0 .2rem rgba(var(--ek-primary-rgb), .3); }
+.menu-week { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+.menu-week__day { padding: 10px 12px; border: 1px solid var(--ek-border); border-radius: 12px; background: var(--ek-soft, #f6f8fb); min-width: 0; }
+.menu-week__day.is-today { border-color: rgba(var(--ek-gold-rgb), .8); background: var(--ek-gold-50, #fbf6e9); }
+.menu-week__name { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 800; color: var(--ek-ink); margin-bottom: 6px; }
+.menu-week__dish { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-size: .86rem; color: var(--ek-ink); border-top: 1px dashed var(--ek-border); overflow-wrap: anywhere; }
+.menu-week__dish span { white-space: nowrap; color: var(--ek-muted); font-variant-numeric: tabular-nums; }
+.menu-week__none { font-size: .82rem; color: var(--ek-muted); }
+.sale-menu-day { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 4px 12px; border-radius: 999px; background: var(--ek-gold-50, #fbf6e9); border: 1px solid rgba(var(--ek-gold-rgb), .55); color: #6b5212; font-weight: 700; font-size: .85rem; }
+.sale-menu-day::first-letter { text-transform: uppercase; }
+.sale-off-menu { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--ek-border); }
+.sale-off-menu > summary { cursor: pointer; font-weight: 700; color: var(--ek-ink); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sale-off-menu > summary::-webkit-details-marker { display: none; }
+.sale-off-menu > summary::before { content: '▸'; color: var(--ek-muted); transition: transform .15s ease; }
+.sale-off-menu[open] > summary::before { transform: rotate(90deg); }
+.home-service__menu { margin-top: 4px; font-size: .8rem; font-weight: 600; color: #6b5212; overflow-wrap: anywhere; }
+.home-service__menu i { color: var(--ek-gold); margin-right: 2px; }

@@ -23,7 +23,7 @@ class ActivityLog extends Model
         'dossier' => 'Affectations et réservations',
         'encaissement' => 'Encaissements',
         'depense' => 'Dépenses',
-        'vente' => 'Ventes (restauration, plage et piscine)',
+        'vente' => 'Ventes (restauration, bar, plage et piscine)',
         'cloture' => 'Clôtures de caisse',
         'client' => 'Clients',
         'configuration' => 'Configuration',

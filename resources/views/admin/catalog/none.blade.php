@@ -11,7 +11,7 @@
     <div class="alert alert-info">
         L'établissement ne propose aucun service en plus de l'hébergement.
         @can('settings.manage')
-            Cochez les services proposés (restauration, plage et piscine, réunions et événements) dans <a href="{{ route('admin.hotel.edit') }}#services">Configuration → Hôtel</a>.
+            Cochez les services proposés (restauration, bar, plage et piscine, réunions et événements) dans <a href="{{ route('admin.hotel.edit') }}#services">Configuration → Hôtel</a>.
         @endcan
     </div>
 @endsection

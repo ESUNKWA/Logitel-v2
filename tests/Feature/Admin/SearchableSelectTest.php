@@ -53,11 +53,25 @@ class SearchableSelectTest extends TestCase
     {
         $js = file_get_contents(public_path('app/js/select-search.js'));
 
-        // Only existing options can be chosen, and labels go through Tom Select's escaping templates.
-        $this->assertStringContainsString('create: false', $js);
+        // Only existing options can be chosen, and labels go through Tom Select's escaping templates —
+        // except on a select marked data-allow-create (catalogue category, 2026-11-28), whose
+        // « Ajouter « … » » line escapes what was typed.
+        $this->assertStringContainsString("var allowCreate = select.hasAttribute('data-allow-create');", $js);
+        $this->assertMatchesRegularExpression('/create: allowCreate \? function[\s\S]*?\} : false,/', $js);
+        $this->assertStringContainsString("Ajouter « <strong>' + escape(clean(data.input)) + '</strong> »", $js);
         $this->assertStringNotContainsString('innerHTML', $js);
         $this->assertStringNotContainsString('eval(', $js);
         $this->assertDoesNotMatchRegularExpression('/render:\s*\{[^}]*\b(option|item)\s*:/s', $js, 'a custom option/item template must escape() its labels');
+    }
+
+    public function test_only_the_catalogue_category_allows_new_values(): void
+    {
+        $views = collect(\Illuminate\Support\Facades\File::allFiles(resource_path('views')))
+            ->filter(fn ($file) => str_contains($file->getContents(), 'data-allow-create'))
+            ->map(fn ($file) => str_replace(resource_path('views').DIRECTORY_SEPARATOR, '', $file->getPathname()))
+            ->values()->all();
+
+        $this->assertSame(['admin/catalog/index.blade.php'], $views);
     }
 
     public function test_sweetalert_pop_ups_keep_their_hidden_select_native(): void

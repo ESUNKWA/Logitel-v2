@@ -13,7 +13,10 @@
 // input select (.swal2-select, unused by our pop-ups: enhanced, it showed up in every confirmation).
 // Security: labels are rendered by Tom Select's default templates, which HTML-escape them (guest
 // and room names are user input) — any custom render function must use escape() too. No create:
-// only the existing options can be chosen (the server validates every value anyway). If the
+// only the existing options can be chosen (the server validates every value anyway) — except on a
+// select marked data-allow-create (catalogue category, client request 2026-11-28): a name typed
+// in the search that matches no option can be added (« Ajouter « … » », 60 characters at most,
+// escaped); a matching <option> is appended to the <select> so it is what gets posted. If the
 // library is missing or fails, the native selects simply stay as they are.
 (function () {
     'use strict';
@@ -145,12 +148,29 @@
         // A native select sized by its content (width: auto, flex item) is as wide as its longest
         // option; the control is only as wide as the chosen one: keep the native width.
         var nativeWidth = select.offsetWidth;
+        // data-allow-create: a new value typed in the search (trimmed, 60 characters at most), unless
+        // an option already has that name whatever the case (« boissons » → « Boissons »).
+        var allowCreate = select.hasAttribute('data-allow-create');
+        var clean = function (input) { return String(input || '').replace(/\s+/g, ' ').trim().slice(0, 60); };
+        var exists = function (text) {
+            var wanted = text.toLocaleLowerCase('fr');
+            return Array.prototype.some.call(select.options, function (option) {
+                return option.value !== '' && option.value.toLocaleLowerCase('fr') === wanted;
+            });
+        };
         var ts;
         try {
             ts = new window.TomSelect(select, {
                 plugins: ['dropdown_input', 'no_backspace_delete', 'ek_in_place'],
                 allowEmptyOption: true,
-                create: false,
+                create: allowCreate ? function (input) {
+                    var text = clean(input);
+                    return text === '' || exists(text) ? false : { value: text, text: text };
+                } : false,
+                createFilter: allowCreate ? function (input) {
+                    var text = clean(input);
+                    return text !== '' && !exists(text);
+                } : null,
                 maxItems: 1,
                 maxOptions: null,
                 closeAfterSelect: true,
@@ -158,12 +178,25 @@
                 dropdownParent: clipped ? 'body' : null,
                 render: {
                     no_results: function () { return '<div class="no-results">Aucun résultat</div>'; },
+                    option_create: function (data, escape) {
+                        return '<div class="create">Ajouter « <strong>' + escape(clean(data.input)) + '</strong> »</div>';
+                    },
                 },
             });
         } catch (e) {
             return; // the native select stays usable
         }
 
+        if (allowCreate) {
+            // The created value must exist in the <select> to be posted (ek_in_place writes the
+            // value with the native setter, which ignores unknown values).
+            ts.on('option_add', function (value, data) {
+                var known = Array.prototype.some.call(select.options, function (option) { return option.value === String(value); });
+                if (!known) {
+                    select.appendChild(new Option(data && data.text ? data.text : String(value), String(value)));
+                }
+            });
+        }
         ts.wrapper.classList.add('ek-select');
         if (nativeWidth > 0 && ts.wrapper.offsetWidth < nativeWidth - 1) {
             ts.wrapper.style.minWidth = nativeWidth + 'px';

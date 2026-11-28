@@ -87,6 +87,27 @@ class CatalogAndPilotageTest extends TestCase
         $this->assertTrue(ActivityLog::query()->where('category', 'configuration')->where('description', 'like', '%Attiéké poisson%')->exists());
     }
 
+    public function test_the_categories_are_offered_in_a_list_of_the_service(): void
+    {
+        $dish = $this->item(Department::Restauration, 'Garba', 2000);
+        $dish->update(['category' => 'Plats']);
+        $this->item(Department::Restauration, 'Bissap', 1000)->update(['category' => 'Boissons']);
+        $this->item(Department::PlagePiscine, 'Transat', 1000)->update(['category' => 'Locations']); // another service
+
+        $page = $this->actingAs($this->manager)->get(route('admin.catalog.index', ['service' => 'restauration']))->assertOk();
+        // The add form: a list (new categories typed in its search, data-allow-create), this service's categories only.
+        $page->assertSeeInOrder(['<select class="form-select" id="new-category" name="category" data-allow-create>', 'Sans catégorie', 'Boissons', 'Plats', '</select>'], false)
+            ->assertDontSee('<datalist', false)
+            ->assertDontSee('>Locations<', false);
+        // Each line: its own category selected in the same list.
+        $page->assertSee('<option value="Plats" selected>Plats</option>', false);
+
+        // A category typed in the list is a new value posted as is.
+        $this->post(route('admin.catalog.store'), ['service' => 'restauration', 'name' => 'Dêguê', 'category' => 'Desserts', 'price' => '1 000'])->assertSessionHasNoErrors();
+        $this->assertSame('Desserts', CatalogItem::query()->where('name', 'Dêguê')->value('category'));
+        $this->get(route('admin.catalog.index', ['service' => 'restauration']))->assertSeeInOrder(['id="new-category"', 'Boissons', 'Desserts', 'Plats'], false);
+    }
+
     public function test_a_sold_item_is_deactivated_not_deleted(): void
     {
         $sold = $this->item(Department::Restauration, 'Poulet', 5000);

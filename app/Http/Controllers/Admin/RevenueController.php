@@ -185,7 +185,7 @@ class RevenueController extends Controller
             'kind' => in_array($text('dossier'), [Payment::KIND_STAY, Payment::KIND_BOOKING], true) ? $text('dossier') : null,
             // ?formule= : the file's pricing mode (« mode d'affectation »), not the payment method (?mode=).
             'formula' => PricingMode::tryFrom($text('formule')),
-            // ?service= : hebergement | restauration | plage_piscine (whitelist; anything else = all).
+            // ?service= : hebergement | restauration | bar | plage_piscine | evenements (whitelist; anything else = all).
             'service' => Department::tryFrom($text('service')),
             'single' => $from->isSameDay($to),
             'isToday' => $to->isSameDay($today),

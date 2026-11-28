@@ -48,7 +48,7 @@
 
     <div class="admin-card p-0">
         <div class="table-responsive">
-            <table class="table align-middle mb-0 table-keep">
+            <table class="table align-middle mb-0 table-keep table-stack">
                 <thead>
                     <tr>
                         <th>Nom</th>

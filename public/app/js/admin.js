@@ -567,7 +567,7 @@
             // they show at once (client request, 2026-11-11), the arrival then keeps the free ones.
             var byType = !!form.querySelector('[name="room_type_id"]');
             if (byType && !field('room_type_id')) {
-                roomsMessage('Choisissez d\'abord le type de chambre');
+                roomsMessage('Choisissez d\'abord le type'); // short: fits the list on phones
                 hint('');
                 return;
             }
@@ -613,7 +613,7 @@
                     var currentLabel = roomSelect.value && roomSelect.selectedIndex >= 0 ? roomSelect.options[roomSelect.selectedIndex].textContent : 'choisie';
 
                     if (rooms.length === 0) {
-                        roomsMessage(withArrival ? 'Aucune chambre disponible pour ces dates' : 'Aucune chambre de ce type');
+                        roomsMessage(withArrival ? 'Aucune chambre libre à ces dates' : 'Aucune chambre de ce type'); // short: fits the list on phones
                         hint(withArrival && currentValue ? 'La chambre ' + currentLabel + ' n\'est pas libre pour cette arrivée.' : '', true);
                         roomSelect.dispatchEvent(new CustomEvent('rooms:refreshed'));
                         return;
@@ -1882,6 +1882,86 @@
 
         table.classList.add('table-cards');
     });
+
+    // Editing grids (.table-stack: one form per line, e.g. catalogue, venues): they stay out of
+    // the list cards (.table-keep) but get their labels to be stacked as forms when narrow.
+    document.querySelectorAll('.admin-content table.table-stack').forEach(function (table) {
+        if (!table.tHead) {
+            return;
+        }
+        var headers = Array.prototype.map.call(table.tHead.rows[0].cells, function (th) {
+            return (th.textContent || '').replace(/\s+/g, ' ').trim();
+        });
+        Array.prototype.forEach.call(table.tBodies[0] ? table.tBodies[0].rows : [], function (row) {
+            if (row.cells.length === 1 && (row.cells[0].colSpan || 1) > 1) {
+                row.classList.add('row-full');
+                return;
+            }
+            Array.prototype.forEach.call(row.cells, function (cell, i) {
+                if (!cell.hasAttribute('data-label')) {
+                    cell.setAttribute('data-label', headers[i] || '');
+                }
+                if (i === row.cells.length - 1 && /^actions?$/i.test(headers[i] || '')) {
+                    cell.classList.add('cell-actions');
+                }
+            });
+        });
+        table.classList.add('table-stack-ready');
+    });
+})();
+
+// --- Cards only where a table doesn't fit (client request, 2026-11-28: every screen responsive) ---
+// The switch follows the room each table actually has — the manager's sidebar takes 256 px, so a
+// 1024 px tablet leaves ~700 px to a list — rather than the screen width: a list (.table-cards) or
+// an editing grid (.table-stack-ready) becomes cards (.as-cards) when its table is wider than its
+// box, or when the box is under 560 px (phones); two cards per line (.as-cards-2) from 640 px.
+// Measured again on resize, on DataTables redraws (paging, search) and when a <details> opens.
+(function () {
+    'use strict';
+
+    var selector = 'table.table-cards, table.table-stack-ready';
+    var box = function (table) {
+        // DataTables wraps the table: measure the cell that holds it, else the table's parent.
+        return table.closest('.dt-layout-cell, .dt-layout-full, .table-responsive') || table.parentElement;
+    };
+    var measure = function () {
+        var tables = Array.prototype.filter.call(document.querySelectorAll(selector), function (table) {
+            return table.offsetParent !== null || table.classList.contains('as-cards');
+        });
+        // Write, then read everything, then write: one layout pass for all the tables.
+        tables.forEach(function (table) { table.classList.remove('as-cards', 'as-cards-2'); });
+        var decisions = tables.map(function (table) {
+            var holder = box(table);
+            var room = holder.clientWidth;
+            if (room === 0) {
+                return null;
+            }
+            return { cards: room < 560 || table.offsetWidth > room + 1, two: room >= 640 };
+        });
+        tables.forEach(function (table, i) {
+            if (decisions[i] && decisions[i].cards) {
+                table.classList.add('as-cards');
+                if (decisions[i].two) {
+                    table.classList.add('as-cards-2');
+                }
+            }
+        });
+    };
+
+    var timer = null;
+    var later = function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(measure, 80);
+    };
+
+    measure();
+    window.addEventListener('load', measure);
+    window.addEventListener('resize', later);
+    document.addEventListener('toggle', later, true);
+    document.addEventListener('shown.bs.tab', later);
+    if (window.jQuery) {
+        window.jQuery(document).on('draw.dt init.dt', later);
+    }
 })();
 
 // --- DataTables on every list table (client request, 2026-10-12) ---

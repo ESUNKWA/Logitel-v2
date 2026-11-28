@@ -6,6 +6,8 @@
 @section('content')
     @php($fcfa = fn ($v) => number_format((float) $v, 0, ',', ' '))
     @php($slug = $department->slug())
+    {{-- Restaurant: menu by day (client request, 2026-11-28). --}}
+    @php($byDay = $department->servesByDay())
 
     <div class="admin-page-header">
         <div>
@@ -34,12 +36,6 @@
         @endforeach
     </ul>
 
-    <datalist id="catalog-categories">
-        @foreach ($categories as $category)
-            <option value="{{ $category }}"></option>
-        @endforeach
-    </datalist>
-
     <div class="admin-card">
         <h5>Ajouter une prestation</h5>
         <form method="POST" action="{{ route('admin.catalog.store') }}" class="row g-2 align-items-end">
@@ -52,7 +48,18 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label small" for="new-category">Catégorie <span class="text-muted">(facultatif)</span></label>
-                <input type="text" class="form-control" id="new-category" name="category" maxlength="60" list="catalog-categories" value="{{ old('category') }}" placeholder="Boissons, Plats…">
+                {{-- The service's categories in a list (client request, 2026-11-28); a new one is typed in
+                     the list's search and added (« Ajouter « … » », select-search.js data-allow-create). --}}
+                <select class="form-select" id="new-category" name="category" data-allow-create>
+                    <option value="">Sans catégorie</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category }}" @selected(old('category') === $category)>{{ $category }}</option>
+                    @endforeach
+                    @if (filled(old('category')) && ! $categories->contains(old('category')))
+                        <option value="{{ old('category') }}" selected>{{ old('category') }}</option>
+                    @endif
+                </select>
+                <div class="form-text">Pour une nouvelle catégorie, tapez son nom dans la liste.</div>
             </div>
             <div class="col-md-2">
                 <label class="form-label small" for="new-price">Prix</label>
@@ -74,20 +81,52 @@
             <div class="col-md-1">
                 <button type="submit" class="btn btn-primary w-100"><i class="far fa-plus"></i></button>
             </div>
+            @if ($byDay)
+                <div class="col-12">
+                    <span class="form-label small d-block mb-1">Jours de service <span class="text-muted">(aucun coché = tous les jours : boissons, desserts…)</span></span>
+                    @include('admin.catalog._days', ['idPrefix' => 'new-day', 'selected' => array_map('intval', (array) old('days', [])), 'form' => null])
+                </div>
+            @endif
         </form>
     </div>
+
+    @if ($byDay)
+        {{-- The week at a glance: the dishes served on some days only, per day; today highlighted. --}}
+        @php($today = \App\Support\BusinessDay::today()->isoWeekday())
+        @php($weekly = $items->filter(fn ($i) => $i->is_active && $i->isOnWeeklyMenu()))
+        <section class="admin-card menu-week-card" aria-label="Menu de la semaine">
+            <h5 class="mb-1">Menu de la semaine</h5>
+            <p class="small text-muted mb-3">Les plats servis certains jours seulement. À la vente, seuls les plats du jour sont proposés (les autres restent dans « Hors menu »).</p>
+            <div class="menu-week">
+                @foreach (\App\Models\CatalogItem::WEEKDAYS as $number => [$short, $long])
+                    @php($dishes = $weekly->filter(fn ($i) => in_array($number, $i->servedDays(), true)))
+                    <div class="menu-week__day {{ $number === $today ? 'is-today' : '' }}">
+                        <div class="menu-week__name">{{ ucfirst($long) }} @if ($number === $today)<span class="badge bg-success">Aujourd'hui</span>@endif</div>
+                        @forelse ($dishes as $dish)
+                            <div class="menu-week__dish">{{ $dish->name }}<span>{{ $fcfa($dish->price) }} F</span></div>
+                        @empty
+                            <div class="menu-week__none">Pas de plat du jour</div>
+                        @endforelse
+                    </div>
+                @endforeach
+            </div>
+            @php($everyDay = $items->filter(fn ($i) => $i->is_active && ! $i->isOnWeeklyMenu())->count())
+            <p class="small text-muted mb-0 mt-3">{{ $everyDay }} autre{{ $everyDay > 1 ? 's' : '' }} prestation{{ $everyDay > 1 ? 's' : '' }} servie{{ $everyDay > 1 ? 's' : '' }} tous les jours (aucun jour coché).</p>
+        </section>
+    @endif
 
     <div class="admin-card p-0">
         <div class="table-responsive">
             {{-- One cell per column; each line's fields belong to its form through form="…" (a form
                  can't wrap a table row). Kept out of DataTables / phone cards (.table-keep). --}}
-            <table class="table align-middle mb-0 catalog-table table-keep">
+            <table class="table align-middle mb-0 catalog-table table-keep table-stack">
                 <thead>
                     <tr>
                         <th>Nom</th>
                         <th>Catégorie</th>
                         <th class="catalog-table__price">Prix (F)</th>
                         <th class="catalog-table__small">Ordre</th>
+                        @if ($byDay)<th>Jours</th>@endif
                         @if ($department->countsEntries())<th class="text-center">Entrée</th>@endif
                         <th class="text-center">Active</th>
                         <th class="text-end">Actions</th>
@@ -98,9 +137,19 @@
                         @php($f = 'item-form-'.$item->id)
                         <tr class="{{ $item->is_active ? '' : 'catalog-table__inactive' }}">
                             <td><input type="text" class="form-control form-control-sm" form="{{ $f }}" name="name" maxlength="120" value="{{ $item->name }}" aria-label="Nom" required></td>
-                            <td><input type="text" class="form-control form-control-sm" form="{{ $f }}" name="category" maxlength="60" list="catalog-categories" value="{{ $item->category }}" aria-label="Catégorie"></td>
+                            <td>
+                                <select class="form-select form-select-sm" form="{{ $f }}" name="category" aria-label="Catégorie" data-allow-create>
+                                    <option value="">Sans catégorie</option>
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category }}" @selected($item->category === $category)>{{ $category }}</option>
+                                    @endforeach
+                                </select>
+                            </td>
                             <td><input type="text" inputmode="numeric" data-money class="form-control form-control-sm text-end" form="{{ $f }}" name="price" value="{{ $fcfa($item->price) }}" aria-label="Prix" required></td>
                             <td><input type="number" class="form-control form-control-sm" form="{{ $f }}" name="position" min="0" max="9999" value="{{ $item->position }}" aria-label="Ordre"></td>
+                            @if ($byDay)
+                                <td>@include('admin.catalog._days', ['idPrefix' => 'day-'.$item->id, 'selected' => $item->servedDays(), 'form' => $f])</td>
+                            @endif
                             @if ($department->countsEntries())
                                 <td class="text-center">
                                     <input type="hidden" form="{{ $f }}" name="counts_entry" value="0">
@@ -125,7 +174,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="{{ $department->countsEntries() ? 7 : 6 }}" class="text-center text-muted py-4">Aucune prestation pour ce service : ajoutez la première ci-dessus.</td></tr>
+                        <tr><td colspan="{{ 6 + ($department->countsEntries() ? 1 : 0) + ($byDay ? 1 : 0) }}" class="text-center text-muted py-4">Aucune prestation pour ce service : ajoutez la première ci-dessus.</td></tr>
                     @endforelse
                 </tbody>
             </table>

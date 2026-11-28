@@ -16,7 +16,7 @@
         <a href="{{ route('admin.sales.index', $slug) }}" class="btn btn-outline-secondary">Retour aux ventes</a>
     </div>
 
-    @if ($items->isEmpty())
+    @if ($items->isEmpty() && $offMenu->isEmpty())
         <div class="alert alert-info">
             Aucune prestation n'est proposée pour ce service.
             @can('catalog.manage')
@@ -33,28 +33,23 @@
                     <div class="admin-card">
                         <h5>Prestations</h5>
                         @error('items')<div class="alert alert-danger py-2">{{ $message }}</div>@enderror
-                        @foreach ($items as $category => $group)
-                            @if ($category !== '')
-                                <h6 class="text-uppercase text-muted small fw-bold mt-3">{{ $category }}</h6>
+                        {{-- Restaurant: today's menu (business day) first, the other dishes folded below (client request, 2026-11-28). --}}
+                        @if ($menuDay)
+                            <div class="sale-menu-day"><i class="far fa-utensils"></i> Menu du jour — {{ $menuDay->translatedFormat('l j F') }}</div>
+                            @if ($items->isEmpty())
+                                <p class="text-muted small mb-0">Aucun plat prévu au menu de ce jour : choisissez dans « Hors menu ».</p>
                             @endif
-                            <div class="sale-items">
-                                @foreach ($group as $item)
-                                    <div class="sale-item">
-                                        <label class="sale-item__name" for="item-{{ $item->id }}">
-                                            {{ $item->name }}
-                                            <span class="sale-item__price">{{ $fcfa($item->price) }} F</span>
-                                        </label>
-                                        <div class="input-group input-group-sm sale-item__qty">
-                                            <button type="button" class="btn btn-outline-secondary" data-qty-step="-1" aria-label="Retirer un « {{ $item->name }} »">−</button>
-                                            <input type="number" class="form-control text-center" id="item-{{ $item->id }}" name="items[{{ $item->id }}]"
-                                                min="0" max="{{ \App\Models\Sale::MAX_QUANTITY }}" step="1" inputmode="numeric"
-                                                value="{{ (int) ($oldItems[$item->id] ?? 0) }}" data-sale-qty data-price="{{ (float) $item->price }}">
-                                            <button type="button" class="btn btn-outline-secondary" data-qty-step="1" aria-label="Ajouter un « {{ $item->name }} »">+</button>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endforeach
+                        @endif
+                        @include('admin.sales._items', ['groups' => $items])
+                        @if ($offMenu->isNotEmpty())
+                            @php($offMenuCount = $offMenu->flatten(1)->count())
+                            {{-- Open when nothing is on today's menu, or when an off-menu dish was typed before a failed submission. --}}
+                            @php($offMenuOpen = $items->isEmpty() || $offMenu->flatten(1)->contains(fn ($i) => (int) ($oldItems[$i->id] ?? 0) > 0))
+                            <details class="sale-off-menu" @if ($offMenuOpen) open @endif>
+                                <summary>Hors menu du jour <span class="badge bg-light text-dark">{{ $offMenuCount }}</span> <span class="small text-muted fw-normal">— plats servis d'autres jours, pour une commande spéciale</span></summary>
+                                @include('admin.sales._items', ['groups' => $offMenu])
+                            </details>
+                        @endif
                     </div>
                 </div>
 

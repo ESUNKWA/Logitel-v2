@@ -71,7 +71,7 @@ return [
     ],
 
     // Services offered besides the accommodation (Configuration → Hôtel), comma-separated
-    // Department values: restauration, plage_piscine, evenements. Empty = none (client decision,
+    // Department values: restauration, bar, plage_piscine, evenements. Empty = none (client decision,
     // 2026-11-27: every hotel ticks its own); a service not offered is hidden and blocked.
     'services' => '',
 

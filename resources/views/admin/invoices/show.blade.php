@@ -104,11 +104,11 @@
                             @include('admin.payments._lines', ['due' => $invoice->remainingAmount(), 'required' => true,
                                 'defaultAmount' => (string) (int) round((float) $invoice->remainingAmount())])
                             <div class="row g-2 mt-1">
-                                <div class="col-sm-6">
+                                <div class="col-12 col-xl-6">
                                     <label class="form-label" for="paid_at">Date</label>
                                     <input type="datetime-local" class="form-control" id="paid_at" name="paid_at" value="{{ old('paid_at', now()->format('Y-m-d\TH:i')) }}" required>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="col-12 col-xl-6">
                                     <label class="form-label" for="payment-notes">Note</label>
                                     <input type="text" class="form-control" id="payment-notes" name="notes" value="{{ old('notes') }}">
                                 </div>

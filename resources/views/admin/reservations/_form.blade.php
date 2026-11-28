@@ -118,8 +118,9 @@
         $offers = fn ($case) => ! $selectedType || $case->rateFor($selectedType) !== null;
         $perkMenus = \App\Models\Perk::menusFor($roomTypes); // « Inclus : … » under the modes
     @endphp
-    {{-- Type and room on the same row, on computers and phones (client request, 2026-11-11). --}}
-    <div class="col-6">
+    {{-- Type and room on the same row from tablets up (client request, 2026-11-11); stacked on
+         phones, where side by side cut their texts (client request, 2026-11-28). --}}
+    <div class="col-12 col-sm-6">
         <label class="form-label" for="booking_room_type">Type de chambre</label>
         <select class="form-select @error('room_type_id') is-invalid @enderror" id="booking_room_type" name="room_type_id" data-booking-type required>
             <option value="">Choisissez un type de chambre…</option>
@@ -128,7 +129,7 @@
             @endforeach
         </select>
     </div>
-    <div class="col-6">
+    <div class="col-12 col-sm-6">
         <label class="form-label" for="room_id">Chambre</label>
         <select
             class="form-select"
@@ -144,7 +145,7 @@
             @if ($currentRoomOption ?? null)
                 <option value="{{ $currentRoomOption['id'] }}" data-rate="{{ $currentRoomOption['rate'] }}" selected>{{ $currentRoomOption['label'] }}</option>
             @else
-                <option value="">Choisissez le type de chambre et l'arrivée</option>
+                <option value="">Choisissez d'abord le type</option>
             @endif
         </select>
         <div class="form-text" data-room-hint hidden></div>

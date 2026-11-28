@@ -56,10 +56,17 @@ class SaleController extends Controller
     public function create(Request $request, string $department): View
     {
         $department = $this->department($department);
+        $items = CatalogItem::query()->ofDepartment($department)->active()->ordered()->get();
+        $byCategory = fn ($list) => $list->groupBy(fn (CatalogItem $i) => $i->category ?? '');
+        // Restaurant: today's menu first (business day); the other dishes stay sellable in a folded
+        // « Hors menu » block (client request, 2026-11-28).
+        $day = BusinessDay::today();
 
         return view('admin.sales.create', [
             'department' => $department,
-            'items' => CatalogItem::query()->ofDepartment($department)->active()->ordered()->get()->groupBy(fn (CatalogItem $i) => $i->category ?? ''),
+            'items' => $byCategory($items->filter(fn (CatalogItem $i) => $i->servedOn($day))),
+            'offMenu' => $byCategory($items->reject(fn (CatalogItem $i) => $i->servedOn($day))),
+            'menuDay' => $department->servesByDay() ? $day : null,
             'stays' => $this->staysInProgress(),
             // « Ajouter une consommation » from an affectation pre-selects its room.
             'preselectedStay' => ctype_digit((string) $request->query('chambre')) ? (int) $request->query('chambre') : null,
