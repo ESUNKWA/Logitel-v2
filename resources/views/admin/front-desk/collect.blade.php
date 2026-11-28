@@ -25,12 +25,31 @@
     <ul class="nav nav-pills mb-3 reservation-tabs">
         @foreach (['aujourdhui' => 'Aujourd\'hui', 'tout' => 'Tout'] as $key => $label)
             <li class="nav-item">
-                <a href="{{ route('admin.front-desk.collect', $key === 'tout' ? [] : ['periode' => $key]) }}" class="nav-link {{ $period === $key ? 'active' : '' }}" @if ($period === $key) aria-current="page" @endif>
+                <a href="{{ route('admin.front-desk.collect', array_filter(['periode' => $key === 'tout' ? null : $key, 'q' => $q])) }}" class="nav-link {{ $period === $key ? 'active' : '' }}" @if ($period === $key) aria-current="page" @endif>
                     {{ $label }} <span class="badge bg-light text-dark">{{ $counts[$key] }}</span>
                 </a>
             </li>
         @endforeach
     </ul>
+
+    {{-- Free-text search (Invoice::scopeSearch), kept within the current tab. --}}
+    <form method="GET" action="{{ route('admin.front-desk.collect') }}" class="admin-card collect-search" role="search">
+        @if ($period === 'aujourdhui')
+            <input type="hidden" name="periode" value="aujourdhui">
+        @endif
+        <div class="input-group">
+            <span class="input-group-text"><i class="far fa-search"></i></span>
+            <input type="search" name="q" value="{{ $q }}" class="form-control" maxlength="80" autocomplete="off" enterkeyhint="search"
+                placeholder="Client, téléphone, chambre, n° de facture, table…" aria-label="Rechercher une facture à encaisser">
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+        </div>
+        @if ($q !== '')
+            <div class="small text-muted mt-2">
+                {{ $invoices->total() }} résultat{{ $invoices->total() > 1 ? 's' : '' }} pour « {{ $q }} »
+                · <a href="{{ route('admin.front-desk.collect', $period === 'aujourdhui' ? ['periode' => 'aujourdhui'] : []) }}">Effacer la recherche</a>
+            </div>
+        @endif
+    </form>
 
     <div class="fd-list">
         @forelse ($invoices as $invoice)
@@ -84,7 +103,11 @@
                 </div>
             </div>
         @empty
-            <div class="fd-empty"><i class="far fa-check-circle"></i> {{ $period === 'aujourdhui' ? 'Rien à encaisser aujourd\'hui.' : 'Tout est réglé : aucune facture en attente de paiement.' }}</div>
+            @if ($q !== '')
+                <div class="fd-empty"><i class="far fa-search"></i> Aucune facture à encaisser ne correspond à « {{ $q }} »@if ($period === 'aujourdhui') aujourd'hui (essayez l'onglet <a href="{{ route('admin.front-desk.collect', ['q' => $q]) }}">Tout</a>)@endif.</div>
+            @else
+                <div class="fd-empty"><i class="far fa-check-circle"></i> {{ $period === 'aujourdhui' ? 'Rien à encaisser aujourd\'hui.' : 'Tout est réglé : aucune facture en attente de paiement.' }}</div>
+            @endif
         @endforelse
     </div>
 

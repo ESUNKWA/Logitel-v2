@@ -3362,7 +3362,27 @@ a.duty-pill:not(.duty-pill--none):hover { color: #0e5a3c; background: rgba(var(-
 .duty-take__card p { text-align: left; }
 .duty-take__card .duty-take__day { text-align: center; }
 .duty-take__defer { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--ek-border); text-align: left; }
-.duty-assign .form-select { min-width: 150px; }
+/* « Prises de service »: correction forms wrap instead of widening the table (tablets); on phones
+   (table-cards) each row is a card headed by its day, the forms take the card's full width. */
+.duty-actions__group { display: flex; flex-wrap: wrap; gap: 8px; }
+.duty-assign { display: flex; flex-wrap: wrap; gap: 8px; }
+.duty-assign .form-select { flex: 1 1 140px; min-width: 0; width: auto; }
+.duty-assign .btn, .duty-close .btn { white-space: nowrap; }
+.duty-day-repeat { display: none; }
+@media (max-width: 991.98px) { .duty-th-long { display: none; } }
+@media (max-width: 767.98px) {
+    .duty-table .duty-day-repeat { display: inline; }
+    .duty-actions__group, .duty-actions .duty-assign, .duty-actions .duty-close { width: 100%; }
+    .duty-assign { flex-wrap: nowrap; }
+    .duty-assign .form-select { flex: 1 1 auto; min-height: 38px; }
+    .duty-assign .btn, .duty-close .btn { min-height: 38px; }
+    .duty-close .btn { width: 100%; }
+    /* The table sits in DataTables' wrapper: drop the outer card like the other card tables. */
+    .admin-card:has(.duty-table.table-cards) { background: transparent; border: 0; box-shadow: none; padding: 0 !important; }
+}
+/* The page's own pill shows the whole text (the top bar's one is the one shortened). */
+.admin-page-header .duty-pill { max-width: none; }
+.admin-page-header .duty-pill .duty-pill__text { white-space: normal; }
 
 /* Room board on phones: 5 rooms per page (admin.js; client request, 2026-11-10). */
 .room-card.is-paged-out, .room-board.is-paged-out, .room-type-heading.is-paged-out { display: none; }
@@ -3660,3 +3680,25 @@ body > .ts-dropdown.ek-select__dropdown { z-index: 1060; } /* lists attached to 
 .catalog-table__price { width: 150px; }
 .catalog-table__small { width: 100px; }
 .catalog-table__inactive input:not([type="checkbox"]) { color: var(--bs-secondary-color); }
+
+/* « À encaisser »: free-text search (Invoice::scopeSearch) above the list. */
+.collect-search { padding: 14px 16px; margin-bottom: 16px; }
+.collect-search .input-group-text { background: var(--ek-surface); color: var(--ek-muted); }
+
+/* Réception home: « Autres services » (FrontDeskController::otherServices) — one tile per
+   service with today's figures and a direct « Nouvelle vente » / « Nouvelle réservation ». */
+.home-services { margin-top: 22px; }
+.home-services__title { font-family: var(--ek-font); font-size: 1rem; font-weight: 800; color: var(--ek-ink); margin: 0 0 10px; }
+.home-services__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 14px; }
+/* Two columns in the home's left column: a last tile alone on its row takes the full width. */
+@container (max-width: 779px) { .home-services__grid > .home-service:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+.home-service { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--ek-radius); background: var(--ek-surface); border: 1px solid var(--ek-border); box-shadow: var(--ek-shadow); min-width: 0; }
+.home-service__main { display: flex; align-items: flex-start; gap: 12px; color: var(--ek-ink); text-decoration: none; min-width: 0; }
+.home-service__main:hover { color: var(--ek-primary); }
+.home-service__icon { width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center; font-size: 1.1rem; color: var(--ek-primary); background: var(--ek-primary-50); }
+.home-service__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.home-service__name { font-weight: 800; font-size: 1rem; }
+.home-service__figures { font-size: .88rem; color: var(--ek-text); font-variant-numeric: tabular-nums; }
+.home-service__figures strong { color: var(--ek-ink); }
+.home-service__hint { font-size: .78rem; color: var(--ek-muted); }
+.home-service__action { margin-top: auto; width: 100%; font-weight: 600; }

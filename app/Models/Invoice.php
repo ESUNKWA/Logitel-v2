@@ -72,6 +72,47 @@ class Invoice extends Model
      * starts before then. A venue booking's sale is created when the room is booked, hence the
      * event's start rather than `sold_at`. Future bookings and events are left out.
      */
+    /**
+     * Free-text search of « À encaisser » (client request, 2026-11-28): every word typed must be
+     * found in one of the invoice's texts — its number; the stay's guest (first / last / company
+     * name, phone with or without spaces) and room; the sale's label, the room it is charged to,
+     * or its venue booking (contact, organisation, title, phone). « bamba 203 » finds Fatou Bamba
+     * in room 203. Case-insensitive; at most 6 words.
+     */
+    public function scopeSearch(Builder $query, string $text): Builder
+    {
+        // LIKE wildcards are dropped (escaping differs between PostgreSQL and SQLite).
+        $words = array_slice(array_filter(preg_split('/\s+/u', mb_strtolower(str_replace(['%', '_'], ' ', trim($text)))) ?: []), 0, 6);
+
+        foreach ($words as $word) {
+            $like = '%'.$word.'%';
+            $digits = preg_replace('/\D/', '', $word) ?? '';
+            $phone = fn (Builder $q, string $column) => strlen($digits) >= 3
+                ? $q->orWhereRaw("replace(replace(replace({$column}, ' ', ''), '.', ''), '-', '') like ?", ['%'.$digits.'%'])
+                : $q;
+            $guest = fn (Builder $g) => $phone($g->where(fn (Builder $w) => $w
+                ->whereRaw('lower(first_name) like ?', [$like])
+                ->orWhereRaw('lower(last_name) like ?', [$like])
+                ->orWhereRaw('lower(company_name) like ?', [$like])), 'phone');
+            $stay = fn (Builder $r) => $r->where(fn (Builder $w) => $w
+                ->whereHas('guest', $guest)
+                ->orWhereHas('room', fn (Builder $room) => $room->whereRaw('lower(number) like ?', [$like])));
+
+            $query->where(fn (Builder $w) => $w
+                ->whereRaw('lower(invoices.number) like ?', [$like])
+                ->orWhereHas('reservation', $stay)
+                ->orWhereHas('sale', fn (Builder $s) => $s->where(fn (Builder $sw) => $sw
+                    ->whereRaw('lower(label) like ?', [$like])
+                    ->orWhereHas('reservation', $stay)
+                    ->orWhereHas('venueBooking', fn (Builder $v) => $phone($v->where(fn (Builder $vw) => $vw
+                        ->whereRaw('lower(client_name) like ?', [$like])
+                        ->orWhereRaw('lower(organization) like ?', [$like])
+                        ->orWhereRaw('lower(title) like ?', [$like])), 'client_phone')))));
+        }
+
+        return $query;
+    }
+
     public function scopeDueBy(Builder $query, CarbonInterface $dayEnd): Builder
     {
         return $query->where(fn (Builder $due) => $due

@@ -62,6 +62,62 @@
 
     </div>
 
+    {{-- « Autres services » (réception only, FrontDeskController::otherServices): today's figures
+         and a one-click « Nouvelle vente » instead of going through the « Plus » menu. --}}
+    @if ($services)
+        @php
+            $fcfaService = fn ($v) => number_format((float) $v, 0, ',', ' ');
+        @endphp
+        <section class="home-services" aria-label="Autres services">
+            <h2 class="home-services__title">Autres services</h2>
+            <div class="home-services__grid">
+                @foreach ($services['sales'] as $service)
+                    @php
+                        $slug = $service['department']->slug();
+                    @endphp
+                    <div class="home-service">
+                        <a href="{{ route('admin.sales.index', $slug) }}" class="home-service__main">
+                            <span class="home-service__icon"><i class="far {{ $service['department']->icon() }}"></i></span>
+                            <span class="home-service__text">
+                                <span class="home-service__name">{{ $service['department']->getLabel() }}</span>
+                                <span class="home-service__figures">
+                                    {{ $plural($service['count'], 'vente', 'ventes') }} · <strong>{{ $fcfaService($service['amount']) }} F</strong>
+                                    @if ($service['entries'] !== null)
+                                        · {{ $plural($service['entries'], 'entrée', 'entrées') }}
+                                    @endif
+                                </span>
+                                <span class="home-service__hint">aujourd'hui</span>
+                            </span>
+                        </a>
+                        <a href="{{ route('admin.sales.create', $slug) }}" class="btn btn-primary home-service__action"><i class="far fa-plus"></i> Nouvelle vente</a>
+                    </div>
+                @endforeach
+                @if ($services['events'])
+                    @php
+                        $events = $services['events'];
+                    @endphp
+                    <div class="home-service">
+                        <a href="{{ route('admin.events.index') }}" class="home-service__main">
+                            <span class="home-service__icon"><i class="far {{ \App\Enums\Department::Evenements->icon() }}"></i></span>
+                            <span class="home-service__text">
+                                <span class="home-service__name">{{ \App\Enums\Department::Evenements->getLabel() }}</span>
+                                <span class="home-service__figures">
+                                    <strong>{{ $plural($events['today'], 'événement', 'événements') }}</strong> aujourd'hui
+                                </span>
+                                <span class="home-service__hint">{{ $events['upcoming'] ? $plural($events['upcoming'], 'réservation', 'réservations').' à venir' : 'Aucune réservation à venir' }}</span>
+                            </span>
+                        </a>
+                        @if ($events['canBook'])
+                            <a href="{{ route('admin.events.create') }}" class="btn btn-primary home-service__action"><i class="far fa-plus"></i> Nouvelle réservation</a>
+                        @else
+                            <a href="{{ route('admin.events.index') }}" class="btn btn-outline-primary home-service__action">Voir les réservations</a>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
     @if ($roomCounts)
         <div class="home-rooms">
             <span class="home-rooms__title">Chambres</span>

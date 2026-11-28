@@ -100,7 +100,9 @@
                                 Reste dû : <strong>{{ number_format((float) $invoice->remainingAmount(), 0, ',', ' ') }} FCFA</strong>.
                                 Pour un paiement mixte (ex. espèces + Wave), ajoutez une ligne par mode.
                             </p>
-                            @include('admin.payments._lines', ['due' => $invoice->remainingAmount(), 'required' => true])
+                            {{-- The amount field opens filled with what is left to pay (client request, 2026-11-28); the cashier may lower it for a partial payment. --}}
+                            @include('admin.payments._lines', ['due' => $invoice->remainingAmount(), 'required' => true,
+                                'defaultAmount' => (string) (int) round((float) $invoice->remainingAmount())])
                             <div class="row g-2 mt-1">
                                 <div class="col-sm-6">
                                     <label class="form-label" for="paid_at">Date</label>

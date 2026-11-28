@@ -37,7 +37,7 @@
                     <th>Journée</th>
                     <th>Réceptionniste</th>
                     <th>Période de service</th>
-                    <th class="text-end">Encaissé pendant la période</th>
+                    <th class="text-end">Encaissé <span class="duty-th-long">pendant la période</span></th>
                     <th>Corriger</th>
                 </tr>
             </thead>
@@ -49,20 +49,21 @@
                         @php([$total] = $shift->salesSummary())
                         <tr>
                             <td>
-                                @if ($i === 0)
+                                {{-- On phones every row is a card headed by its day: the day is repeated (hidden on wider screens). --}}
+                                <span class="{{ $i === 0 ? '' : 'duty-day-repeat' }}">
                                     <strong>{{ $weekdays[$day->dayOfWeek] }} {{ $day->format('d/m/Y') }}</strong>
                                     @if ($day->equalTo($today))
                                         <span class="badge bg-success ms-1">Aujourd'hui</span>
                                     @endif
-                                @endif
+                                </span>
                             </td>
-                            <td>
+                            <td data-label="De service">
                                 <i class="far fa-user-clock text-muted"></i> {{ $shift->user?->name }}
                                 @if ($shift->assignedBy)
                                     <div class="small text-muted">désignée par {{ $shift->assignedBy->name }}</div>
                                 @endif
                             </td>
-                            <td class="small">
+                            <td class="small" data-label="Période">
                                 {{ $shift->started_at->format('d/m H\hi') }} →
                                 @if ($shift->ended_at)
                                     {{ $shift->ended_at->format('d/m H\hi') }}
@@ -73,11 +74,11 @@
                                     <span class="badge bg-success">en cours</span>
                                 @endif
                             </td>
-                            <td class="text-end">{{ $fcfa($total) }} F</td>
-                            <td>
+                            <td class="text-end" data-label="Encaissé">{{ $fcfa($total) }} F</td>
+                            <td class="duty-actions" data-label="">
                                 @if ($receptionists->isNotEmpty())
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <form method="POST" action="{{ route('admin.duty.reassign', $shift) }}" class="d-flex gap-2 duty-assign"
+                                    <div class="duty-actions__group">
+                                        <form method="POST" action="{{ route('admin.duty.reassign', $shift) }}" class="duty-assign"
                                             data-confirm="Toutes les ventes de la période du {{ $shift->started_at->format('d/m/Y à H\hi') }} seront attribuées à la réceptionniste choisie. Continuer ?"
                                             data-confirm-button="Oui, attribuer">
                                             @csrf
@@ -85,7 +86,7 @@
                                             <button type="submit" class="btn btn-sm btn-outline-primary">Valider</button>
                                         </form>
                                         @if ($shift->isOpen())
-                                            <form method="POST" action="{{ route('admin.duty.close', $shift) }}"
+                                            <form method="POST" action="{{ route('admin.duty.close', $shift) }}" class="duty-close"
                                                 data-confirm="Le service de {{ $shift->user?->name }} sera terminé maintenant ; la prochaine réceptionniste le prendra à sa connexion."
                                                 data-confirm-button="Oui, terminer">
                                                 @csrf
@@ -104,12 +105,12 @@
                                     <span class="badge bg-success ms-1">Aujourd'hui</span>
                                 @endif
                             </td>
-                            <td><span class="text-muted">— personne</span></td>
-                            <td class="small">—</td>
-                            <td class="text-end">—</td>
-                            <td>
+                            <td data-label="De service"><span class="text-muted">— personne</span></td>
+                            <td class="small" data-label="Période">—</td>
+                            <td class="text-end" data-label="Encaissé">—</td>
+                            <td class="duty-actions" data-label="">
                                 @if ($receptionists->isNotEmpty())
-                                    <form method="POST" action="{{ route('admin.duty.assign') }}" class="d-flex gap-2 duty-assign"
+                                    <form method="POST" action="{{ route('admin.duty.assign') }}" class="duty-assign"
                                         data-confirm="Toutes les ventes de la journée du {{ $day->format('d/m/Y') }} seront attribuées à la réceptionniste choisie. Continuer ?"
                                         data-confirm-button="Oui, attribuer">
                                         @csrf

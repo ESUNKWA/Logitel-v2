@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Department;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
@@ -12,9 +13,13 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\Sale;
 use App\Models\User;
+use App\Models\Venue;
+use App\Models\VenueBooking;
 use App\Support\BusinessDay;
 use App\Support\FinanceStats;
+use App\Support\NavGroups;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -42,8 +47,52 @@ class FrontDeskController extends Controller
                 ] : null,
                 'arrivees' => $user->can('reservations.view') ? $this->arrivalsQuery()->count() : null,
             ],
+            'services' => self::otherServices($user),
             ...self::moneyBlocks($user),
         ]);
+    }
+
+    /**
+     * « Autres services » on the réception's home (client request, 2026-11-28): one tile per
+     * service the user may sell for — the same list as the « Plus » menu (NavGroups) — with
+     * today's figures (as on the sales page: valid sales of the business day, amount, beach
+     * entries) and a direct « Nouvelle vente » button; the venue bookings with today's and
+     * upcoming events. Réception only: null for the manager (dashboard.revenue).
+     *
+     * @return array{sales: list<array{department: Department, count: int, amount: float, entries: int|null}>, events: array{today: int, upcoming: int, canBook: bool}|null}|null
+     */
+    public static function otherServices(User $user): ?array
+    {
+        if ($user->can('dashboard.revenue')) {
+            return null;
+        }
+        [$dayStart, $dayEnd] = BusinessDay::current();
+
+        $departments = NavGroups::saleServices($user);
+        $sold = $departments === [] ? collect() : Sale::query()->valid()
+            ->whereIn('department', array_map(fn (Department $d) => $d->value, $departments))
+            ->where('sold_at', '>=', $dayStart)->where('sold_at', '<', $dayEnd)
+            ->with('lines')->get()
+            ->groupBy(fn (Sale $sale) => $sale->department instanceof Department ? $sale->department->value : (string) $sale->department);
+
+        $sales = array_map(function (Department $department) use ($sold) {
+            $day = $sold->get($department->value, collect());
+
+            return [
+                'department' => $department,
+                'count' => $day->count(),
+                'amount' => (float) $day->sum('total_amount'),
+                'entries' => $department->countsEntries() ? (int) $day->sum(fn (Sale $sale) => $sale->entries()) : null,
+            ];
+        }, $departments);
+
+        $events = Department::Evenements->isOffered() && $user->can('events.manage') ? [
+            'today' => VenueBooking::query()->notCancelled()->where('start_at', '<', $dayEnd)->where('end_at', '>', $dayStart)->count(),
+            'upcoming' => VenueBooking::query()->notCancelled()->where('start_at', '>=', $dayEnd)->count(),
+            'canBook' => Venue::query()->active()->exists(),
+        ] : null;
+
+        return $sales === [] && $events === null ? null : ['sales' => $sales, 'events' => $events];
     }
 
     /**
@@ -171,15 +220,19 @@ class FrontDeskController extends Controller
     {
         $dayEnd = BusinessDay::current()[1];
         $period = $request->query('periode') === 'aujourdhui' ? 'aujourdhui' : 'tout';
+        // Free-text search (Invoice::scopeSearch), combined with the tab; the counts follow it.
+        $q = trim(mb_substr($request->string('q')->toString(), 0, 80));
+        $base = fn () => $this->toCollectQuery()->when($q !== '', fn (Builder $query) => $query->search($q));
 
         return view('admin.front-desk.collect', [
             'period' => $period,
+            'q' => $q,
             'counts' => [
-                'aujourdhui' => $this->toCollectQuery()->dueBy($dayEnd)->count(),
-                'tout' => $this->toCollectQuery()->count(),
+                'aujourdhui' => $base()->dueBy($dayEnd)->count(),
+                'tout' => $base()->count(),
             ],
-            'invoices' => $this->toCollectQuery()
-                ->when($period === 'aujourdhui', fn (Builder $q) => $q->dueBy($dayEnd))
+            'invoices' => $base()
+                ->when($period === 'aujourdhui', fn (Builder $query) => $query->dueBy($dayEnd))
                 ->with(['reservation.guest', 'reservation.room', 'sale.reservation.room'])
                 ->withSum('payments', 'amount')
                 ->orderBy('issued_at')

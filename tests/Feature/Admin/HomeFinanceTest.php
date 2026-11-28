@@ -126,6 +126,51 @@ class HomeFinanceTest extends TestCase
             ->assertSee($future->invoice->number)->assertSee($laterEvent->sale->invoice->number);
     }
 
+    public function test_the_collect_page_searches_every_text_of_the_line(): void
+    {
+        $bamba = $this->book('203', '2026-10-08 18:00');
+        $bamba->guest->update(['first_name' => 'Fatou', 'last_name' => 'Bamba', 'phone' => '07 48 22 19 03']);
+        $other = $this->book('204', '2026-10-12 14:00');
+        $other->guest->update(['first_name' => 'Serge', 'last_name' => 'Kouadio', 'phone' => '0707312690']);
+        $table = Sale::record(Department::Restauration, [], 'Table 4', null, '0', null, [['label' => 'Garba', 'unit_price' => '2000', 'quantity' => 1]]);
+        $hall = Venue::create(['name' => 'Salle Baobab', 'capacity' => 50, 'half_day_rate' => 100000, 'day_rate' => 180000]);
+        $event = VenueBooking::book(['venue_id' => $hall->id, 'start_at' => Carbon::parse('2026-10-15 08:00'), 'end_at' => Carbon::parse('2026-10-15 13:00'),
+            'formula' => VenueBooking::FORMULA_HALF, 'participants' => 10, 'client_name' => 'Mme Yao', 'client_phone' => '0101010101',
+            'organization' => 'Orange CI', 'status' => VenueBooking::STATUS_OPTION, 'quantities' => [], 'discount' => '0'], User::factory()->create());
+
+        $this->actingAs(User::factory()->reception()->simpleUi()->create());
+        $found = fn (string $q, string $period = '') => $this->get('/admin/a-encaisser?q='.urlencode($q).($period ? '&periode='.$period : ''))->assertOk()
+            ->viewData('invoices')->getCollection()->pluck('number')->all();
+
+        $this->assertSame([$bamba->invoice->number], $found('bamba 203')); // two words, two fields
+        $this->assertSame([$bamba->invoice->number], $found('FATOU'));
+        $this->assertSame([$bamba->invoice->number], $found('0748221903')); // phone typed without spaces
+        $this->assertSame([$other->invoice->number], $found('kouad'));
+        $this->assertSame([$table->invoice->number], $found('table 4'));
+        $this->assertSame([$event->sale->invoice->number], $found('orange'));
+        $this->assertSame([$bamba->invoice->number], $found($bamba->invoice->number));
+        $this->assertSame([], $found('kouadio', 'aujourdhui')); // future booking: not in « Aujourd'hui »
+        $this->assertSame([], $found('introuvable'));
+
+        $this->get('/admin/a-encaisser?q=kouadio&periode=aujourdhui')
+            ->assertViewHas('counts', ['aujourdhui' => 0, 'tout' => 1])
+            ->assertSee('Aucune facture à encaisser ne correspond à « kouadio »', false);
+    }
+
+    public function test_the_invoice_payment_form_opens_with_what_is_left_to_pay(): void
+    {
+        $stay = $this->stay('101', 4, [['method' => 'especes', 'amount' => 5000, 'received' => 5000]]); // 20 000 - 5 000
+
+        $this->actingAs(User::factory()->reception()->simpleUi()->create())
+            ->get(route('admin.invoices.show', $stay->invoice))->assertOk()
+            ->assertSee('name="payments[0][amount]" value="15000"', false);
+
+        // Settling it fully leaves no form to fill.
+        $stay->invoice->settle([['method' => 'wave', 'amount' => 15000]], now());
+        $this->get(route('admin.invoices.show', $stay->invoice))->assertOk()
+            ->assertDontSee('name="payments[0][amount]"', false);
+    }
+
     public function test_the_due_today_card_says_when_nothing_is_left(): void
     {
         $this->stay('101', 2, [['method' => 'wave', 'amount' => 10000]]);
